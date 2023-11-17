@@ -5,9 +5,8 @@ import 'forge-std/Test.sol';
 import {AaveV3EthereumAssets, AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
 import {ProtocolV3TestBase} from 'aave-helpers/ProtocolV3TestBase.sol';
 import {AaveV3Ethereum_GHOVariableDebtTokenUpgrade_20231126} from './AaveV3Ethereum_GHOVariableDebtTokenUpgrade_20231126.sol';
-import {IGhoVariableDebtToken} from 'gho-core/contracts/facilitators/aave/tokens/interfaces/IGhoVariableDebtToken.sol';
 
-interface IGhoVariableDebtTokenHelper is IGhoVariableDebtToken {
+interface IGhoVariableDebtTokenHelper {
   function DEBT_TOKEN_REVISION() external view returns (uint256);
 }
 
