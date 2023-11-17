@@ -8,7 +8,7 @@ import {AaveV3Ethereum_GHOVariableDebtTokenUpgrade_20231126} from './AaveV3Ether
 import {IGhoVariableDebtToken} from 'gho-core/contracts/facilitators/aave/tokens/interfaces/IGhoVariableDebtToken.sol';
 
 interface IGhoVariableDebtTokenHelper is IGhoVariableDebtToken {
-  function DEBT_TOKEN_REVISION() external returns (uint256);
+  function DEBT_TOKEN_REVISION() external view returns (uint256);
 }
 
 /**
