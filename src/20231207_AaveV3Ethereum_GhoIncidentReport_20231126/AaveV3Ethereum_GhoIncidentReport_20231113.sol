@@ -6,11 +6,12 @@ import {IERC20} from 'forge-std/interfaces/IERC20.sol';
 import {AaveV3Ethereum, AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 
 /**
- * @title vGHO improvement: upgrade vGHO implementation
- * @author AAVE
- * - Discussion:
+ * @title GHO update on Aave V3 Ethereum Pool for 13/11/2023 Report
+ * @dev Upgrades the implementation of the GhoVariableDebtToken contract
+ * @author Aave Labs (@aave)
+ * - Discussion: https://governance.aave.com/t/arfc-gho-technical-incident-13-11-2023/15642
  */
-contract AaveV3Ethereum_GHOVariableDebtTokenUpgrade_20231126 {
+contract AaveV3Ethereum_GhoIncidentReport_20231113 {
   address public immutable NEW_VGHO_IMPL;
 
   constructor(address newVGhoImpl) {
