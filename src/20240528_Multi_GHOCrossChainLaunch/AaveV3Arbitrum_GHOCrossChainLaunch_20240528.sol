@@ -106,8 +106,6 @@ library Utils {
  * 7. Seed Aave Pool
  */
 contract AaveV3Arbitrum_GHOCrossChainLaunch_20240528 is AaveV3PayloadArbitrum {
-  using SafeERC20 for IERC20;
-
   address public immutable GHO;
   address public immutable GHO_IMPL;
   address public immutable CCIP_TOKEN_POOL;
@@ -225,12 +223,59 @@ contract AaveV3Arbitrum_GHOCrossChainLaunch_20240528 is AaveV3PayloadArbitrum {
   }
 
   function _defensiveSeed() internal {
-    // Add Governance as Facilitator
-    IGhoToken(GHO).addFacilitator(address(this), 'Governance', uint128(Utils.GHO_SEED_AMOUNT));
+    AaveDefensiveSeed defensiveSeed = new AaveDefensiveSeed(GHO, Utils.GHO_SEED_AMOUNT);
 
-    // Mint GHO and supply
-    IGhoToken(GHO).mint(address(this), Utils.GHO_SEED_AMOUNT);
-    IERC20(GHO).forceApprove(address(AaveV3Arbitrum.POOL), Utils.GHO_SEED_AMOUNT);
-    AaveV3Arbitrum.POOL.supply(GHO, Utils.GHO_SEED_AMOUNT, address(0), 0);
+    // Add Facilitator and remove just after the mint of seed amount
+    uint256 seedAmount = defensiveSeed.DEFENSIVE_SEED_AMOUNT();
+    IGhoToken(GHO).addFacilitator(address(defensiveSeed), 'DefensiveSeed', uint128(seedAmount));
+    defensiveSeed.mint();
+    IGhoToken(GHO).setFacilitatorBucketCapacity(address(defensiveSeed), 0);
+  }
+}
+
+contract AaveDefensiveSeed {
+  using SafeERC20 for IERC20;
+
+  address public immutable GHO;
+  uint256 public immutable DEFENSIVE_SEED_AMOUNT;
+  bool public mintOnce;
+  bool public burnOnce;
+
+  constructor(address gho, uint256 seedAmount) {
+    GHO = gho;
+    DEFENSIVE_SEED_AMOUNT = seedAmount;
+  }
+
+  function mint() external {
+    require(!mintOnce, 'NOT_ACTIVE');
+
+    // mint
+    IGhoToken(GHO).mint(address(this), DEFENSIVE_SEED_AMOUNT);
+
+    // supply
+    IERC20(GHO).forceApprove(address(AaveV3Arbitrum.POOL), DEFENSIVE_SEED_AMOUNT);
+    AaveV3Arbitrum.POOL.supply(GHO, DEFENSIVE_SEED_AMOUNT, address(this), 0);
+
+    mintOnce = true;
+  }
+
+  function burn() external {
+    require(!burnOnce, 'NOT_ACTIVE');
+
+    // Check address(0) is aGHO holder
+    (address aGHO, , ) = AaveV3Arbitrum.AAVE_PROTOCOL_DATA_PROVIDER.getReserveTokensAddresses(GHO);
+    require(
+      IERC20(aGHO).balanceOf(address(0)) >= DEFENSIVE_SEED_AMOUNT,
+      'NOT_ENOUGH_DEFENSIVE_SEED'
+    );
+
+    // withdraw
+    uint256 amount = IERC20(aGHO).balanceOf(address(this));
+    AaveV3Arbitrum.POOL.withdraw(GHO, amount, address(this));
+
+    // burn
+    IGhoToken(GHO).burn(amount);
+
+    burnOnce = true;
   }
 }
