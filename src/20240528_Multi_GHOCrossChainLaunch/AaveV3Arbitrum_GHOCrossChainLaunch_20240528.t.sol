@@ -86,6 +86,7 @@ contract AaveV3Arbitrum_GHOCrossChainLaunch_20240528_Test is ProtocolV3TestBase 
     assertEq(AaveDefensiveSeed(defensiveSeed).DEFENSIVE_SEED_AMOUNT(), Utils.GHO_SEED_AMOUNT);
     assertEq(AaveDefensiveSeed(defensiveSeed).mintOnce(), true);
     assertEq(AaveDefensiveSeed(defensiveSeed).burnOnce(), false);
+    assertEq(GHO.hasRole(GHO.FACILITATOR_MANAGER_ROLE(), defensiveSeed), true);
 
     vm.expectRevert('NOT_ACTIVE');
     AaveDefensiveSeed(defensiveSeed).mint();
@@ -118,6 +119,10 @@ contract AaveV3Arbitrum_GHOCrossChainLaunch_20240528_Test is ProtocolV3TestBase 
 
     vm.expectRevert('NOT_ACTIVE');
     AaveDefensiveSeed(defensiveSeed).burn();
+
+    assertEq(AaveDefensiveSeed(defensiveSeed).mintOnce(), true);
+    assertEq(AaveDefensiveSeed(defensiveSeed).burnOnce(), true);
+    assertEq(GHO.hasRole(GHO.FACILITATOR_MANAGER_ROLE(), defensiveSeed), false);
 
     assertEq(GHO.totalSupply(), Utils.GHO_SEED_AMOUNT);
     assertEq(IERC20(aGHO).totalSupply(), Utils.GHO_SEED_AMOUNT);

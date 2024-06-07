@@ -230,6 +230,9 @@ contract AaveV3Arbitrum_GHOCrossChainLaunch_20240528 is AaveV3PayloadArbitrum {
     IGhoToken(GHO).addFacilitator(address(defensiveSeed), 'DefensiveSeed', uint128(seedAmount));
     defensiveSeed.mint();
     IGhoToken(GHO).setFacilitatorBucketCapacity(address(defensiveSeed), 0);
+
+    // Give FacilitatorManager role so it can unwind
+    IGhoToken(GHO).grantRole(IGhoToken(GHO).FACILITATOR_MANAGER_ROLE(), address(defensiveSeed));
   }
 }
 
@@ -275,6 +278,12 @@ contract AaveDefensiveSeed {
 
     // burn
     IGhoToken(GHO).burn(amount);
+
+    // Remove itself as facilitator
+    IGhoToken(GHO).removeFacilitator(address(this));
+
+    // resign FacilitatorManager role
+    IGhoToken(GHO).renounceRole(IGhoToken(GHO).FACILITATOR_MANAGER_ROLE(), address(this));
 
     burnOnce = true;
   }
