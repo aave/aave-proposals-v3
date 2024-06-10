@@ -53,7 +53,7 @@ library Utils {
     proxy = ICreate3Factory(MiscArbitrum.CREATE_3_FACTORY).create(GHO_DEPLOY_SALT, creationCode);
   }
 
-  function deployCcipTokenPool(address ghoToken) internal returns (address imple, address proxy) {
+  function deployCcipTokenPool(address ghoToken) external returns (address imple, address proxy) {
     // Deploy imple
     bytes memory implCreationCode = abi.encodePacked(
       type(UpgradeableBurnMintTokenPool).creationCode,
@@ -236,6 +236,10 @@ contract AaveV3Arbitrum_GHOCrossChainLaunch_20240528 is AaveV3PayloadArbitrum {
   }
 }
 
+/**
+ * @dev This contract serves as a temporary holder for the initial seeding of the GHO reserve in the Aave V3 Pool.
+ * @dev Designed as an immutable interim GHO Facilitator, removed once the GHO reserve is adequately seeded.
+ */
 contract AaveDefensiveSeed {
   using SafeERC20 for IERC20;
 
@@ -244,11 +248,20 @@ contract AaveDefensiveSeed {
   bool public mintOnce;
   bool public burnOnce;
 
+  /**
+   * @dev Constructor
+   * @param gho The address of GHO token
+   * @param seedAmount The initial seed amount to be supplied to the Aave Pool
+   */
   constructor(address gho, uint256 seedAmount) {
     GHO = gho;
     DEFENSIVE_SEED_AMOUNT = seedAmount;
   }
 
+  /**
+   * @dev Executes the initial seeding of the GHO reserve in the Aave V3 Pool.
+   * @dev It can only be called once.
+   */
   function mint() external {
     require(!mintOnce, 'NOT_ACTIVE');
 
@@ -262,10 +275,15 @@ contract AaveDefensiveSeed {
     mintOnce = true;
   }
 
+  /**
+   * @dev Executes the withdrawal of the initial seeding from the GHO reserve in the Aave V3 Pool, effectively removing
+   * this contract as GHO Facilitator.
+   * @dev It can only be called once, and only if a sufficient amount of aGHO has been burned at the zero address
+   */
   function burn() external {
     require(!burnOnce, 'NOT_ACTIVE');
 
-    // Check address(0) is aGHO holder
+    // Check address(0) is aGHO holder with sufficient amount
     (address aGHO, , ) = AaveV3Arbitrum.AAVE_PROTOCOL_DATA_PROVIDER.getReserveTokensAddresses(GHO);
     require(
       IERC20(aGHO).balanceOf(address(0)) >= DEFENSIVE_SEED_AMOUNT,
