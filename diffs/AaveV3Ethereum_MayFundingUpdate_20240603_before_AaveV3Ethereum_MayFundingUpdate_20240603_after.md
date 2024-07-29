@@ -586,7 +586,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -632,7 +632,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -678,7 +678,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -724,7 +724,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -766,7 +766,7 @@
       },
       "baseStableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "baseVariableBorrowRate": {
         "from": null,
@@ -774,35 +774,35 @@
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessUsageRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "optimalStableToTotalDebtRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "optimalUsageRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "stableRateSlope1": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "stableRateSlope2": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "variableRateSlope1": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "variableRateSlope2": {
         "from": null,
-        "to": "0"
+        "to": 0
       }
     },
     "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3": {
@@ -816,7 +816,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -828,7 +828,7 @@
       },
       "optimalStableToTotalDebtRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "optimalUsageRatio": {
         "from": null,
@@ -866,7 +866,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -912,7 +912,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -962,7 +962,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1012,7 +1012,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1062,7 +1062,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1108,7 +1108,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1200,7 +1200,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1246,7 +1246,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1288,11 +1288,11 @@
       },
       "baseStableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1304,7 +1304,7 @@
       },
       "optimalStableToTotalDebtRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "optimalUsageRatio": {
         "from": null,
@@ -1312,19 +1312,19 @@
       },
       "stableRateSlope1": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "stableRateSlope2": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "variableRateSlope1": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "variableRateSlope2": {
         "from": null,
-        "to": "0"
+        "to": 0
       }
     },
     "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2": {
@@ -1338,7 +1338,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1388,7 +1388,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1434,7 +1434,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1446,7 +1446,7 @@
       },
       "optimalStableToTotalDebtRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "optimalUsageRatio": {
         "from": null,
@@ -1454,11 +1454,11 @@
       },
       "stableRateSlope1": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "stableRateSlope2": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "variableRateSlope1": {
         "from": null,
@@ -1480,7 +1480,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1526,7 +1526,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1622,7 +1622,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1668,7 +1668,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1714,7 +1714,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1726,7 +1726,7 @@
       },
       "optimalStableToTotalDebtRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "optimalUsageRatio": {
         "from": null,
@@ -1734,11 +1734,11 @@
       },
       "stableRateSlope1": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "stableRateSlope2": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "variableRateSlope1": {
         "from": null,
@@ -1760,7 +1760,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1852,7 +1852,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1948,7 +1948,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -1994,7 +1994,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -2040,7 +2040,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
@@ -2052,7 +2052,7 @@
       },
       "optimalStableToTotalDebtRatio": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "optimalUsageRatio": {
         "from": null,
@@ -2060,11 +2060,11 @@
       },
       "stableRateSlope1": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "stableRateSlope2": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "variableRateSlope1": {
         "from": null,
@@ -2086,7 +2086,7 @@
       },
       "baseVariableBorrowRate": {
         "from": null,
-        "to": "0"
+        "to": 0
       },
       "maxExcessStableToTotalDebtRatio": {
         "from": null,
