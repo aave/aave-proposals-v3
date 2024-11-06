@@ -17,6 +17,8 @@ import {IEVM2EVMOffRamp_1_2, IEVM2EVMOffRamp_1_5} from 'src/interfaces/ccip/IEVM
 import {ITokenAdminRegistry} from 'src/interfaces/ccip/ITokenAdminRegistry.sol';
 import {IUpgradeableBurnMintTokenPool} from 'src/interfaces/ccip/IUpgradeableBurnMintTokenPool.sol';
 import {IUpgradeableLockReleaseTokenPool} from 'src/interfaces/ccip/IUpgradeableLockReleaseTokenPool.sol';
+import {AaveV3Arbitrum_GHOStewardV2Upgrade_20241007} from '../20241007_Multi_GHOStewardV2Upgrade/AaveV3Arbitrum_GHOStewardV2Upgrade_20241007.sol';
+import {AaveV3Ethereum_GHOStewardV2Upgrade_20241007} from '../20241007_Multi_GHOStewardV2Upgrade/AaveV3Ethereum_GHOStewardV2Upgrade_20241007.sol';
 import {CCIPUtils} from './utils/CCIPUtils.sol';
 import {AaveV3Ethereum_GHOCCIP150Upgrade_20241021} from './AaveV3Ethereum_GHOCCIP150Upgrade_20241021.sol';
 import {AaveV3Arbitrum_GHOCCIP150Upgrade_20241021} from './AaveV3Arbitrum_GHOCCIP150Upgrade_20241021.sol';
@@ -50,6 +52,7 @@ contract AaveV3E2E_GHOCCIP150Upgrade_20241021_Base is ProtocolV3TestBase {
   }
 
   struct L1 {
+    AaveV3Ethereum_GHOStewardV2Upgrade_20241007 stewardProposal;
     AaveV3Ethereum_GHOCCIP150Upgrade_20241021 proposal;
     IUpgradeableLockReleaseTokenPool tokenPool;
     IRateLimiter.Config rateLimitConfig;
@@ -57,6 +60,7 @@ contract AaveV3E2E_GHOCCIP150Upgrade_20241021_Base is ProtocolV3TestBase {
   }
 
   struct L2 {
+    AaveV3Arbitrum_GHOStewardV2Upgrade_20241007 stewardProposal;
     AaveV3Arbitrum_GHOCCIP150Upgrade_20241021 proposal;
     IUpgradeableBurnMintTokenPool tokenPool;
     IRateLimiter.Config rateLimitConfig;
@@ -82,6 +86,7 @@ contract AaveV3E2E_GHOCCIP150Upgrade_20241021_Base is ProtocolV3TestBase {
 
     vm.selectFork(l1.c.forkId);
     l1.proposal = new AaveV3Ethereum_GHOCCIP150Upgrade_20241021();
+    l1.stewardProposal = new AaveV3Ethereum_GHOStewardV2Upgrade_20241007();
     l1.c.proxyPool = IProxyPool(l1.proposal.GHO_CCIP_PROXY_POOL());
     l1.tokenPool = IUpgradeableLockReleaseTokenPool(MiscEthereum.GHO_CCIP_TOKEN_POOL);
     l1.rateLimitConfig = IRateLimiter.Config({
@@ -100,6 +105,7 @@ contract AaveV3E2E_GHOCCIP150Upgrade_20241021_Base is ProtocolV3TestBase {
 
     vm.selectFork(l2.c.forkId);
     l2.proposal = new AaveV3Arbitrum_GHOCCIP150Upgrade_20241021();
+    l2.stewardProposal = new AaveV3Arbitrum_GHOStewardV2Upgrade_20241007();
     l2.c.proxyPool = IProxyPool(l2.proposal.GHO_CCIP_PROXY_POOL());
     l2.tokenPool = IUpgradeableBurnMintTokenPool(MiscArbitrum.GHO_CCIP_TOKEN_POOL);
     l2.rateLimitConfig = IRateLimiter.Config({
@@ -115,6 +121,12 @@ contract AaveV3E2E_GHOCCIP150Upgrade_20241021_Base is ProtocolV3TestBase {
     l2.c.EVM2EVMOffRamp1_2 = IEVM2EVMOffRamp_1_2(0x542ba1902044069330e8c5b36A84EC503863722f);
     l2.c.EVM2EVMOffRamp1_5 = IEVM2EVMOffRamp_1_5(0x91e46cc5590A4B9182e47f40006140A7077Dec31); // new offramp
     l2.c.tokenAdminRegistry = ITokenAdminRegistry(0x39AE1032cF4B334a1Ed41cdD0833bdD7c7E7751E);
+
+    // execute steward proposal
+    vm.selectFork(l1.c.forkId);
+    executePayload(vm, address(l1.stewardProposal));
+    vm.selectFork(l2.c.forkId);
+    executePayload(vm, address(l2.stewardProposal));
 
     _validateConfig({migrated: false});
   }

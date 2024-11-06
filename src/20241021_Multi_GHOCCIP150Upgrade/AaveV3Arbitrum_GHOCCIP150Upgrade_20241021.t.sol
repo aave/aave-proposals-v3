@@ -19,6 +19,7 @@ import {IGhoCcipSteward} from 'src/interfaces/IGhoCcipSteward.sol';
 import {IUpgradeableBurnMintTokenPool} from 'src/interfaces/ccip/IUpgradeableBurnMintTokenPool.sol';
 import {CCIPUtils} from './utils/CCIPUtils.sol';
 
+import {AaveV3Arbitrum_GHOStewardV2Upgrade_20241007} from '../20241007_Multi_GHOStewardV2Upgrade/AaveV3Arbitrum_GHOStewardV2Upgrade_20241007.sol';
 import {AaveV3Arbitrum_GHOCCIP150Upgrade_20241021} from './AaveV3Arbitrum_GHOCCIP150Upgrade_20241021.sol';
 
 /**
@@ -32,6 +33,7 @@ contract AaveV3Arbitrum_GHOCCIP150Upgrade_20241021_Test is ProtocolV3TestBase {
     bool migrated;
   }
 
+  AaveV3Arbitrum_GHOStewardV2Upgrade_20241007 internal stewardProposal;
   AaveV3Arbitrum_GHOCCIP150Upgrade_20241021 internal proposal;
   IUpgradeableBurnMintTokenPool internal ghoTokenPool;
   IProxyPool internal proxyPool;
@@ -62,9 +64,13 @@ contract AaveV3Arbitrum_GHOCCIP150Upgrade_20241021_Test is ProtocolV3TestBase {
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('arbitrum'), 271638492);
+    stewardProposal = new AaveV3Arbitrum_GHOStewardV2Upgrade_20241007();
     proposal = new AaveV3Arbitrum_GHOCCIP150Upgrade_20241021();
     ghoTokenPool = IUpgradeableBurnMintTokenPool(MiscArbitrum.GHO_CCIP_TOKEN_POOL);
     proxyPool = IProxyPool(proposal.GHO_CCIP_PROXY_POOL());
+
+    // execute steward proposal before all subsequent tests
+    executePayload(vm, address(stewardProposal));
 
     _validateConstants();
   }

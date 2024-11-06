@@ -16,6 +16,7 @@ import {IRateLimiter} from 'src/interfaces/ccip/IRateLimiter.sol';
 import {ITokenAdminRegistry} from 'src/interfaces/ccip/ITokenAdminRegistry.sol';
 import {IGhoCcipSteward} from 'src/interfaces/IGhoCcipSteward.sol';
 import {IUpgradeableLockReleaseTokenPool} from 'src/interfaces/ccip/IUpgradeableLockReleaseTokenPool.sol';
+import {AaveV3Ethereum_GHOStewardV2Upgrade_20241007} from '../20241007_Multi_GHOStewardV2Upgrade/AaveV3Ethereum_GHOStewardV2Upgrade_20241007.sol';
 import {CCIPUtils} from './utils/CCIPUtils.sol';
 import {AaveV3Ethereum_GHOCCIP150Upgrade_20241021} from './AaveV3Ethereum_GHOCCIP150Upgrade_20241021.sol';
 
@@ -30,6 +31,7 @@ contract AaveV3Ethereum_GHOCCIP150Upgrade_20241021_Test is ProtocolV3TestBase {
     bool migrated;
   }
 
+  AaveV3Ethereum_GHOStewardV2Upgrade_20241007 internal stewardProposal;
   AaveV3Ethereum_GHOCCIP150Upgrade_20241021 internal proposal;
   IUpgradeableLockReleaseTokenPool internal ghoTokenPool;
   IProxyPool internal proxyPool;
@@ -59,9 +61,12 @@ contract AaveV3Ethereum_GHOCCIP150Upgrade_20241021_Test is ProtocolV3TestBase {
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 21128760);
     proposal = new AaveV3Ethereum_GHOCCIP150Upgrade_20241021();
+    stewardProposal = new AaveV3Ethereum_GHOStewardV2Upgrade_20241007();
     ghoTokenPool = IUpgradeableLockReleaseTokenPool(MiscEthereum.GHO_CCIP_TOKEN_POOL);
     proxyPool = IProxyPool(proposal.GHO_CCIP_PROXY_POOL());
 
+    // execute steward proposal before all subsequent tests
+    executePayload(vm, address(stewardProposal));
     _validateConstants();
   }
 
