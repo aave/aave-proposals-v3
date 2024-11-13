@@ -89,7 +89,7 @@ The address creating the mainnet proposal(3) requires 80k AAVE of proposition po
 
 The payload is always deployed on the chain it affects.
 Therefore you need to adjust the relevant script accordingly.
-The generated scripts include exact instrauctions on what to execute.
+The generated scripts include exact instructions on what to execute.
 
 ### 2. Create an aip
 
