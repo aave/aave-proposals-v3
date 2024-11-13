@@ -7,7 +7,7 @@ snapshot: "https://snapshot.org/#/aave.eth/proposal/0xc5e7df1536ef9fc71a7d2e2f6f
 
 ## Simple Summary
 
-This publication proposes upgrading the GHO Steward Role to incorporate additional functionality to accomodate the current and future growth of GHO.
+This publication proposes upgrading the GHO Steward Role to incorporate additional functionality to accommodate the current and future growth of GHO.
 
 ## Motivation
 
