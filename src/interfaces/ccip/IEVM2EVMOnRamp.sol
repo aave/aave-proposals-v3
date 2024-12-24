@@ -3,8 +3,9 @@
 pragma solidity ^0.8.0;
 
 import {IInternal} from './IInternal.sol';
+import {ITypeAndVersion} from './ITypeAndVersion.sol';
 
-interface IEVM2EVMOnRamp {
+interface IEVM2EVMOnRamp is ITypeAndVersion {
   struct TokenTransferFeeConfig {
     uint32 minFeeUSDCents; // ──────────╮ Minimum fee to charge per token transfer, multiples of 0.01 USD
     uint32 maxFeeUSDCents; //           │ Maximum fee to charge per token transfer, multiples of 0.01 USD

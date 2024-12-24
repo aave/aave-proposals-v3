@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import {IInternal} from 'src/interfaces/ccip/IInternal.sol';
+import {IInternal} from './IInternal.sol';
+import {ITypeAndVersion} from './ITypeAndVersion.sol';
 
-interface IEVM2EVMOffRamp_1_2 {
+interface IEVM2EVMOffRamp_1_2 is ITypeAndVersion {
   /// @notice Execute a single message.
   /// @param message The message that will be executed.
   /// @param offchainTokenData Token transfer data to be passed to TokenPool.
@@ -18,7 +19,7 @@ interface IEVM2EVMOffRamp_1_2 {
   ) external;
 }
 
-interface IEVM2EVMOffRamp_1_5 {
+interface IEVM2EVMOffRamp_1_5 is ITypeAndVersion {
   /// @notice Execute a single message.
   /// @param message The message that will be executed.
   /// @param offchainTokenData Token transfer data to be passed to TokenPool.
