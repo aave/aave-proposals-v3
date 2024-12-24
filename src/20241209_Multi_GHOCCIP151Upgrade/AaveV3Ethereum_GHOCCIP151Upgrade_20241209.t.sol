@@ -21,6 +21,7 @@ import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
 import {MiscEthereum} from 'aave-address-book/MiscEthereum.sol';
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {AaveV3Arbitrum} from 'aave-address-book/AaveV3Arbitrum.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveV3ArbitrumAssets} from 'aave-address-book/AaveV3Arbitrum.sol';
 
 import {TransparentUpgradeableProxy} from 'solidity-utils/contracts/transparent-proxy/TransparentUpgradeableProxy.sol';
@@ -44,7 +45,7 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
   uint64 internal constant ETH_CHAIN_SELECTOR = 5009297550715157269;
   uint64 internal constant ARB_CHAIN_SELECTOR = 4949039107694359620;
 
-  IGhoToken internal constant GHO = IGhoToken(MiscEthereum.GHO_TOKEN);
+  IGhoToken internal constant GHO = IGhoToken(AaveV3EthereumAssets.GHO_UNDERLYING);
   ITokenAdminRegistry internal constant TOKEN_ADMIN_REGISTRY =
     ITokenAdminRegistry(0xb22764f98dD05c789929716D677382Df22C05Cb6);
   address internal constant ARB_PROXY_POOL = 0x26329558f08cbb40d6a4CCA0E0C67b29D64A8c50;
@@ -88,7 +89,7 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
     // pre-req - chainlink transfers gho token pool ownership on token admin registry
     vm.prank(TOKEN_ADMIN_REGISTRY.owner());
     TOKEN_ADMIN_REGISTRY.transferAdminRole(
-      MiscEthereum.GHO_TOKEN,
+      AaveV3EthereumAssets.GHO_UNDERLYING,
       GovernanceV3Ethereum.EXECUTOR_LVL_1
     );
 
@@ -166,7 +167,7 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
     assertEq(EXISTING_TOKEN_POOL.getRateLimitAdmin(), address(EXISTING_GHO_CCIP_STEWARD));
 
     assertEq(NEW_GHO_CCIP_STEWARD.RISK_COUNCIL(), EXISTING_GHO_CCIP_STEWARD.RISK_COUNCIL());
-    assertEq(NEW_GHO_CCIP_STEWARD.GHO_TOKEN(), MiscEthereum.GHO_TOKEN);
+    assertEq(NEW_GHO_CCIP_STEWARD.GHO_TOKEN(), AaveV3EthereumAssets.GHO_UNDERLYING);
     assertEq(NEW_GHO_CCIP_STEWARD.GHO_TOKEN_POOL(), address(NEW_TOKEN_POOL));
     assertTrue(NEW_GHO_CCIP_STEWARD.BRIDGE_LIMIT_ENABLED()); // *present* on eth token pool
   }
@@ -176,7 +177,7 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
   ) internal returns (IClient.EVM2AnyMessage memory, IInternal.EVM2EVMMessage memory) {
     IClient.EVM2AnyMessage memory message = CCIPUtils.generateMessage(params.sender, 1);
     message.tokenAmounts[0] = IClient.EVMTokenAmount({
-      token: MiscEthereum.GHO_TOKEN,
+      token: AaveV3EthereumAssets.GHO_UNDERLYING,
       amount: params.amount
     });
 
@@ -190,7 +191,7 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
         sourceChainSelector: ETH_CHAIN_SELECTOR,
         feeTokenAmount: feeAmount,
         originalSender: params.sender,
-        sourceToken: MiscEthereum.GHO_TOKEN,
+        sourceToken: AaveV3EthereumAssets.GHO_UNDERLYING,
         destinationToken: AaveV3ArbitrumAssets.GHO_UNDERLYING,
         poolVersion: params.poolVersion
       })
@@ -221,7 +222,6 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
       abi.encode(
         ghoTokenPool.owner(),
         ghoTokenPool.getSupportedChains(),
-        ghoTokenPool.getAllowListEnabled(),
         ghoTokenPool.getRebalancer(),
         ghoTokenPool.getBridgeLimit()
       );
@@ -262,10 +262,6 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
 contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_SetupAndProposalActions is
   AaveV3Ethereum_GHOCCIP151Upgrade_20241209_Base
 {
-  function setUp() public override {
-    super.setUp();
-  }
-
   /**
    * @dev executes the generic test suite including e2e and config snapshots
    */
@@ -374,8 +370,10 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_PostUpgrade is
     executePayload(vm, address(proposal));
   }
 
-  function test_sendMessageSucceedsAndRoutesViaNewPool() public {
-    uint256 amount = 100_000e18;
+  function test_sendMessageSucceedsAndRoutesViaNewPool(uint256 amount) public {
+    uint256 bridgeableAmount = NEW_TOKEN_POOL.getBridgeLimit() -
+      NEW_TOKEN_POOL.getCurrentBridgedAmount();
+    amount = bound(amount, 1, bridgeableAmount);
 
     deal(address(GHO), alice, amount);
     vm.prank(alice);
@@ -425,8 +423,10 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_PostUpgrade is
   }
 
   // on-ramp via new pool
-  function test_lockOrBurnSucceedsOnNewPool() public {
-    uint256 amount = 100_000e18;
+  function test_lockOrBurnSucceedsOnNewPool(uint256 amount) public {
+    uint256 bridgeableAmount = NEW_TOKEN_POOL.getBridgeLimit() -
+      NEW_TOKEN_POOL.getCurrentBridgedAmount();
+    amount = bound(amount, 1, bridgeableAmount);
 
     // router pulls tokens from the user & sends to the token pool during onRamps
     // we don't override NEW_TOKEN_POOL balance here & instead transfer because we want
@@ -475,8 +475,9 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_PostUpgrade is
   }
 
   // off-ramp messages sent from new eth token pool (v1.5.1)
-  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaNewTokenPoolEth() public {
-    uint256 amount = 100_000e18;
+  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaNewTokenPoolEth(uint256 amount) public {
+    uint256 bridgeableAmount = NEW_TOKEN_POOL.getCurrentBridgedAmount();
+    amount = bound(amount, 1, bridgeableAmount);
 
     uint256 aliceBalance = GHO.balanceOf(alice);
     uint256 tokenPoolBalance = GHO.balanceOf(address(NEW_TOKEN_POOL));
@@ -505,8 +506,11 @@ contract AaveV3Ethereum_GHOCCIP151Upgrade_20241209_PostUpgrade is
   }
 
   // off-ramp messages sent from existing eth token pool (v1.4) ie ProxyPool
-  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaExistingTokenPoolEth() public {
-    uint256 amount = 100_000e18;
+  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaExistingTokenPoolEth(
+    uint256 amount
+  ) public {
+    uint256 bridgeableAmount = NEW_TOKEN_POOL.getCurrentBridgedAmount();
+    amount = bound(amount, 1, bridgeableAmount);
 
     uint256 aliceBalance = GHO.balanceOf(alice);
     uint256 tokenPoolBalance = GHO.balanceOf(address(NEW_TOKEN_POOL));

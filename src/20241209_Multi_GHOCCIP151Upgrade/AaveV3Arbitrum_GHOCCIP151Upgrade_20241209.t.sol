@@ -18,9 +18,9 @@ import {IGhoCcipSteward} from 'src/interfaces/IGhoCcipSteward.sol';
 
 import {ProtocolV3TestBase} from 'aave-helpers/src/ProtocolV3TestBase.sol';
 import {AaveV3Arbitrum} from 'aave-address-book/AaveV3Arbitrum.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveV3ArbitrumAssets} from 'aave-address-book/AaveV3Arbitrum.sol';
 import {MiscArbitrum} from 'aave-address-book/MiscArbitrum.sol';
-import {MiscEthereum} from 'aave-address-book/MiscEthereum.sol';
 import {GovernanceV3Arbitrum} from 'aave-address-book/GovernanceV3Arbitrum.sol';
 
 import {TransparentUpgradeableProxy} from 'solidity-utils/contracts/transparent-proxy/TransparentUpgradeableProxy.sol';
@@ -74,7 +74,7 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
   event CCIPSendRequested(IInternal.EVM2EVMMessage message);
 
   function setUp() public virtual {
-    vm.createSelectFork(vm.rpcUrl('arbitrum'), 287752362);
+    vm.createSelectFork(vm.rpcUrl('arbitrum'), 288070365);
     NEW_TOKEN_POOL = IUpgradeableBurnMintTokenPool_1_5_1(_deployNewTokenPoolArb());
     NEW_GHO_CCIP_STEWARD = IGhoCcipSteward(_deployNewGhoCcipSteward(address(NEW_TOKEN_POOL)));
     proposal = new AaveV3Arbitrum_GHOCCIP151Upgrade_20241209(
@@ -183,7 +183,7 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
         feeTokenAmount: feeAmount,
         originalSender: params.sender,
         sourceToken: AaveV3ArbitrumAssets.GHO_UNDERLYING,
-        destinationToken: MiscEthereum.GHO_TOKEN,
+        destinationToken: AaveV3EthereumAssets.GHO_UNDERLYING,
         poolVersion: params.poolVersion
       })
     );
@@ -204,12 +204,7 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
 
   function _getDynamicParams(address tokenPool) internal view returns (bytes memory) {
     IUpgradeableBurnMintTokenPool_1_4 ghoTokenPool = IUpgradeableBurnMintTokenPool_1_4(tokenPool);
-    return
-      abi.encode(
-        ghoTokenPool.owner(),
-        ghoTokenPool.getSupportedChains(),
-        ghoTokenPool.getAllowListEnabled()
-      );
+    return abi.encode(ghoTokenPool.owner(), ghoTokenPool.getSupportedChains());
   }
 
   function _tokenBucketToConfig(
@@ -247,10 +242,6 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
 contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_SetupAndProposalActions is
   AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_Base
 {
-  function setUp() public override {
-    super.setUp();
-  }
-
   function test_defaultProposalExecution() public {
     defaultTest(
       'AaveV3Arbitrum_GHOCCIP151Upgrade_20241209',
@@ -296,7 +287,7 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_SetupAndProposalActions is
 
     newFacilitator = GHO.getFacilitator(address(NEW_TOKEN_POOL));
 
-    assertEq(newFacilitator.label, 'CCIP v1.5.1 TokenPool');
+    assertEq(newFacilitator.label, 'CCIP TokenPool v1.5.1 ');
     assertEq(newFacilitator.bucketCapacity, existingFacilitator.bucketCapacity);
     assertEq(newFacilitator.bucketLevel, existingFacilitator.bucketLevel);
 
@@ -325,7 +316,10 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_SetupAndProposalActions is
     assertEq(NEW_TOKEN_POOL.getRemotePools(ETH_CHAIN_SELECTOR).length, 2);
     assertTrue(NEW_TOKEN_POOL.isRemotePool(ETH_CHAIN_SELECTOR, abi.encode(ETH_PROXY_POOL)));
     assertTrue(NEW_TOKEN_POOL.isRemotePool(ETH_CHAIN_SELECTOR, abi.encode(NEW_REMOTE_POOL_ETH)));
-    assertEq(NEW_TOKEN_POOL.getRemoteToken(ETH_CHAIN_SELECTOR), abi.encode(MiscEthereum.GHO_TOKEN));
+    assertEq(
+      NEW_TOKEN_POOL.getRemoteToken(ETH_CHAIN_SELECTOR),
+      abi.encode(AaveV3EthereumAssets.GHO_UNDERLYING)
+    );
     assertEq(NEW_TOKEN_POOL.getSupportedChains().length, 1);
     assertTrue(NEW_TOKEN_POOL.isSupportedChain(ETH_CHAIN_SELECTOR));
 
@@ -356,8 +350,9 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_PostUpgrade is
     executePayload(vm, address(proposal));
   }
 
-  function test_sendMessageSucceedsAndRoutesViaNewPool() public {
-    uint256 amount = 100_000e18;
+  function test_sendMessageSucceedsAndRoutesViaNewPool(uint256 amount) public {
+    uint256 bridgeableAmount = GHO.getFacilitator(address(NEW_TOKEN_POOL)).bucketLevel;
+    amount = bound(amount, 1, bridgeableAmount);
 
     deal(address(GHO), alice, amount);
     vm.prank(alice);
@@ -406,8 +401,9 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_PostUpgrade is
   }
 
   // on-ramp via new pool
-  function test_lockOrBurnSucceedsOnNewPool() public {
-    uint256 amount = 100_000e18;
+  function test_lockOrBurnSucceedsOnNewPool(uint256 amount) public {
+    uint256 bridgeableAmount = GHO.getFacilitator(address(NEW_TOKEN_POOL)).bucketLevel;
+    amount = bound(amount, 1, bridgeableAmount);
 
     // router pulls tokens from the user & sends to the token pool during onRamps
     deal(address(GHO), address(NEW_TOKEN_POOL), amount);
@@ -448,10 +444,13 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_PostUpgrade is
   }
 
   // off-ramp messages sent from new eth token pool (v1.5.1)
-  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaNewTokenPoolEth() public {
-    uint256 amount = 100_000e18;
+  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaNewTokenPoolEth(uint256 amount) public {
+    (uint256 bucketCapacity, uint256 bucketLevel) = GHO.getFacilitatorBucket(
+      address(NEW_TOKEN_POOL)
+    );
+    uint256 mintAbleAmount = bucketCapacity - bucketLevel;
+    amount = bound(amount, 1, mintAbleAmount);
 
-    uint256 bucketLevel = GHO.getFacilitator(address(NEW_TOKEN_POOL)).bucketLevel;
     uint256 aliceBalance = GHO.balanceOf(alice);
 
     vm.expectEmit(address(NEW_TOKEN_POOL));
@@ -476,10 +475,15 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209_PostUpgrade is
   }
 
   // off-ramp messages sent from existing eth token pool (v1.4) ie ProxyPool
-  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaExistingTokenPoolEth() public {
-    uint256 amount = 100_000e18;
+  function test_releaseOrMintSucceedsOnNewPoolOffRampedViaExistingTokenPoolEth(
+    uint256 amount
+  ) public {
+    (uint256 bucketCapacity, uint256 bucketLevel) = GHO.getFacilitatorBucket(
+      address(NEW_TOKEN_POOL)
+    );
+    uint256 mintAbleAmount = bucketCapacity - bucketLevel;
+    amount = bound(amount, 1, mintAbleAmount);
 
-    uint256 bucketLevel = GHO.getFacilitator(address(NEW_TOKEN_POOL)).bucketLevel;
     uint256 aliceBalance = GHO.balanceOf(alice);
 
     vm.expectEmit(address(NEW_TOKEN_POOL));

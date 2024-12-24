@@ -7,11 +7,11 @@ export const config: ConfigFile = {
     date: '20241209',
     author: 'Aave Labs',
     discussion: '',
-    snapshot: '',
+    snapshot: 'Direct-to-AIP',
     votingNetwork: 'POLYGON',
   },
   poolOptions: {
     AaveV3Ethereum: {configs: {OTHERS: {}}, cache: {blockNumber: 21366260}},
-    AaveV3Arbitrum: {configs: {OTHERS: {}}, cache: {blockNumber: 287752362}},
+    AaveV3Arbitrum: {configs: {OTHERS: {}}, cache: {blockNumber: 288070365}},
   },
 };

@@ -8,14 +8,13 @@ import {ITokenAdminRegistry} from 'src/interfaces/ccip/ITokenAdminRegistry.sol';
 import {IRateLimiter} from 'src/interfaces/ccip/IRateLimiter.sol';
 import {IGhoToken} from 'src/interfaces/IGhoToken.sol';
 import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
-import {MiscEthereum} from 'aave-address-book/MiscEthereum.sol';
 import {MiscArbitrum} from 'aave-address-book/MiscArbitrum.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveV3ArbitrumAssets} from 'aave-address-book/AaveV3Arbitrum.sol';
 
 /**
  * @title GHO CCIP 1.5.1 Upgrade
  * @author Aave Labs
- * - Snapshot: TODO
  * - Discussion: TODO
  */
 contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209 is IProposalGenericExecutor {
@@ -36,11 +35,10 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209 is IProposalGenericExecutor {
   address public constant EXISTING_REMOTE_POOL_ETH = 0x9Ec9F9804733df96D1641666818eFb5198eC50f0; // ProxyPool on ETH
   address public immutable NEW_REMOTE_POOL_ETH;
 
-  // https://arbiscan.io/address/0x360d8aa8F6b09B7BC57aF34db2Eb84dD87bf4d12
+  // https://arbiscan.io/address/0xA5Ba213867E175A182a5dd6A9193C6158738105A
   address public constant EXISTING_TOKEN_POOL_UPGRADE_IMPL =
-    0x360d8aa8F6b09B7BC57aF34db2Eb84dD87bf4d12; // from https://github.com/aave/ccip/pull/21 (commit f684d950178fbdc95f543382fac472cf47434d55)
+    0xA5Ba213867E175A182a5dd6A9193C6158738105A; // https://github.com/aave/ccip/commit/ca73ec8c4f7dc0f6a99ae1ea0acde43776c7b9bb
 
-  ProxyAdmin public constant PROXY_ADMIN = ProxyAdmin(MiscArbitrum.PROXY_ADMIN);
   IGhoToken public constant GHO = IGhoToken(AaveV3ArbitrumAssets.GHO_UNDERLYING);
 
   constructor(address newTokenPoolArb, address newTokenPoolEth, address newGhoCcipSteward) {
@@ -67,7 +65,7 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209 is IProposalGenericExecutor {
       address(EXISTING_TOKEN_POOL)
     );
 
-    GHO.addFacilitator(address(NEW_TOKEN_POOL), 'CCIP v1.5.1 TokenPool', uint128(bucketCapacity));
+    GHO.addFacilitator(address(NEW_TOKEN_POOL), 'CCIP TokenPool v1.5.1 ', uint128(bucketCapacity));
     NEW_TOKEN_POOL.directMint(address(EXISTING_TOKEN_POOL), bucketLevel); // increase facilitator level
 
     _upgradeExistingTokenPool(); // introduce `directBurn` method
@@ -93,7 +91,7 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209 is IProposalGenericExecutor {
     chains[0] = IUpgradeableBurnMintTokenPool_1_5_1.ChainUpdate({
       remoteChainSelector: ETH_CHAIN_SELECTOR,
       remotePoolAddresses: remotePoolAddresses,
-      remoteTokenAddress: abi.encode(MiscEthereum.GHO_TOKEN),
+      remoteTokenAddress: abi.encode(AaveV3EthereumAssets.GHO_UNDERLYING),
       outboundRateLimiterConfig: emptyRateLimiterConfig,
       inboundRateLimiterConfig: emptyRateLimiterConfig
     });
@@ -110,7 +108,7 @@ contract AaveV3Arbitrum_GHOCCIP151Upgrade_20241209 is IProposalGenericExecutor {
   }
 
   function _upgradeExistingTokenPool() internal {
-    PROXY_ADMIN.upgrade(
+    ProxyAdmin(MiscArbitrum.PROXY_ADMIN).upgrade(
       TransparentUpgradeableProxy(payable(address(EXISTING_TOKEN_POOL))),
       EXISTING_TOKEN_POOL_UPGRADE_IMPL
     );

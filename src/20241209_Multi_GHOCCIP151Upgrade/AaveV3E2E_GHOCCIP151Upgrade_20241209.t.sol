@@ -14,6 +14,7 @@ import {ITokenAdminRegistry} from 'src/interfaces/ccip/ITokenAdminRegistry.sol';
 import {IGhoToken} from 'src/interfaces/IGhoToken.sol';
 import {IGhoCcipSteward} from 'src/interfaces/IGhoCcipSteward.sol';
 
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveV3ArbitrumAssets} from 'aave-address-book/AaveV3Arbitrum.sol';
 import {MiscEthereum} from 'aave-address-book/MiscEthereum.sol';
 import {MiscArbitrum} from 'aave-address-book/MiscArbitrum.sol';
@@ -87,13 +88,13 @@ contract AaveV3E2E_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
 
   function setUp() public virtual {
     l1.c.forkId = vm.createFork(vm.rpcUrl('mainnet'), 21366260);
-    l2.c.forkId = vm.createFork(vm.rpcUrl('arbitrum'), 287752362);
+    l2.c.forkId = vm.createFork(vm.rpcUrl('arbitrum'), 288070365);
 
     vm.selectFork(l1.c.forkId);
     address newTokenPoolEth = _deployNewTokenPoolEth();
     address newGhoCcipStewardEth = _deployNewGhoCcipSteward(
       newTokenPoolEth,
-      MiscEthereum.GHO_TOKEN,
+      AaveV3EthereumAssets.GHO_UNDERLYING,
       GovernanceV3Ethereum.EXECUTOR_LVL_1, // riskAdmin, set as executor for convenience
       true // bridgeLimitEnabled
     );
@@ -178,7 +179,7 @@ contract AaveV3E2E_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
   function _validateConfig(bool upgraded) internal {
     vm.selectFork(l1.c.forkId);
     assertEq(l1.c.chainSelector, 5009297550715157269);
-    assertEq(address(l1.c.token), MiscEthereum.GHO_TOKEN);
+    assertEq(address(l1.c.token), AaveV3EthereumAssets.GHO_UNDERLYING);
     assertEq(l1.c.router.typeAndVersion(), 'Router 1.2.0');
     assertEq(l1.c.EVM2EVMOnRamp.typeAndVersion(), 'EVM2EVMOnRamp 1.5.0');
     assertEq(l1.c.EVM2EVMOffRamp.typeAndVersion(), 'EVM2EVMOffRamp 1.5.0');
@@ -246,7 +247,7 @@ contract AaveV3E2E_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
     if (upgraded) {
       assertEq(l2.c.tokenAdminRegistry.getPool(address(l2.c.token)), address(l2.newTokenPool));
       assertEq(bytes(l2.c.token.getFacilitator(address(l2.existingTokenPool)).label).length, 0);
-      assertEq(l2.c.token.getFacilitator(address(l2.newTokenPool)).label, 'CCIP v1.5.1 TokenPool');
+      assertEq(l2.c.token.getFacilitator(address(l2.newTokenPool)).label, 'CCIP TokenPool v1.5.1 ');
     } else {
       assertEq(l2.c.tokenAdminRegistry.getPool(address(l2.c.token)), l2.c.proxyPool);
       assertEq(l2.c.token.getFacilitator(address(l2.existingTokenPool)).label, 'CCIP TokenPool');
@@ -265,7 +266,7 @@ contract AaveV3E2E_GHOCCIP151Upgrade_20241209_Base is ProtocolV3TestBase {
     vm.selectFork(l1.c.forkId);
     vm.prank(l1.c.tokenAdminRegistry.owner());
     l1.c.tokenAdminRegistry.transferAdminRole(
-      MiscEthereum.GHO_TOKEN,
+      AaveV3EthereumAssets.GHO_UNDERLYING,
       GovernanceV3Ethereum.EXECUTOR_LVL_1
     );
 
@@ -521,10 +522,6 @@ contract AaveV3E2E_GHOCCIP151Upgrade_20241209_PostUpgrade is
 contract AaveV3E2E_GHOCCIP151Upgrade_20241209_InFlightUpgrade is
   AaveV3E2E_GHOCCIP151Upgrade_20241209_Base
 {
-  function setUp() public override {
-    super.setUp();
-  }
-
   function test_E2E_InFlightMsg_FromEth() public {
     vm.selectFork(l1.c.forkId);
 
