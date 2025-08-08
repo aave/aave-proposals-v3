@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import {GovV3Helpers, IPayloadsControllerCore, PayloadsControllerUtils} from 'aave-helpers/src/GovV3Helpers.sol';
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {EthereumScript, ArbitrumScript, BaseScript, AvalancheScript} from 'solidity-utils/contracts/utils/ScriptUtils.sol';
-import {AaveV3Ethereum_GHOAvalancheLaunch_20250519} from './AaveV3Ethereum_GHOAvalancheLaunch_20250519.sol';
-import {AaveV3Arbitrum_GHOAvalancheLaunch_20250519} from './AaveV3Arbitrum_GHOAvalancheLaunch_20250519.sol';
-import {AaveV3Base_GHOAvalancheLaunch_20250519} from './AaveV3Base_GHOAvalancheLaunch_20250519.sol';
+import {Ethereum_Avalanche_AaveV3GHOLane_20250519} from "./remote-lanes/Ethereum_Avalanche_AaveV3GHOLane_20250519.sol";
+import {Arbitrum_Avalanche_AaveV3GHOLane_20250519} from './remote-lanes/Arbitrum_Avalanche_AaveV3GHOLane_20250519.sol';
+import {Base_Avalanche_AaveV3GHOLane_20250519} from './remote-lanes/Base_Avalanche_AaveV3GHOLane_20250519.sol';
 import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from './AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
 import {AaveV3Avalanche_GHOAvalancheListing_20250519} from './AaveV3Avalanche_GHOAvalancheListing_20250519.sol';
 /**
@@ -18,7 +18,7 @@ contract DeployEthereum is EthereumScript {
   function run() external broadcast {
     // deploy payloads
     address payload0 = GovV3Helpers.deployDeterministic(
-      type(AaveV3Ethereum_GHOAvalancheLaunch_20250519).creationCode
+      type(Ethereum_Avalanche_AaveV3GHOLane_20250519).creationCode
     );
 
     // compose action
@@ -40,7 +40,7 @@ contract DeployArbitrum is ArbitrumScript {
   function run() external broadcast {
     // deploy payloads
     address payload0 = GovV3Helpers.deployDeterministic(
-      type(AaveV3Arbitrum_GHOAvalancheLaunch_20250519).creationCode
+      type(Arbitrum_Avalanche_AaveV3GHOLane_20250519).creationCode
     );
 
     // compose action
@@ -62,7 +62,7 @@ contract DeployBase is BaseScript {
   function run() external broadcast {
     // deploy payloads
     address payload0 = GovV3Helpers.deployDeterministic(
-      type(AaveV3Base_GHOAvalancheLaunch_20250519).creationCode
+      type(Base_Avalanche_AaveV3GHOLane_20250519).creationCode
     );
 
     // compose action
@@ -118,21 +118,21 @@ contract CreateProposal is EthereumScript {
     IPayloadsControllerCore.ExecutionAction[]
       memory actionsEthereum = new IPayloadsControllerCore.ExecutionAction[](1);
     actionsEthereum[0] = GovV3Helpers.buildAction(
-      type(AaveV3Ethereum_GHOAvalancheLaunch_20250519).creationCode
+      type(Ethereum_Avalanche_AaveV3GHOLane_20250519).creationCode
     );
     payloads[0] = GovV3Helpers.buildMainnetPayload(vm, actionsEthereum);
 
     IPayloadsControllerCore.ExecutionAction[]
       memory actionsArbitrum = new IPayloadsControllerCore.ExecutionAction[](1);
     actionsArbitrum[0] = GovV3Helpers.buildAction(
-      type(AaveV3Arbitrum_GHOAvalancheLaunch_20250519).creationCode
+      type(Arbitrum_Avalanche_AaveV3GHOLane_20250519).creationCode
     );
     payloads[1] = GovV3Helpers.buildArbitrumPayload(vm, actionsArbitrum);
 
     IPayloadsControllerCore.ExecutionAction[]
       memory actionsBase = new IPayloadsControllerCore.ExecutionAction[](1);
     actionsBase[0] = GovV3Helpers.buildAction(
-      type(AaveV3Base_GHOAvalancheLaunch_20250519).creationCode
+      type(Base_Avalanche_AaveV3GHOLane_20250519).creationCode
     );
     payloads[2] = GovV3Helpers.buildBasePayload(vm, actionsBase);
 
