@@ -25,9 +25,10 @@ import {GhoArbitrum} from 'aave-address-book/GhoArbitrum.sol';
 import {GhoEthereum} from 'aave-address-book/GhoEthereum.sol';
 import {GhoBase} from 'aave-address-book/GhoBase.sol';
 
-import {GHOAvalancheLaunch} from './utils/GHOAvalancheLaunch.sol';
-import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from './AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
-import {AaveV3Avalanche_GHOAvalancheListing_20250519} from './AaveV3Avalanche_GHOAvalancheListing_20250519.sol';
+import {GhoCCIPChains} from '../abstraction/constants/GhoCCIPChains.sol';
+import {GHOAvalancheLaunch} from '../utils/GHOAvalancheLaunch.sol';
+import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from '../AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
+import {AaveV3Avalanche_GHOAvalancheListing_20250519} from '../AaveV3Avalanche_GHOAvalancheListing_20250519.sol';
 
 /**
  * @dev Test for AaveV3Avalanche_GHOAvalancheListing_20250519
