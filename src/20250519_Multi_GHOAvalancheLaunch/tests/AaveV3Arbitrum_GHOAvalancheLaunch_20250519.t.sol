@@ -201,12 +201,7 @@ contract Arbitrum_Avalanche_AaveV3GHOLane_20250519_Avalanche is ProtocolV3TestBa
   }
 
   function _getRateLimiterConfig() internal pure returns (IRateLimiter.Config memory) {
-    return
-      IRateLimiter.Config({
-        isEnabled: true,
-        capacity: 1_500_000e18,
-        rate: 300e18
-      });
+    return IRateLimiter.Config({isEnabled: true, capacity: 1_500_000e18, rate: 300e18});
   }
 
   function _getOutboundRefillTime(uint256 amount) internal pure returns (uint256) {

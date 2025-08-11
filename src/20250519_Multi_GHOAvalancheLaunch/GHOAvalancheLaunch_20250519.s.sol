@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {GovV3Helpers, IPayloadsControllerCore, PayloadsControllerUtils} from 'aave-helpers/src/GovV3Helpers.sol';
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {EthereumScript, ArbitrumScript, BaseScript, AvalancheScript} from 'solidity-utils/contracts/utils/ScriptUtils.sol';
-import {Ethereum_Avalanche_AaveV3GHOLane_20250519} from "./remote-lanes/Ethereum_Avalanche_AaveV3GHOLane_20250519.sol";
+import {Ethereum_Avalanche_AaveV3GHOLane_20250519} from './remote-lanes/Ethereum_Avalanche_AaveV3GHOLane_20250519.sol';
 import {Arbitrum_Avalanche_AaveV3GHOLane_20250519} from './remote-lanes/Arbitrum_Avalanche_AaveV3GHOLane_20250519.sol';
 import {Base_Avalanche_AaveV3GHOLane_20250519} from './remote-lanes/Base_Avalanche_AaveV3GHOLane_20250519.sol';
 import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from './AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
