@@ -6,7 +6,6 @@ import 'forge-std/Test.sol';
 import {AaveV3GHOEthereumRemoteLaneTest_PostExecution} from '../../abstraction/tests/AaveV3GHOEthereumRemoteLaneTest.sol';
 import {GhoCCIPChains} from '../../abstraction/constants/GhoCCIPChains.sol';
 import {AaveV3GHOLane} from '../../abstraction/AaveV3GHOLane.sol';
-import {IEVM2EVMOnRamp} from 'src/interfaces/ccip/IEVM2EVMOnRamp.sol';
 import {IEVM2EVMOffRamp_1_5} from 'src/interfaces/ccip/IEVM2EVMOffRamp.sol';
 import {Ethereum_Avalanche_AaveV3GHOLane_20250519} from '../../remote-lanes/Ethereum_Avalanche_AaveV3GHOLane_20250519.sol';
 
@@ -72,29 +71,10 @@ contract Ethereum_Avalanche_AaveV3GHOLane_20250519_Test is
     }
   }
 
-  function _ccipRateLimitCapacity() internal view virtual override returns (uint128) {
-    return 1_500_000e18;
-  }
-
-  function _ccipRateLimitRefillRate() internal view virtual override returns (uint128) {
-    return 300e18;
-  }
-
-  // Local Chain's outbound lane to Ethereum (OnRamp address)
-  function _localOutboundLaneToEth() internal view virtual override returns (IEVM2EVMOnRamp) {
-    // return IEVM2EVMOnRamp(BASE_ETH_ON_RAMP);
-    return IEVM2EVMOnRamp(address(0));
-  }
-
   // Local Chain's inbound lane from Ethereum (OffRamp address)
   function _localInboundLaneFromEth() internal view virtual override returns (IEVM2EVMOffRamp_1_5) {
     // return IEVM2EVMOffRamp_1_5(BASE_ETH_OFF_RAMP);
     return IEVM2EVMOffRamp_1_5(address(0));
-  }
-
-  // Local Chain's outbound lane to Remote Chain (OnRamp address)
-  function _localOutboundLaneToRemote() internal view virtual override returns (IEVM2EVMOnRamp) {
-    return IEVM2EVMOnRamp(ETH_AVAX_ON_RAMP);
   }
 
   // Local Chain's inbound lane from Remote Chain (OffRamp address)

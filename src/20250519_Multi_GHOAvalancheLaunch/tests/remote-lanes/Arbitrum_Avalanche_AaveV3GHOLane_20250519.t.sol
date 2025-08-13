@@ -74,27 +74,9 @@ contract Arbitrum_Avalanche_AaveV3GHOLane_20250519_Test is AaveV3GHORemoteLaneTe
     }
   }
 
-  function _ccipRateLimitCapacity() internal view virtual override returns (uint128) {
-    return 1_500_000e18;
-  }
-
-  function _ccipRateLimitRefillRate() internal view virtual override returns (uint128) {
-    return 300e18;
-  }
-
-  // Local Chain's outbound lane to Ethereum (OnRamp address)
-  function _localOutboundLaneToEth() internal view virtual override returns (IEVM2EVMOnRamp) {
-    return IEVM2EVMOnRamp(ARB_ETH_ON_RAMP);
-  }
-
   // Local Chain's inbound lane from Ethereum (OffRamp address)
   function _localInboundLaneFromEth() internal view virtual override returns (IEVM2EVMOffRamp_1_5) {
     return IEVM2EVMOffRamp_1_5(ARB_ETH_OFF_RAMP);
-  }
-
-  // Local Chain's outbound lane to Remote Chain (OnRamp address)
-  function _localOutboundLaneToRemote() internal view virtual override returns (IEVM2EVMOnRamp) {
-    return IEVM2EVMOnRamp(ARB_AVAX_ON_RAMP);
   }
 
   // Local Chain's inbound lane from Remote Chain (OffRamp address)

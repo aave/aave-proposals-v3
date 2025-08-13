@@ -4,18 +4,16 @@ pragma solidity ^0.8.0;
 import {IPool as IPool_CCIP} from 'src/interfaces/ccip/tokenPool/IPool.sol';
 import {IClient} from 'src/interfaces/ccip/IClient.sol';
 import {IInternal} from 'src/interfaces/ccip/IInternal.sol';
-import {IRouter} from 'src/interfaces/ccip/IRouter.sol';
 import {AaveV3GHOLaneTest} from './AaveV3GHOLaneTest.sol';
 import {GhoCCIPChains} from '../constants/GhoCCIPChains.sol';
 import {IACLManager} from 'aave-address-book/AaveV3.sol';
 import {IGhoToken} from 'src/interfaces/IGhoToken.sol';
-import {IGhoAaveSteward} from 'src/interfaces/IGhoAaveSteward.sol';
-import {IGhoBucketSteward} from 'src/interfaces/IGhoBucketSteward.sol';
-import {IGhoCcipSteward} from 'src/interfaces/IGhoCcipSteward.sol';
 import {IOwnable} from 'aave-address-book/common/IOwnable.sol';
 import {GovernanceV3Avalanche} from 'aave-address-book/GovernanceV3Avalanche.sol';
 import {AaveV3Avalanche} from 'aave-address-book/AaveV3Avalanche.sol';
 import {IUpgradeableBurnMintTokenPool_1_5_1} from 'src/interfaces/ccip/tokenPool/IUpgradeableBurnMintTokenPool.sol';
+import {IGhoAaveSteward} from 'src/interfaces/IGhoAaveSteward.sol';
+import {IGhoCcipSteward} from 'src/interfaces/IGhoCcipSteward.sol';
 
 abstract contract AaveV3GHOLaunchTest_PreExecution is AaveV3GHOLaneTest {
   IACLManager public immutable LOCAL_ACL_MANAGER;
@@ -46,10 +44,6 @@ abstract contract AaveV3GHOLaunchTest_PreExecution is AaveV3GHOLaneTest {
     LOCAL_ACL_MANAGER = IACLManager(localChainInfo.aclManager);
   }
 
-  function _isPostExecutionTest() internal view virtual override returns (bool) {
-    return false;
-  }
-
   /**
    * @dev executes the generic test suite including e2e and config snapshots
    */
@@ -61,12 +55,6 @@ abstract contract AaveV3GHOLaunchTest_PreExecution is AaveV3GHOLaneTest {
     );
   }
 
-  function _localGhoBucketSteward() internal view virtual returns (IGhoBucketSteward);
-
-  function _localGhoAaveSteward() internal view virtual returns (IGhoAaveSteward);
-
-  function _localGhoCCIPSteward() internal view virtual returns (IGhoCcipSteward);
-
   function _localRiskCouncil() internal view virtual returns (address);
 
   function _localRmnProxy() internal view virtual returns (address);
@@ -77,10 +65,10 @@ abstract contract AaveV3GHOLaunchTest_PreExecution is AaveV3GHOLaneTest {
     assertFalse(
       LOCAL_ACL_MANAGER.hasRole(
         LOCAL_ACL_MANAGER.RISK_ADMIN_ROLE(),
-        address(_localGhoAaveSteward())
+        address(LOCAL_GHO_AAVE_CORE_STEWARD)
       )
     );
-    assertEq(_localGhoBucketSteward().getControlledFacilitators().length, 0);
+    assertEq(LOCAL_GHO_BUCKET_STEWARD.getControlledFacilitators().length, 0);
     assertEq(LOCAL_TOKEN_POOL.getRateLimitAdmin(), address(0));
 
     executePayload(vm, address(proposal));
@@ -107,59 +95,60 @@ abstract contract AaveV3GHOLaunchTest_PreExecution is AaveV3GHOLaneTest {
     assertTrue(
       LOCAL_ACL_MANAGER.hasRole(
         LOCAL_ACL_MANAGER.RISK_ADMIN_ROLE(),
-        address(_localGhoAaveSteward())
+        address(LOCAL_GHO_AAVE_CORE_STEWARD)
       )
     );
 
     assertTrue(
       LOCAL_GHO_TOKEN.hasRole(
         LOCAL_GHO_TOKEN.BUCKET_MANAGER_ROLE(),
-        address(_localGhoBucketSteward())
+        address(LOCAL_GHO_BUCKET_STEWARD)
       )
     );
 
-    address[] memory facilitatorList = _localGhoBucketSteward().getControlledFacilitators();
+    address[] memory facilitatorList = LOCAL_GHO_BUCKET_STEWARD.getControlledFacilitators();
     assertEq(facilitatorList.length, 1);
     assertEq(facilitatorList[0], address(LOCAL_TOKEN_POOL));
-    assertTrue(_localGhoBucketSteward().isControlledFacilitator(address(LOCAL_TOKEN_POOL)));
+    assertTrue(LOCAL_GHO_BUCKET_STEWARD.isControlledFacilitator(address(LOCAL_TOKEN_POOL)));
 
-    assertEq(LOCAL_TOKEN_POOL.getRateLimitAdmin(), address(_localGhoCCIPSteward()));
+    assertEq(LOCAL_TOKEN_POOL.getRateLimitAdmin(), address(LOCAL_GHO_CCIP_STEWARD));
   }
 
   function test_stewardsConfig() public view {
     assertEq(
-      IOwnable(address(_localGhoAaveSteward())).owner(),
+      IOwnable(address(LOCAL_GHO_AAVE_CORE_STEWARD)).owner(),
       GovernanceV3Avalanche.EXECUTOR_LVL_1
     );
     assertEq(
-      _localGhoAaveSteward().POOL_ADDRESSES_PROVIDER(),
+      LOCAL_GHO_AAVE_CORE_STEWARD.POOL_ADDRESSES_PROVIDER(),
       address(AaveV3Avalanche.POOL_ADDRESSES_PROVIDER)
     );
     assertEq(
-      _localGhoAaveSteward().POOL_DATA_PROVIDER(),
+      LOCAL_GHO_AAVE_CORE_STEWARD.POOL_DATA_PROVIDER(),
       address(AaveV3Avalanche.AAVE_PROTOCOL_DATA_PROVIDER)
     );
-    assertEq(_localGhoAaveSteward().RISK_COUNCIL(), _localRiskCouncil());
-    IGhoAaveSteward.BorrowRateConfig memory config = _localGhoAaveSteward().getBorrowRateConfig();
+    assertEq(LOCAL_GHO_AAVE_CORE_STEWARD.RISK_COUNCIL(), _localRiskCouncil());
+    IGhoAaveSteward.BorrowRateConfig memory config = LOCAL_GHO_AAVE_CORE_STEWARD
+      .getBorrowRateConfig();
     assertEq(config.optimalUsageRatioMaxChange, 500);
     assertEq(config.baseVariableBorrowRateMaxChange, 500);
     assertEq(config.variableRateSlope1MaxChange, 500);
     assertEq(config.variableRateSlope2MaxChange, 500);
 
     assertEq(
-      IOwnable(address(_localGhoBucketSteward())).owner(),
+      IOwnable(address(LOCAL_GHO_BUCKET_STEWARD)).owner(),
       GovernanceV3Avalanche.EXECUTOR_LVL_1
     );
-    assertEq(_localGhoBucketSteward().GHO_TOKEN(), address(LOCAL_GHO_TOKEN));
-    assertEq(_localGhoBucketSteward().RISK_COUNCIL(), _localRiskCouncil());
-    assertEq(_localGhoBucketSteward().getControlledFacilitators().length, 0); // before AIP, no controlled facilitators are set
+    assertEq(LOCAL_GHO_BUCKET_STEWARD.GHO_TOKEN(), address(LOCAL_GHO_TOKEN));
+    assertEq(LOCAL_GHO_BUCKET_STEWARD.RISK_COUNCIL(), _localRiskCouncil());
+    assertEq(LOCAL_GHO_BUCKET_STEWARD.getControlledFacilitators().length, 0); // before AIP, no controlled facilitators are set
 
-    assertEq(_localGhoCCIPSteward().GHO_TOKEN(), address(LOCAL_GHO_TOKEN));
-    assertEq(_localGhoCCIPSteward().GHO_TOKEN_POOL(), address(LOCAL_TOKEN_POOL));
-    assertEq(_localGhoCCIPSteward().RISK_COUNCIL(), _localRiskCouncil());
-    assertFalse(_localGhoCCIPSteward().BRIDGE_LIMIT_ENABLED());
+    assertEq(LOCAL_GHO_CCIP_STEWARD.GHO_TOKEN(), address(LOCAL_GHO_TOKEN));
+    assertEq(LOCAL_GHO_CCIP_STEWARD.GHO_TOKEN_POOL(), address(LOCAL_TOKEN_POOL));
+    assertEq(LOCAL_GHO_CCIP_STEWARD.RISK_COUNCIL(), _localRiskCouncil());
+    assertFalse(LOCAL_GHO_CCIP_STEWARD.BRIDGE_LIMIT_ENABLED());
     assertEq(
-      abi.encode(_localGhoCCIPSteward().getCcipTimelocks()),
+      abi.encode(LOCAL_GHO_CCIP_STEWARD.getCcipTimelocks()),
       abi.encode(IGhoCcipSteward.CcipDebounce(0, 0))
     );
   }
@@ -257,9 +246,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
 
   function setUp() public override {
     super.setUp();
-    if (_isPostExecutionTest()) {
-      executePayload(vm, address(proposal));
-    }
+    executePayload(vm, address(proposal));
   }
 
   function test_sendMessageToSupportedChainSucceeds(uint256 amount, uint8 chainIndex) public {
@@ -332,7 +319,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
 
     uint256 aliceBalance = LOCAL_GHO_TOKEN.balanceOf(alice);
 
-    address offRamp = _getOffRamp(supportedChains[chainIndex].chainSelector);
+    address offRamp = _getOnRampFailIfNotFound(supportedChains[chainIndex].chainSelector);
 
     vm.expectEmit(address(LOCAL_TOKEN_POOL));
     emit Minted(offRamp, alice, amount);
@@ -368,7 +355,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
     uint256 amount = 100e18;
     skip(_getInboundRefillTime(amount));
 
-    address offRampI = _getOffRamp(supportedChains[chainIndexI].chainSelector);
+    address offRampI = _getOnRampFailIfNotFound(supportedChains[chainIndexI].chainSelector);
 
     vm.expectRevert(
       abi.encodeWithSelector(
@@ -389,15 +376,5 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
         offchainTokenData: new bytes(0)
       })
     );
-  }
-
-  function _getOffRamp(uint64 chainSelector) internal view virtual returns (address) {
-    IRouter.OffRamp[] memory offRamps = LOCAL_CCIP_ROUTER.getOffRamps();
-    for (uint256 i = 0; i < offRamps.length; i++) {
-      if (offRamps[i].sourceChainSelector == chainSelector) {
-        return offRamps[i].offRamp;
-      }
-    }
-    revert('No offRamp found for the supported chain');
   }
 }
