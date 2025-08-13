@@ -36,6 +36,7 @@ abstract contract AaveV3GHOLaunchTest_PreExecution is AaveV3GHOLaneTest {
         address(0),
         address(0),
         address(0),
+        address(0),
         address(0)
       ), // Nullified remote chain info as it's not used for this test
       rpcAlias,
@@ -191,7 +192,7 @@ abstract contract AaveV3GHOLaunchTest_PreExecution is AaveV3GHOLaneTest {
     assertEq(LOCAL_TOKEN_POOL.getRmnProxy(), _localRmnProxy());
     assertFalse(LOCAL_TOKEN_POOL.getAllowListEnabled());
     assertEq(abi.encode(LOCAL_TOKEN_POOL.getAllowList()), abi.encode(new address[](0)));
-    assertEq(LOCAL_TOKEN_POOL.getRouter(), address(_localCCIPRouter()));
+    assertEq(LOCAL_TOKEN_POOL.getRouter(), address(LOCAL_CCIP_ROUTER));
 
     GhoCCIPChains.ChainInfo[] memory expectedSupportedChains = _expectedSupportedChains();
 
@@ -246,6 +247,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
         address(0),
         address(0),
         address(0),
+        address(0),
         address(0)
       ), // Nullified remote chain info as it's not used for this test
       rpcAlias,
@@ -274,7 +276,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
     LOCAL_GHO_TOKEN.mint(alice, amount); // increase bucket level
 
     vm.prank(alice);
-    LOCAL_GHO_TOKEN.approve(address(_localCCIPRouter()), amount);
+    LOCAL_GHO_TOKEN.approve(address(LOCAL_CCIP_ROUTER), amount);
 
     uint256 aliceBalance = LOCAL_GHO_TOKEN.balanceOf(alice);
     uint256 bucketLevel = LOCAL_GHO_TOKEN.getFacilitator(address(LOCAL_TOKEN_POOL)).bucketLevel;
@@ -291,7 +293,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
         })
       );
 
-    address onRamp = _localCCIPRouter().getOnRamp(supportedChains[chainIndex].chainSelector);
+    address onRamp = LOCAL_CCIP_ROUTER.getOnRamp(supportedChains[chainIndex].chainSelector);
 
     vm.expectEmit(address(LOCAL_TOKEN_POOL));
     emit Burned(onRamp, amount);
@@ -299,7 +301,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
     emit CCIPSendRequested(eventArg);
 
     vm.prank(alice);
-    _localCCIPRouter().ccipSend{value: eventArg.feeTokenAmount}(
+    LOCAL_CCIP_ROUTER.ccipSend{value: eventArg.feeTokenAmount}(
       supportedChains[chainIndex].chainSelector,
       message
     );
@@ -390,7 +392,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
   }
 
   function _getOffRamp(uint64 chainSelector) internal view virtual returns (address) {
-    IRouter.OffRamp[] memory offRamps = _localCCIPRouter().getOffRamps();
+    IRouter.OffRamp[] memory offRamps = LOCAL_CCIP_ROUTER.getOffRamps();
     for (uint256 i = 0; i < offRamps.length; i++) {
       if (offRamps[i].sourceChainSelector == chainSelector) {
         return offRamps[i].offRamp;

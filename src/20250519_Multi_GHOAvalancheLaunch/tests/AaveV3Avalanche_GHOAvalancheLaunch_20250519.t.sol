@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IRouter} from 'src/interfaces/ccip/IRouter.sol';
-
 import {IEVM2EVMOnRamp} from 'src/interfaces/ccip/IEVM2EVMOnRamp.sol';
 import {IEVM2EVMOffRamp_1_5} from 'src/interfaces/ccip/IEVM2EVMOffRamp.sol';
 import {IGhoAaveSteward} from 'src/interfaces/IGhoAaveSteward.sol';
@@ -10,7 +8,6 @@ import {IGhoBucketSteward} from 'src/interfaces/IGhoBucketSteward.sol';
 import {IGhoCcipSteward} from 'src/interfaces/IGhoCcipSteward.sol';
 import {GHOAvalancheLaunch} from '../utils/GHOAvalancheLaunch.sol';
 import {GhoCCIPChains} from '../abstraction/constants/GhoCCIPChains.sol';
-import {CCIPChainRouters} from '../abstraction/constants/CCIPChainRouters.sol';
 import {AaveV3GHOLane} from '../abstraction/AaveV3GHOLane.sol';
 import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from '../AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
 import {AaveV3GHOLaunchTest_PostExecution, AaveV3GHOLaunchTest_PreExecution} from '../abstraction/tests/AaveV3GHOLaunchTest.sol';
@@ -31,10 +28,6 @@ contract AaveV3Avalanche_GHOAvalancheLaunch_20250519_PreExecution is
 
   function _ccipRateLimitRefillRate() internal view virtual override returns (uint128) {
     return GHOAvalancheLaunch.CCIP_RATE_LIMIT_REFILL_RATE;
-  }
-
-  function _localCCIPRouter() internal view virtual override returns (IRouter) {
-    return IRouter(CCIPChainRouters.AVALANCHE);
   }
 
   function _localOutboundLaneToEth() internal view virtual override returns (IEVM2EVMOnRamp) {
@@ -81,7 +74,7 @@ contract AaveV3Avalanche_GHOAvalancheLaunch_20250519_PreExecution is
   function _validateConstants() internal view virtual override {
     assertEq(LOCAL_TOKEN_ADMIN_REGISTRY.typeAndVersion(), 'TokenAdminRegistry 1.5.0');
     assertEq(LOCAL_TOKEN_POOL.typeAndVersion(), 'BurnMintTokenPool 1.5.1');
-    assertEq(_localCCIPRouter().typeAndVersion(), 'Router 1.2.0');
+    assertEq(LOCAL_CCIP_ROUTER.typeAndVersion(), 'Router 1.2.0');
   }
 
   function _localGhoBucketSteward() internal view virtual override returns (IGhoBucketSteward) {
@@ -123,10 +116,6 @@ contract AaveV3Avalanche_GHOAvalanceLaunch_20250519_PostExecution is
     return GHOAvalancheLaunch.CCIP_RATE_LIMIT_REFILL_RATE;
   }
 
-  function _localCCIPRouter() internal view virtual override returns (IRouter) {
-    return IRouter(CCIPChainRouters.AVALANCHE);
-  }
-
   function _localOutboundLaneToEth() internal view virtual override returns (IEVM2EVMOnRamp) {
     return IEVM2EVMOnRamp(GHOAvalancheLaunch.AVAX_ETH_ON_RAMP);
   }
@@ -171,6 +160,6 @@ contract AaveV3Avalanche_GHOAvalanceLaunch_20250519_PostExecution is
   function _validateConstants() internal view virtual override {
     assertEq(LOCAL_TOKEN_ADMIN_REGISTRY.typeAndVersion(), 'TokenAdminRegistry 1.5.0');
     assertEq(LOCAL_TOKEN_POOL.typeAndVersion(), 'BurnMintTokenPool 1.5.1');
-    assertEq(_localCCIPRouter().typeAndVersion(), 'Router 1.2.0');
+    assertEq(LOCAL_CCIP_ROUTER.typeAndVersion(), 'Router 1.2.0');
   }
 }

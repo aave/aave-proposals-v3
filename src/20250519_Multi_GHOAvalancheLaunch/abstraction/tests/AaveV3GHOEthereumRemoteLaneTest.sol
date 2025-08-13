@@ -43,13 +43,13 @@ abstract contract AaveV3GHOEthereumRemoteLaneTest_PostExecution is
       _localOutboundLaneToRemote(),
       LOCAL_CHAIN_SELECTOR,
       REMOTE_CHAIN_SELECTOR,
-      _localCCIPRouter()
+      LOCAL_CCIP_ROUTER
     );
     _assertOffRamp(
       _localInboundLaneFromRemote(),
       REMOTE_CHAIN_SELECTOR,
       LOCAL_CHAIN_SELECTOR,
-      _localCCIPRouter()
+      LOCAL_CCIP_ROUTER
     );
   }
 
@@ -128,7 +128,7 @@ abstract contract AaveV3GHOEthereumRemoteLaneTest_PostExecution is
 
     deal(address(LOCAL_GHO_TOKEN), alice, amount);
     vm.prank(alice);
-    LOCAL_GHO_TOKEN.approve(address(_localCCIPRouter()), amount);
+    LOCAL_GHO_TOKEN.approve(address(LOCAL_CCIP_ROUTER), amount);
 
     uint256 aliceBalance = LOCAL_GHO_TOKEN.balanceOf(alice);
     uint256 currentBridgedAmount = IUpgradeableLockReleaseTokenPool_1_5_1(address(LOCAL_TOKEN_POOL))
@@ -152,7 +152,7 @@ abstract contract AaveV3GHOEthereumRemoteLaneTest_PostExecution is
     emit CCIPSendRequested(eventArg);
 
     vm.prank(alice);
-    _localCCIPRouter().ccipSend{value: eventArg.feeTokenAmount}(REMOTE_CHAIN_SELECTOR, message);
+    LOCAL_CCIP_ROUTER.ccipSend{value: eventArg.feeTokenAmount}(REMOTE_CHAIN_SELECTOR, message);
 
     assertEq(LOCAL_GHO_TOKEN.balanceOf(alice), aliceBalance - amount);
     assertEq(
@@ -185,7 +185,7 @@ abstract contract AaveV3GHOEthereumRemoteLaneTest_PostExecution is
 
     deal(address(LOCAL_GHO_TOKEN), alice, amount);
     vm.prank(alice);
-    LOCAL_GHO_TOKEN.approve(address(_localCCIPRouter()), amount);
+    LOCAL_GHO_TOKEN.approve(address(LOCAL_CCIP_ROUTER), amount);
 
     uint256 aliceBalance = LOCAL_GHO_TOKEN.balanceOf(alice);
     uint256 currentBridgedAmount = IUpgradeableLockReleaseTokenPool_1_5_1(address(LOCAL_TOKEN_POOL))
@@ -203,7 +203,7 @@ abstract contract AaveV3GHOEthereumRemoteLaneTest_PostExecution is
         })
       );
 
-    address onRamp = _localCCIPRouter().getOnRamp(supportedChains[chainIndex].chainSelector);
+    address onRamp = LOCAL_CCIP_ROUTER.getOnRamp(supportedChains[chainIndex].chainSelector);
 
     vm.expectEmit(address(LOCAL_TOKEN_POOL));
     emit Locked(onRamp, amount);
@@ -211,7 +211,7 @@ abstract contract AaveV3GHOEthereumRemoteLaneTest_PostExecution is
     emit CCIPSendRequested(eventArg);
 
     vm.prank(alice);
-    _localCCIPRouter().ccipSend{value: eventArg.feeTokenAmount}(
+    LOCAL_CCIP_ROUTER.ccipSend{value: eventArg.feeTokenAmount}(
       supportedChains[chainIndex].chainSelector,
       message
     );

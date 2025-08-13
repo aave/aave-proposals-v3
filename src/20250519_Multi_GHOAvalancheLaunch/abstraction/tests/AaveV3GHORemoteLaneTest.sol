@@ -82,7 +82,7 @@ abstract contract AaveV3GHORemoteLaneTest_PostExecution is AaveV3GHOLaneTest {
 
     deal(address(LOCAL_GHO_TOKEN), alice, amount);
     vm.prank(alice);
-    LOCAL_GHO_TOKEN.approve(address(_localCCIPRouter()), amount);
+    LOCAL_GHO_TOKEN.approve(address(LOCAL_CCIP_ROUTER), amount);
 
     uint256 aliceBalance = LOCAL_GHO_TOKEN.balanceOf(alice);
     uint256 bucketLevel = LOCAL_GHO_TOKEN.getFacilitator(address(LOCAL_TOKEN_POOL)).bucketLevel;
@@ -105,7 +105,7 @@ abstract contract AaveV3GHORemoteLaneTest_PostExecution is AaveV3GHOLaneTest {
     emit CCIPSendRequested(eventArg);
 
     vm.prank(alice);
-    _localCCIPRouter().ccipSend{value: eventArg.feeTokenAmount}(REMOTE_CHAIN_SELECTOR, message);
+    LOCAL_CCIP_ROUTER.ccipSend{value: eventArg.feeTokenAmount}(REMOTE_CHAIN_SELECTOR, message);
 
     assertEq(LOCAL_GHO_TOKEN.balanceOf(alice), aliceBalance - amount);
     assertEq(
@@ -128,7 +128,7 @@ abstract contract AaveV3GHORemoteLaneTest_PostExecution is AaveV3GHOLaneTest {
 
     deal(address(LOCAL_GHO_TOKEN), alice, amount);
     vm.prank(alice);
-    LOCAL_GHO_TOKEN.approve(address(_localCCIPRouter()), amount);
+    LOCAL_GHO_TOKEN.approve(address(LOCAL_CCIP_ROUTER), amount);
 
     uint256 aliceBalance = LOCAL_GHO_TOKEN.balanceOf(alice);
     uint256 bucketLevel = LOCAL_GHO_TOKEN.getFacilitator(address(LOCAL_TOKEN_POOL)).bucketLevel;
@@ -151,7 +151,7 @@ abstract contract AaveV3GHORemoteLaneTest_PostExecution is AaveV3GHOLaneTest {
     emit CCIPSendRequested(eventArg);
 
     vm.prank(alice);
-    _localCCIPRouter().ccipSend{value: eventArg.feeTokenAmount}(ETH_CHAIN_SELECTOR, message);
+    LOCAL_CCIP_ROUTER.ccipSend{value: eventArg.feeTokenAmount}(ETH_CHAIN_SELECTOR, message);
 
     assertEq(LOCAL_GHO_TOKEN.balanceOf(alice), aliceBalance - amount);
     assertEq(

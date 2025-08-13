@@ -38,6 +38,7 @@ abstract contract AaveV3GHOLaneTest is ProtocolV3TestBase {
   IUpgradeableBurnMintTokenPool_1_5_1 internal immutable REMOTE_TOKEN_POOL;
   IUpgradeableBurnMintTokenPool_1_5_1 internal immutable ETH_TOKEN_POOL;
   ITokenAdminRegistry internal immutable LOCAL_TOKEN_ADMIN_REGISTRY;
+  IRouter internal immutable LOCAL_CCIP_ROUTER;
 
   address internal alice = makeAddr('alice');
   address internal bob = makeAddr('bob');
@@ -68,6 +69,7 @@ abstract contract AaveV3GHOLaneTest is ProtocolV3TestBase {
     REMOTE_TOKEN_POOL = IUpgradeableBurnMintTokenPool_1_5_1(remoteChainInfo.ghoCCIPTokenPool);
     LOCAL_TOKEN_ADMIN_REGISTRY = ITokenAdminRegistry(localChainInfo.tokenAdminRegistry);
     ETH_TOKEN_POOL = IUpgradeableBurnMintTokenPool_1_5_1(GhoCCIPChains.ETHEREUM().ghoCCIPTokenPool);
+    LOCAL_CCIP_ROUTER = IRouter(localChainInfo.ccipRouter);
   }
 
   function _isPostExecutionTest() internal view virtual returns (bool) {
@@ -79,8 +81,6 @@ abstract contract AaveV3GHOLaneTest is ProtocolV3TestBase {
   function _ccipRateLimitCapacity() internal view virtual returns (uint128);
 
   function _ccipRateLimitRefillRate() internal view virtual returns (uint128);
-
-  function _localCCIPRouter() internal view virtual returns (IRouter);
 
   // Local Chain's outbound lane to Ethereum (OnRamp address)
   function _localOutboundLaneToEth() internal view virtual returns (IEVM2EVMOnRamp);
@@ -130,7 +130,7 @@ abstract contract AaveV3GHOLaneTest is ProtocolV3TestBase {
 
     assertEq(LOCAL_TOKEN_ADMIN_REGISTRY.typeAndVersion(), 'TokenAdminRegistry 1.5.0');
     assertEq(LOCAL_TOKEN_POOL.typeAndVersion(), _expectedLocalTokenPoolTypeAndVersion());
-    assertEq(_localCCIPRouter().typeAndVersion(), 'Router 1.2.0');
+    assertEq(LOCAL_CCIP_ROUTER.typeAndVersion(), 'Router 1.2.0');
 
     _assertOnAndOffRamps();
   }
@@ -140,25 +140,25 @@ abstract contract AaveV3GHOLaneTest is ProtocolV3TestBase {
       _localOutboundLaneToEth(),
       LOCAL_CHAIN_SELECTOR,
       ETH_CHAIN_SELECTOR,
-      _localCCIPRouter()
+      LOCAL_CCIP_ROUTER
     );
     _assertOnRamp(
       _localOutboundLaneToRemote(),
       LOCAL_CHAIN_SELECTOR,
       REMOTE_CHAIN_SELECTOR,
-      _localCCIPRouter()
+      LOCAL_CCIP_ROUTER
     );
     _assertOffRamp(
       _localInboundLaneFromEth(),
       ETH_CHAIN_SELECTOR,
       LOCAL_CHAIN_SELECTOR,
-      _localCCIPRouter()
+      LOCAL_CCIP_ROUTER
     );
     _assertOffRamp(
       _localInboundLaneFromRemote(),
       REMOTE_CHAIN_SELECTOR,
       LOCAL_CHAIN_SELECTOR,
-      _localCCIPRouter()
+      LOCAL_CCIP_ROUTER
     );
   }
 
@@ -197,13 +197,13 @@ abstract contract AaveV3GHOLaneTest is ProtocolV3TestBase {
       amount: params.amount
     });
 
-    uint256 feeAmount = _localCCIPRouter().getFee(params.destChainSelector, message);
+    uint256 feeAmount = LOCAL_CCIP_ROUTER.getFee(params.destChainSelector, message);
     deal(params.sender, feeAmount);
 
     IInternal.EVM2EVMMessage memory eventArg = CCIPUtils.messageToEvent(
       CCIPUtils.MessageToEventParams({
         message: message,
-        router: _localCCIPRouter(),
+        router: LOCAL_CCIP_ROUTER,
         sourceChainSelector: LOCAL_CHAIN_SELECTOR,
         destChainSelector: params.destChainSelector,
         feeTokenAmount: feeAmount,

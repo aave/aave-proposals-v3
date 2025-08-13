@@ -6,11 +6,9 @@ import 'forge-std/Test.sol';
 import {AaveV3GHORemoteLaneTest_PostExecution} from '../../abstraction/tests/AaveV3GHORemoteLaneTest.sol';
 import {GhoCCIPChains} from '../../abstraction/constants/GhoCCIPChains.sol';
 import {AaveV3GHOLane} from '../../abstraction/AaveV3GHOLane.sol';
-import {IRouter} from 'src/interfaces/ccip/IRouter.sol';
 import {IEVM2EVMOnRamp} from 'src/interfaces/ccip/IEVM2EVMOnRamp.sol';
 import {IEVM2EVMOffRamp_1_5} from 'src/interfaces/ccip/IEVM2EVMOffRamp.sol';
 import {Base_Avalanche_AaveV3GHOLane_20250519} from '../../remote-lanes/Base_Avalanche_AaveV3GHOLane_20250519.sol';
-import {CCIPChainRouters} from '../../abstraction/constants/CCIPChainRouters.sol';
 
 /**
  * @dev Test for Base_Avalanche_AaveV3GHOLane_20250519
@@ -55,10 +53,6 @@ contract Base_Avalanche_AaveV3GHOLane_20250519_Test is AaveV3GHORemoteLaneTest_P
 
   function _ccipRateLimitRefillRate() internal view virtual override returns (uint128) {
     return 300e18;
-  }
-
-  function _localCCIPRouter() internal view virtual override returns (IRouter) {
-    return IRouter(CCIPChainRouters.BASE);
   }
 
   // Local Chain's outbound lane to Ethereum (OnRamp address)
