@@ -22,33 +22,21 @@ abstract contract AaveV3GHOLane is IProposalGenericExecutor {
     _execute();
   }
 
-  function getChainLanesToAdd()
-    external
-    view
-    returns (IUpgradeableBurnMintTokenPool_1_5_1.ChainUpdate[] memory)
-  {
-    return _chainLanesToAdd();
-  }
-
-  function getChainLanesToRemove() external view returns (uint64[] memory) {
-    return _chainLanesToRemove();
-  }
-
-  function _execute() internal virtual {
-    TOKEN_POOL.applyChainUpdates({
-      remoteChainSelectorsToRemove: _chainLanesToRemove(),
-      chainsToAdd: _chainLanesToAdd()
-    });
-  }
-
-  function _chainLanesToAdd()
-    internal
+  function lanesToAdd()
+    public
     view
     virtual
     returns (IUpgradeableBurnMintTokenPool_1_5_1.ChainUpdate[] memory);
 
-  function _chainLanesToRemove() internal view virtual returns (uint64[] memory) {
+  function lanesToRemove() public view virtual returns (uint64[] memory) {
     return new uint64[](0);
+  }
+
+  function _execute() internal virtual {
+    TOKEN_POOL.applyChainUpdates({
+      remoteChainSelectorsToRemove: lanesToRemove(),
+      chainsToAdd: lanesToAdd()
+    });
   }
 
   /////////////////////// Helper functions ///////////////////////

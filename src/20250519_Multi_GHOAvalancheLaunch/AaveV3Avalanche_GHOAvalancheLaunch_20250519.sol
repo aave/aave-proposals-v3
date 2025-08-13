@@ -14,8 +14,8 @@ import {GhoCCIPChains} from './abstraction/constants/GhoCCIPChains.sol';
 contract AaveV3Avalanche_GHOAvalancheLaunch_20250519 is AaveV3GHOLaunch {
   constructor() AaveV3GHOLaunch(GhoCCIPChains.AVALANCHE()) {}
 
-  function _chainLanesToAdd()
-    internal
+  function lanesToAdd()
+    public
     pure
     override
     returns (IUpgradeableBurnMintTokenPool_1_5_1.ChainUpdate[] memory)

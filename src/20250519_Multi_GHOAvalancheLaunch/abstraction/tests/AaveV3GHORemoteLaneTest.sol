@@ -105,9 +105,9 @@ abstract contract AaveV3GHORemoteLaneTest is ProtocolV3TestBase {
 
   function _validateConstants() internal view virtual {
     IUpgradeableBurnMintTokenPool_1_5_1.ChainUpdate[] memory chainLanesToAdd = proposal
-      .getChainLanesToAdd();
+      .lanesToAdd();
     assertEq(chainLanesToAdd.length, 1);
-    assertEq(proposal.getChainLanesToRemove().length, 0);
+    assertEq(proposal.lanesToRemove().length, 0);
     IUpgradeableBurnMintTokenPool_1_5_1.ChainUpdate memory remoteChainToAdd = chainLanesToAdd[0];
 
     assertEq(remoteChainToAdd.remoteChainSelector, REMOTE_CHAIN_SELECTOR);
