@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {GHOAvalancheLaunch} from '../utils/GHOAvalancheLaunch.sol';
+import {GHOAvalancheLaunchConstants} from '../GHOAvalancheLaunchConstants.sol';
 import {GhoCCIPChains} from '../abstraction/constants/GhoCCIPChains.sol';
 import {AaveV3GHOLane} from '../abstraction/AaveV3GHOLane.sol';
 import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from '../AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
@@ -17,7 +17,7 @@ contract AaveV3Avalanche_GHOAvalancheLaunch_20250519_PreExecution is
     AaveV3GHOLaunchTest_PreExecution(
       GhoCCIPChains.AVALANCHE(),
       'avalanche',
-      GHOAvalancheLaunch.AVAX_BLOCK_NUMBER
+      GHOAvalancheLaunchConstants.AVAX_BLOCK_NUMBER
     )
   {}
 
@@ -47,11 +47,11 @@ contract AaveV3Avalanche_GHOAvalancheLaunch_20250519_PreExecution is
   }
 
   function _localRiskCouncil() internal view virtual override returns (address) {
-    return GHOAvalancheLaunch.RISK_COUNCIL;
+    return GHOAvalancheLaunchConstants.RISK_COUNCIL;
   }
 
   function _localRmnProxy() internal view virtual override returns (address) {
-    return GHOAvalancheLaunch.AVAX_RMN_PROXY;
+    return GHOAvalancheLaunchConstants.AVAX_RMN_PROXY;
   }
 }
 
@@ -65,7 +65,7 @@ contract AaveV3Avalanche_GHOAvalanceLaunch_20250519_PostExecution is
     AaveV3GHOLaunchTest_PostExecution(
       GhoCCIPChains.AVALANCHE(),
       'avalanche',
-      GHOAvalancheLaunch.AVAX_BLOCK_NUMBER
+      GHOAvalancheLaunchConstants.AVAX_BLOCK_NUMBER
     )
   {}
 

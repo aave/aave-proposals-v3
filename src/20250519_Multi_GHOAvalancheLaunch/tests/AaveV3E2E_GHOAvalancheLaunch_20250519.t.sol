@@ -24,18 +24,52 @@ import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {AaveV3BaseAssets} from 'aave-address-book/AaveV3Base.sol';
 
 import {CCIPUtils} from './utils/CCIPUtils.sol';
-import {GHOAvalancheLaunch} from '../utils/GHOAvalancheLaunch.sol';
+import {GHOAvalancheLaunchConstants} from '../GHOAvalancheLaunchConstants.sol';
 import {Arbitrum_Avalanche_AaveV3GHOLane_20250519} from '../remote-lanes/Arbitrum_Avalanche_AaveV3GHOLane_20250519.sol';
 import {Base_Avalanche_AaveV3GHOLane_20250519} from '../remote-lanes/Base_Avalanche_AaveV3GHOLane_20250519.sol';
 import {Ethereum_Avalanche_AaveV3GHOLane_20250519} from '../remote-lanes/Ethereum_Avalanche_AaveV3GHOLane_20250519.sol';
 import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from '../AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
 import {AaveV3GHOLane} from '../abstraction/AaveV3GHOLane.sol';
+import {GhoCCIPChains} from '../abstraction/constants/GhoCCIPChains.sol';
 
 /**
  * @dev Test for Base_Avalanche_AaveV3GHOLane_20250519
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20250519_Multi_GHOAvalancheLaunch/tests/Base_Avalanche_AaveV3GHOLane_20250519.t.sol -vv
  */
 abstract contract AaveV3Base_GHOAvalancheLaunch_20250519_Base is ProtocolV3TestBase {
+  // https://docs.chain.link/ccip/directory/mainnet/chain/mainnet (Outbound = ON_RAMP, Inbound = OFF_RAMP)
+  address internal constant ETH_AVAX_ON_RAMP = 0xaFd31C0C78785aDF53E4c185670bfd5376249d8A;
+  address internal constant ETH_BASE_ON_RAMP = 0xb8a882f3B88bd52D1Ff56A873bfDB84b70431937;
+  address internal constant ETH_AVAX_OFF_RAMP = 0xd98E80C79a15E4dbaF4C40B6cCDF690fe619BFBb;
+  address internal constant ETH_ARB_OFF_RAMP = 0xdf615eF8D4C64d0ED8Fd7824BBEd2f6a10245aC9;
+  address internal constant ETH_BASE_OFF_RAMP = 0x6B4B6359Dd5B47Cdb030E5921456D2a0625a9EbD;
+
+  // https://docs.chain.link/ccip/directory/mainnet/chain/ethereum-mainnet-base-1 (Outbound = ON_RAMP, Inbound = OFF_RAMP)
+  address internal constant BASE_AVAX_ON_RAMP = 0x4be6E0F97EA849FF80773af7a317356E6c646FD7;
+  address internal constant BASE_ETH_ON_RAMP = 0x56b30A0Dcd8dc87Ec08b80FA09502bAB801fa78e;
+  address internal constant BASE_AVAX_OFF_RAMP = 0x61C3f6d72c80A3D1790b213c4cB58c3d4aaFccDF;
+  address internal constant BASE_ETH_OFF_RAMP = 0xCA04169671A81E4fB8768cfaD46c347ae65371F1;
+  address internal constant BASE_ARB_OFF_RAMP = 0x7D38c6363d5E4DFD500a691Bc34878b383F58d93;
+
+  // https://docs.chain.link/ccip/directory/mainnet/chain/ethereum-mainnet-arbitrum-1 (Outbound = ON_RAMP, Inbound = OFF_RAMP)
+  address internal constant ARB_AVAX_ON_RAMP = 0xe80cC83B895ada027b722b78949b296Bd1fC5639;
+  address internal constant ARB_ETH_ON_RAMP = 0x67761742ac8A21Ec4D76CA18cbd701e5A6F3Bef3;
+  address internal constant ARB_AVAX_OFF_RAMP = 0x95095007d5Cc3E7517A1A03c9e228adA5D0bc376;
+  address internal constant ARB_ETH_OFF_RAMP = 0x91e46cc5590A4B9182e47f40006140A7077Dec31;
+  address internal constant ARB_BASE_OFF_RAMP = 0xb62178f8198905D0Fa6d640Bdb188E4E8143Ac4b;
+
+  // https://docs.chain.link/ccip/directory/mainnet/chain/avalanche-mainnet (Outbound = ON_RAMP, Inbound = OFF_RAMP)
+  address internal constant AVAX_ARB_ON_RAMP = 0x4e910c8Bbe88DaDF90baa6c1B7850DbeA32c5B29;
+  address internal constant AVAX_ETH_ON_RAMP = 0xe8784c29c583C52FA89144b9e5DD91Df2a1C2587;
+  address internal constant AVAX_BASE_ON_RAMP = 0x139D4108C23e66745Eda4ab47c25C83494b7C14d;
+  address internal constant AVAX_ARB_OFF_RAMP = 0x508Ea280D46E4796Ce0f1Acf8BEDa610c4238dB3;
+  address internal constant AVAX_ETH_OFF_RAMP = 0xE5F21F43937199D4D57876A83077b3923F68EB76;
+  address internal constant AVAX_BASE_OFF_RAMP = 0x37879EBFCb807f8C397fCe2f42DC0F5329AD6823;
+
+  uint128 internal constant CCIP_RATE_LIMIT_CAPACITY = 1_500_000e18;
+  uint128 internal constant CCIP_RATE_LIMIT_REFILL_RATE = 300e18;
+  uint128 internal constant CCIP_BUCKET_CAPACITY = 40_000_000e18;
+
   struct Common {
     IRouter router;
     IGhoToken token;
@@ -65,13 +99,10 @@ abstract contract AaveV3Base_GHOAvalancheLaunch_20250519_Base is ProtocolV3TestB
     Common c;
   }
 
-  address internal constant RISK_COUNCIL = GHOAvalancheLaunch.RISK_COUNCIL; // common across all chains
-  address internal constant RMN_PROXY_AVAX = GHOAvalancheLaunch.AVAX_RMN_PROXY;
-  address internal constant ROUTER_AVAX = GHOAvalancheLaunch.AVAX_CCIP_ROUTER;
-  IGhoToken internal constant GHO_TOKEN_AVAX = IGhoToken(GHOAvalancheLaunch.GHO_TOKEN);
-  uint128 public constant CCIP_RATE_LIMIT_CAPACITY = GHOAvalancheLaunch.CCIP_RATE_LIMIT_CAPACITY;
-  uint128 public constant CCIP_RATE_LIMIT_REFILL_RATE =
-    GHOAvalancheLaunch.CCIP_RATE_LIMIT_REFILL_RATE;
+  address internal constant RISK_COUNCIL = GHOAvalancheLaunchConstants.RISK_COUNCIL; // common across all chains
+  address internal constant RMN_PROXY_AVAX = GHOAvalancheLaunchConstants.AVAX_RMN_PROXY;
+  address internal immutable ROUTER_AVAX = GhoCCIPChains.AVALANCHE().ccipRouter;
+  IGhoToken internal immutable GHO_TOKEN_AVAX = IGhoToken(GhoCCIPChains.AVALANCHE().ghoToken);
 
   ChainStruct internal arb;
   ChainStruct internal base;
@@ -93,67 +124,76 @@ abstract contract AaveV3Base_GHOAvalancheLaunch_20250519_Base is ProtocolV3TestB
   event Minted(address indexed sender, address indexed recipient, uint256 amount);
 
   function setUp() public virtual {
-    arb.c.forkId = vm.createFork(vm.rpcUrl('arbitrum'), GHOAvalancheLaunch.ARB_BLOCK_NUMBER);
-    base.c.forkId = vm.createFork(vm.rpcUrl('base'), GHOAvalancheLaunch.BASE_BLOCK_NUMBER);
-    eth.c.forkId = vm.createFork(vm.rpcUrl('mainnet'), GHOAvalancheLaunch.ETH_BLOCK_NUMBER);
-    ava.c.forkId = vm.createFork(vm.rpcUrl('avalanche'), GHOAvalancheLaunch.AVAX_BLOCK_NUMBER);
+    arb.c.forkId = vm.createFork(
+      vm.rpcUrl('arbitrum'),
+      GHOAvalancheLaunchConstants.ARB_BLOCK_NUMBER
+    );
+    base.c.forkId = vm.createFork(vm.rpcUrl('base'), GHOAvalancheLaunchConstants.BASE_BLOCK_NUMBER);
+    eth.c.forkId = vm.createFork(
+      vm.rpcUrl('mainnet'),
+      GHOAvalancheLaunchConstants.ETH_BLOCK_NUMBER
+    );
+    ava.c.forkId = vm.createFork(
+      vm.rpcUrl('avalanche'),
+      GHOAvalancheLaunchConstants.AVAX_BLOCK_NUMBER
+    );
 
-    arb.c.chainSelector = GHOAvalancheLaunch.ARB_CHAIN_SELECTOR;
-    base.c.chainSelector = GHOAvalancheLaunch.BASE_CHAIN_SELECTOR;
-    eth.c.chainSelector = GHOAvalancheLaunch.ETH_CHAIN_SELECTOR;
-    ava.c.chainSelector = GHOAvalancheLaunch.AVAX_CHAIN_SELECTOR;
+    arb.c.chainSelector = GhoCCIPChains.ARBITRUM().chainSelector;
+    base.c.chainSelector = GhoCCIPChains.BASE().chainSelector;
+    eth.c.chainSelector = GhoCCIPChains.ETHEREUM().chainSelector;
+    ava.c.chainSelector = GhoCCIPChains.AVALANCHE().chainSelector;
 
     vm.selectFork(arb.c.forkId);
     arb.proposal = new Arbitrum_Avalanche_AaveV3GHOLane_20250519();
     arb.c.token = IGhoToken(AaveV3ArbitrumAssets.GHO_UNDERLYING);
-    arb.tokenPool = address(GHOAvalancheLaunch.ARB_GHO_CCIP_TOKEN_POOL);
-    arb.c.tokenAdminRegistry = ITokenAdminRegistry(GHOAvalancheLaunch.ARB_TOKEN_ADMIN_REGISTRY);
+    arb.tokenPool = GhoCCIPChains.ARBITRUM().ghoCCIPTokenPool;
+    arb.c.tokenAdminRegistry = ITokenAdminRegistry(GhoCCIPChains.ARBITRUM().tokenAdminRegistry);
     arb.c.router = IRouter(IUpgradeableBurnMintTokenPool_1_5_1(arb.tokenPool).getRouter());
     arb.c.avaOnRamp = IEVM2EVMOnRamp(arb.c.router.getOnRamp(ava.c.chainSelector));
     arb.c.ethOnRamp = IEVM2EVMOnRamp(arb.c.router.getOnRamp(eth.c.chainSelector));
     arb.c.baseOnRamp = IEVM2EVMOnRamp(arb.c.router.getOnRamp(base.c.chainSelector));
-    arb.c.avaOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ARB_AVAX_OFF_RAMP);
-    arb.c.ethOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ARB_ETH_OFF_RAMP);
-    arb.c.baseOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ARB_BASE_OFF_RAMP);
+    arb.c.avaOffRamp = IEVM2EVMOffRamp_1_5(ARB_AVAX_OFF_RAMP);
+    arb.c.ethOffRamp = IEVM2EVMOffRamp_1_5(ARB_ETH_OFF_RAMP);
+    arb.c.baseOffRamp = IEVM2EVMOffRamp_1_5(ARB_BASE_OFF_RAMP);
 
     vm.selectFork(base.c.forkId);
     base.proposal = new Base_Avalanche_AaveV3GHOLane_20250519();
-    base.tokenPool = address(GHOAvalancheLaunch.BASE_GHO_CCIP_TOKEN_POOL);
-    base.c.tokenAdminRegistry = ITokenAdminRegistry(GHOAvalancheLaunch.BASE_TOKEN_ADMIN_REGISTRY);
+    base.tokenPool = GhoCCIPChains.BASE().ghoCCIPTokenPool;
+    base.c.tokenAdminRegistry = ITokenAdminRegistry(GhoCCIPChains.BASE().tokenAdminRegistry);
     base.c.token = IGhoToken(AaveV3BaseAssets.GHO_UNDERLYING);
     base.c.router = IRouter(IUpgradeableBurnMintTokenPool_1_5_1(base.tokenPool).getRouter());
     base.c.arbOnRamp = IEVM2EVMOnRamp(base.c.router.getOnRamp(arb.c.chainSelector));
     base.c.ethOnRamp = IEVM2EVMOnRamp(base.c.router.getOnRamp(eth.c.chainSelector));
     base.c.avaOnRamp = IEVM2EVMOnRamp(base.c.router.getOnRamp(ava.c.chainSelector));
-    base.c.arbOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.BASE_ARB_OFF_RAMP);
-    base.c.ethOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.BASE_ETH_OFF_RAMP);
-    base.c.avaOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.BASE_AVAX_OFF_RAMP);
+    base.c.arbOffRamp = IEVM2EVMOffRamp_1_5(BASE_ARB_OFF_RAMP);
+    base.c.ethOffRamp = IEVM2EVMOffRamp_1_5(BASE_ETH_OFF_RAMP);
+    base.c.avaOffRamp = IEVM2EVMOffRamp_1_5(BASE_AVAX_OFF_RAMP);
 
     vm.selectFork(eth.c.forkId);
     eth.proposal = new Ethereum_Avalanche_AaveV3GHOLane_20250519();
     eth.c.token = IGhoToken(AaveV3EthereumAssets.GHO_UNDERLYING);
-    eth.tokenPool = address(GHOAvalancheLaunch.ETH_GHO_CCIP_TOKEN_POOL);
-    eth.c.tokenAdminRegistry = ITokenAdminRegistry(GHOAvalancheLaunch.ETH_TOKEN_ADMIN_REGISTRY);
+    eth.tokenPool = GhoCCIPChains.ETHEREUM().ghoCCIPTokenPool;
+    eth.c.tokenAdminRegistry = ITokenAdminRegistry(GhoCCIPChains.ETHEREUM().tokenAdminRegistry);
     eth.c.router = IRouter(IUpgradeableLockReleaseTokenPool_1_5_1(eth.tokenPool).getRouter());
     eth.c.arbOnRamp = IEVM2EVMOnRamp(eth.c.router.getOnRamp(arb.c.chainSelector));
     eth.c.avaOnRamp = IEVM2EVMOnRamp(eth.c.router.getOnRamp(ava.c.chainSelector));
     eth.c.baseOnRamp = IEVM2EVMOnRamp(eth.c.router.getOnRamp(base.c.chainSelector));
-    eth.c.arbOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ETH_ARB_OFF_RAMP);
-    eth.c.avaOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ETH_AVAX_OFF_RAMP);
-    eth.c.baseOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ETH_BASE_OFF_RAMP);
+    eth.c.arbOffRamp = IEVM2EVMOffRamp_1_5(ETH_ARB_OFF_RAMP);
+    eth.c.avaOffRamp = IEVM2EVMOffRamp_1_5(ETH_AVAX_OFF_RAMP);
+    eth.c.baseOffRamp = IEVM2EVMOffRamp_1_5(ETH_BASE_OFF_RAMP);
 
     vm.selectFork(ava.c.forkId);
     ava.proposal = new AaveV3Avalanche_GHOAvalancheLaunch_20250519();
-    ava.tokenPool = address(GHOAvalancheLaunch.GHO_CCIP_TOKEN_POOL);
-    ava.c.tokenAdminRegistry = ITokenAdminRegistry(GHOAvalancheLaunch.AVAX_TOKEN_ADMIN_REGISTRY);
+    ava.tokenPool = GhoCCIPChains.AVALANCHE().ghoCCIPTokenPool;
+    ava.c.tokenAdminRegistry = ITokenAdminRegistry(GhoCCIPChains.AVALANCHE().tokenAdminRegistry);
     ava.c.token = GHO_TOKEN_AVAX;
     ava.c.router = IRouter(IUpgradeableBurnMintTokenPool_1_5_1(ava.tokenPool).getRouter());
     ava.c.arbOnRamp = IEVM2EVMOnRamp(ava.c.router.getOnRamp(arb.c.chainSelector));
     ava.c.baseOnRamp = IEVM2EVMOnRamp(ava.c.router.getOnRamp(base.c.chainSelector));
     ava.c.ethOnRamp = IEVM2EVMOnRamp(ava.c.router.getOnRamp(eth.c.chainSelector));
-    ava.c.arbOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.AVAX_ARB_OFF_RAMP);
-    ava.c.baseOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.AVAX_BASE_OFF_RAMP);
-    ava.c.ethOffRamp = IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.AVAX_ETH_OFF_RAMP);
+    ava.c.arbOffRamp = IEVM2EVMOffRamp_1_5(AVAX_ARB_OFF_RAMP);
+    ava.c.baseOffRamp = IEVM2EVMOffRamp_1_5(AVAX_BASE_OFF_RAMP);
+    ava.c.ethOffRamp = IEVM2EVMOffRamp_1_5(AVAX_ETH_OFF_RAMP);
 
     _validateConfig({executed: false});
   }

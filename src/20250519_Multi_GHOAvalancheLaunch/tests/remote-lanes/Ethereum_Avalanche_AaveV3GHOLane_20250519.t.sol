@@ -7,6 +7,7 @@ import {AaveV3GHOEthereumRemoteLaneTest_PostExecution} from '../../abstraction/t
 import {GhoCCIPChains} from '../../abstraction/constants/GhoCCIPChains.sol';
 import {AaveV3GHOLane} from '../../abstraction/AaveV3GHOLane.sol';
 import {Ethereum_Avalanche_AaveV3GHOLane_20250519} from '../../remote-lanes/Ethereum_Avalanche_AaveV3GHOLane_20250519.sol';
+import {GHOAvalancheLaunchConstants} from '../../GHOAvalancheLaunchConstants.sol';
 
 /**
  * @dev Test for Ethereum_Avalanche_AaveV3GHOLane_20250519
@@ -15,18 +16,11 @@ import {Ethereum_Avalanche_AaveV3GHOLane_20250519} from '../../remote-lanes/Ethe
 contract Ethereum_Avalanche_AaveV3GHOLane_20250519_Test is
   AaveV3GHOEthereumRemoteLaneTest_PostExecution
 {
-  /**
-   * Source: https://docs.chain.link/ccip/directory/mainnet/chain/mainnet
-   * Outbound = ON_RAMP, Inbound = OFF_RAMP
-   */
-  address internal constant ETH_AVAX_ON_RAMP = 0xaFd31C0C78785aDF53E4c185670bfd5376249d8A;
-  address internal constant ETH_BASE_ON_RAMP = 0xb8a882f3B88bd52D1Ff56A873bfDB84b70431937;
-  address internal constant ETH_AVAX_OFF_RAMP = 0xd98E80C79a15E4dbaF4C40B6cCDF690fe619BFBb;
-  address internal constant ETH_ARB_OFF_RAMP = 0xdf615eF8D4C64d0ED8Fd7824BBEd2f6a10245aC9;
-  address internal constant ETH_BASE_OFF_RAMP = 0x6B4B6359Dd5B47Cdb030E5921456D2a0625a9EbD;
-
   constructor()
-    AaveV3GHOEthereumRemoteLaneTest_PostExecution(GhoCCIPChains.AVALANCHE(), 22575695)
+    AaveV3GHOEthereumRemoteLaneTest_PostExecution(
+      GhoCCIPChains.AVALANCHE(),
+      GHOAvalancheLaunchConstants.ETH_BLOCK_NUMBER
+    )
   {}
 
   function _expectedSupportedChains()

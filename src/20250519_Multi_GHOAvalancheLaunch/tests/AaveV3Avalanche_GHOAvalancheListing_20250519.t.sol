@@ -25,9 +25,10 @@ import {GhoArbitrum} from 'aave-address-book/GhoArbitrum.sol';
 import {GhoEthereum} from 'aave-address-book/GhoEthereum.sol';
 import {GhoBase} from 'aave-address-book/GhoBase.sol';
 
-import {GHOAvalancheLaunch} from '../utils/GHOAvalancheLaunch.sol';
+import {GHOAvalancheLaunchConstants} from '../GHOAvalancheLaunchConstants.sol';
 import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from '../AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
 import {AaveV3Avalanche_GHOAvalancheListing_20250519} from '../AaveV3Avalanche_GHOAvalancheListing_20250519.sol';
+import {GhoCCIPChains} from '../abstraction/constants/GhoCCIPChains.sol';
 
 /**
  * @dev Test for AaveV3Avalanche_GHOAvalancheListing_20250519
@@ -36,26 +37,26 @@ import {AaveV3Avalanche_GHOAvalancheListing_20250519} from '../AaveV3Avalanche_G
 contract AaveV3Avalanche_GHOAvalancheListing_20250519_Base is ProtocolV3TestBase {
   AaveV3Avalanche_GHOAvalancheListing_20250519 internal proposal;
 
-  ITokenAdminRegistry internal constant TOKEN_ADMIN_REGISTRY =
-    ITokenAdminRegistry(GHOAvalancheLaunch.AVAX_TOKEN_ADMIN_REGISTRY);
-  address internal constant ROUTER = GHOAvalancheLaunch.AVAX_CCIP_ROUTER;
-  address internal constant RMN_PROXY = GHOAvalancheLaunch.AVAX_RMN_PROXY;
-  address internal constant RISK_COUNCIL = GHOAvalancheLaunch.RISK_COUNCIL;
-  IGhoToken internal constant GHO_TOKEN = IGhoToken(GHOAvalancheLaunch.GHO_TOKEN);
+  ITokenAdminRegistry internal immutable TOKEN_ADMIN_REGISTRY =
+    ITokenAdminRegistry(GhoCCIPChains.AVALANCHE().tokenAdminRegistry);
+  address internal immutable ROUTER = GhoCCIPChains.AVALANCHE().ccipRouter;
+  address internal constant RMN_PROXY = GHOAvalancheLaunchConstants.AVAX_RMN_PROXY;
+  address internal constant RISK_COUNCIL = GHOAvalancheLaunchConstants.RISK_COUNCIL;
+  IGhoToken internal immutable GHO_TOKEN = IGhoToken(GhoCCIPChains.AVALANCHE().ghoToken);
   address internal constant NEW_REMOTE_POOL_ARB = GhoArbitrum.GHO_CCIP_TOKEN_POOL;
   address internal constant NEW_REMOTE_POOL_ETH = GhoEthereum.GHO_CCIP_TOKEN_POOL;
   address internal constant NEW_REMOTE_POOL_BASE = GhoBase.GHO_CCIP_TOKEN_POOL;
-  IGhoAaveSteward internal constant NEW_GHO_AAVE_STEWARD =
-    IGhoAaveSteward(GHOAvalancheLaunch.GHO_AAVE_CORE_STEWARD);
-  IGhoBucketSteward internal constant NEW_GHO_BUCKET_STEWARD =
-    IGhoBucketSteward(GHOAvalancheLaunch.GHO_BUCKET_STEWARD);
-  IGhoCcipSteward internal constant NEW_GHO_CCIP_STEWARD =
-    IGhoCcipSteward(GHOAvalancheLaunch.GHO_CCIP_STEWARD);
-  IUpgradeableBurnMintTokenPool_1_5_1 internal constant NEW_TOKEN_POOL =
-    IUpgradeableBurnMintTokenPool_1_5_1(GHOAvalancheLaunch.GHO_CCIP_TOKEN_POOL);
+  IGhoAaveSteward internal immutable NEW_GHO_AAVE_STEWARD =
+    IGhoAaveSteward(GhoCCIPChains.AVALANCHE().ghoAaveCoreSteward);
+  IGhoBucketSteward internal immutable NEW_GHO_BUCKET_STEWARD =
+    IGhoBucketSteward(GhoCCIPChains.AVALANCHE().ghoBucketSteward);
+  IGhoCcipSteward internal immutable NEW_GHO_CCIP_STEWARD =
+    IGhoCcipSteward(GhoCCIPChains.AVALANCHE().ghoCCIPSteward);
+  IUpgradeableBurnMintTokenPool_1_5_1 internal immutable NEW_TOKEN_POOL =
+    IUpgradeableBurnMintTokenPool_1_5_1(GhoCCIPChains.AVALANCHE().ghoCCIPTokenPool);
 
   function setUp() public virtual {
-    vm.createSelectFork(vm.rpcUrl('avalanche'), GHOAvalancheLaunch.AVAX_BLOCK_NUMBER);
+    vm.createSelectFork(vm.rpcUrl('avalanche'), GHOAvalancheLaunchConstants.AVAX_BLOCK_NUMBER);
     proposal = new AaveV3Avalanche_GHOAvalancheListing_20250519();
   }
 
@@ -185,6 +186,8 @@ contract AaveV3Avalanche_GHOAvalancheListing_20250519_Stewards is
 {
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
+  uint128 public constant CCIP_BUCKET_CAPACITY = 40_000_000e18;
+
   function setUp() public override {
     super.setUp();
     _executeLaunchAIP(); // deploys gho token, token pool & stewards
@@ -267,7 +270,7 @@ contract AaveV3Avalanche_GHOAvalancheListing_20250519_Stewards is
 
   function test_bucketStewardCanUpdateBucketCapacity(uint256 newBucketCapacity) public {
     (uint256 currentBucketCapacity, ) = GHO_TOKEN.getFacilitatorBucket(address(NEW_TOKEN_POOL));
-    assertEq(currentBucketCapacity, GHOAvalancheLaunch.CCIP_BUCKET_CAPACITY);
+    assertEq(currentBucketCapacity, CCIP_BUCKET_CAPACITY);
     newBucketCapacity = bound(
       newBucketCapacity,
       currentBucketCapacity + 1,
@@ -287,9 +290,9 @@ contract AaveV3Avalanche_GHOAvalancheListing_20250519_Stewards is
   }
 
   function test_ccipStewardCanChangeAndDisableRateLimit() public {
-    _runCcipStewardCanChangeAndDisableRateLimit(GHOAvalancheLaunch.ETH_CHAIN_SELECTOR);
+    _runCcipStewardCanChangeAndDisableRateLimit(GhoCCIPChains.ETHEREUM().chainSelector);
     skip(NEW_GHO_CCIP_STEWARD.MINIMUM_DELAY() + 1);
-    _runCcipStewardCanChangeAndDisableRateLimit(GHOAvalancheLaunch.ARB_CHAIN_SELECTOR);
+    _runCcipStewardCanChangeAndDisableRateLimit(GhoCCIPChains.ARBITRUM().chainSelector);
   }
 
   function _runCcipStewardCanChangeAndDisableRateLimit(uint64 remoteChain) internal {

@@ -7,27 +7,19 @@ import {AaveV3GHORemoteLaneTest_PostExecution} from '../../abstraction/tests/Aav
 import {GhoCCIPChains} from '../../abstraction/constants/GhoCCIPChains.sol';
 import {AaveV3GHOLane} from '../../abstraction/AaveV3GHOLane.sol';
 import {Base_Avalanche_AaveV3GHOLane_20250519} from '../../remote-lanes/Base_Avalanche_AaveV3GHOLane_20250519.sol';
+import {GHOAvalancheLaunchConstants} from '../../GHOAvalancheLaunchConstants.sol';
 
 /**
  * @dev Test for Base_Avalanche_AaveV3GHOLane_20250519
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20250519_Multi_GHOAvalancheLaunch/tests/remote-lanes/Base_Avalanche_AaveV3GHOLane_20250519.t.sol -vvv
  */
 contract Base_Avalanche_AaveV3GHOLane_20250519_Test is AaveV3GHORemoteLaneTest_PostExecution {
-  /**
-   * Source: https://docs.chain.link/ccip/directory/mainnet/chain/ethereum-mainnet-base-1
-   * Outbound = ON_RAMP, Inbound = OFF_RAMP
-   */
-  address internal constant BASE_ETH_ON_RAMP = 0x56b30A0Dcd8dc87Ec08b80FA09502bAB801fa78e;
-  address internal constant BASE_ETH_OFF_RAMP = 0xCA04169671A81E4fB8768cfaD46c347ae65371F1;
-  address internal constant BASE_AVAX_ON_RAMP = 0x4be6E0F97EA849FF80773af7a317356E6c646FD7;
-  address internal constant BASE_AVAX_OFF_RAMP = 0x61C3f6d72c80A3D1790b213c4cB58c3d4aaFccDF;
-
   constructor()
     AaveV3GHORemoteLaneTest_PostExecution(
       GhoCCIPChains.BASE(),
       GhoCCIPChains.AVALANCHE(),
       'base',
-      30789286
+      GHOAvalancheLaunchConstants.BASE_BLOCK_NUMBER
     )
   {}
 
