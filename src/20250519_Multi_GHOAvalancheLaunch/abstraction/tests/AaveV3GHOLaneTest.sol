@@ -132,11 +132,24 @@ abstract contract AaveV3GHOLaneTest is ProtocolV3TestBase {
   function _getOffRamp(uint64 chainSelector) internal view virtual returns (address) {
     IRouter.OffRamp[] memory offRamps = LOCAL_CCIP_ROUTER.getOffRamps();
     for (uint256 i = 0; i < offRamps.length; i++) {
-      if (offRamps[i].sourceChainSelector == chainSelector) {
+      if (
+        offRamps[i].sourceChainSelector == chainSelector &&
+        _hasOffRampExpectedVersion(offRamps[i].offRamp)
+      ) {
         return offRamps[i].offRamp;
       }
     }
     return address(0);
+  }
+
+  function _offRampExpectedVersion() internal view virtual returns (string memory) {
+    return 'EVM2EVMOffRamp 1.5.0';
+  }
+
+  function _hasOffRampExpectedVersion(address offRamp) internal view virtual returns (bool) {
+    return
+      keccak256(bytes(IEVM2EVMOffRamp_1_5(offRamp).typeAndVersion())) ==
+      keccak256(bytes(_offRampExpectedVersion()));
   }
 
   function setUp() public virtual {

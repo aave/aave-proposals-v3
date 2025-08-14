@@ -239,13 +239,10 @@ abstract contract AaveV3GHORemoteLaneTest_PostExecution is AaveV3GHOLaneTest {
     uint256 amount = 100e18;
     skip(_getInboundRefillTime(amount));
 
-    vm.prank(address(_localInboundLaneFromRemote()));
-    vm.expectRevert(
-      abi.encodeWithSelector(
-        CallerIsNotARampOnRouter.selector,
-        address(_localInboundLaneFromRemote())
-      )
-    );
+    address offRamp = address(_localInboundLaneFromRemote());
+
+    vm.prank(offRamp);
+    vm.expectRevert(abi.encodeWithSelector(CallerIsNotARampOnRouter.selector, offRamp));
     LOCAL_TOKEN_POOL.releaseOrMint(
       IPool_CCIP.ReleaseOrMintInV1({
         originalSender: abi.encode(alice),

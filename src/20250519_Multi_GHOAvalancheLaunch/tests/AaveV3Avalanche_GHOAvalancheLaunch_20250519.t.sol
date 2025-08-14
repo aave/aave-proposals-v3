@@ -6,7 +6,6 @@ import {GhoCCIPChains} from '../abstraction/constants/GhoCCIPChains.sol';
 import {AaveV3GHOLane} from '../abstraction/AaveV3GHOLane.sol';
 import {AaveV3Avalanche_GHOAvalancheLaunch_20250519} from '../AaveV3Avalanche_GHOAvalancheLaunch_20250519.sol';
 import {AaveV3GHOLaunchTest_PostExecution, AaveV3GHOLaunchTest_PreExecution} from '../abstraction/tests/AaveV3GHOLaunchTest.sol';
-import {IEVM2EVMOffRamp_1_5} from 'src/interfaces/ccip/IEVM2EVMOffRamp.sol';
 
 /**
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20250519_Multi_GHOAvalancheLaunch/tests/AaveV3Avalanche_GHOAvalancheLaunch_20250519_PreExecution.t.sol -vv
@@ -86,22 +85,6 @@ contract AaveV3Avalanche_GHOAvalanceLaunch_20250519_PostExecution is
     chains[1] = GhoCCIPChains.ARBITRUM();
     chains[2] = GhoCCIPChains.BASE();
     return chains;
-  }
-
-  // Local Chain's inbound lane from Ethereum (OffRamp address)
-  function _localInboundLaneFromEth() internal view virtual override returns (IEVM2EVMOffRamp_1_5) {
-    return IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ARB_ETH_OFF_RAMP);
-  }
-
-  // Local Chain's inbound lane from Remote Chain (OffRamp address)
-  function _localInboundLaneFromRemote()
-    internal
-    view
-    virtual
-    override
-    returns (IEVM2EVMOffRamp_1_5)
-  {
-    return IEVM2EVMOffRamp_1_5(GHOAvalancheLaunch.ARB_AVAX_OFF_RAMP);
   }
 
   // Can be improved

@@ -6,8 +6,6 @@ import 'forge-std/Test.sol';
 import {AaveV3GHORemoteLaneTest_PostExecution} from '../../abstraction/tests/AaveV3GHORemoteLaneTest.sol';
 import {GhoCCIPChains} from '../../abstraction/constants/GhoCCIPChains.sol';
 import {AaveV3GHOLane} from '../../abstraction/AaveV3GHOLane.sol';
-import {IEVM2EVMOnRamp} from 'src/interfaces/ccip/IEVM2EVMOnRamp.sol';
-import {IEVM2EVMOffRamp_1_5} from 'src/interfaces/ccip/IEVM2EVMOffRamp.sol';
 import {Arbitrum_Avalanche_AaveV3GHOLane_20250519} from '../../remote-lanes/Arbitrum_Avalanche_AaveV3GHOLane_20250519.sol';
 
 /**
@@ -72,22 +70,6 @@ contract Arbitrum_Avalanche_AaveV3GHOLane_20250519_Test is AaveV3GHORemoteLaneTe
     } else {
       super._assertAgainstSupportedChain(supportedChain);
     }
-  }
-
-  // Local Chain's inbound lane from Ethereum (OffRamp address)
-  function _localInboundLaneFromEth() internal view virtual override returns (IEVM2EVMOffRamp_1_5) {
-    return IEVM2EVMOffRamp_1_5(ARB_ETH_OFF_RAMP);
-  }
-
-  // Local Chain's inbound lane from Remote Chain (OffRamp address)
-  function _localInboundLaneFromRemote()
-    internal
-    view
-    virtual
-    override
-    returns (IEVM2EVMOffRamp_1_5)
-  {
-    return IEVM2EVMOffRamp_1_5(ARB_AVAX_OFF_RAMP);
   }
 
   function _deployAaveV3GHOLaneProposal() internal virtual override returns (AaveV3GHOLane) {
