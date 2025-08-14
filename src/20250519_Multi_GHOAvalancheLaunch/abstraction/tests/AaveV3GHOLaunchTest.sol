@@ -252,7 +252,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
   function test_sendMessageToSupportedChainSucceeds(uint256 amount, uint8 chainIndex) public {
     GhoCCIPChains.ChainInfo[] memory supportedChains = _expectedSupportedChains();
 
-    vm.skip(supportedChains.length == 0);
+    require(supportedChains.length > 0);
 
     chainIndex = uint8(bound(chainIndex, 0, supportedChains.length - 1));
 
@@ -303,7 +303,7 @@ abstract contract AaveV3GHOLaunchTest_PostExecution is AaveV3GHOLaneTest {
   function test_offRampViaSupportedChainSucceeds(uint256 amount, uint8 chainIndex) public {
     GhoCCIPChains.ChainInfo[] memory supportedChains = _expectedSupportedChains();
 
-    vm.skip(supportedChains.length == 0);
+    require(supportedChains.length > 0);
 
     chainIndex = uint8(bound(chainIndex, 0, supportedChains.length - 1));
 

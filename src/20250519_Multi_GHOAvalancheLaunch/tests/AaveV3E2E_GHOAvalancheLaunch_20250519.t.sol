@@ -33,9 +33,9 @@ import {AaveV3GHOLane} from '../abstraction/AaveV3GHOLane.sol';
 
 /**
  * @dev Test for Base_Avalanche_AaveV3GHOLane_20250519
- * command: FOUNDRY_PROFILE=test forge test --match-path=src/20250519_Multi_GHOAvalancheLaunch/Base_Avalanche_AaveV3GHOLane_20250519.t.sol -vv
+ * command: FOUNDRY_PROFILE=test forge test --match-path=src/20250519_Multi_GHOAvalancheLaunch/tests/Base_Avalanche_AaveV3GHOLane_20250519.t.sol -vv
  */
-contract Base_Avalanche_AaveV3GHOLane_20250519_Base is ProtocolV3TestBase {
+abstract contract AaveV3Base_GHOAvalancheLaunch_20250519_Base is ProtocolV3TestBase {
   struct Common {
     IRouter router;
     IGhoToken token;
@@ -493,175 +493,6 @@ contract Base_Avalanche_AaveV3GHOLane_20250519_Base is ProtocolV3TestBase {
     }
   }
 
-  function _assertOnRamp(
-    IEVM2EVMOnRamp onRamp,
-    uint64 srcSelector,
-    uint64 dstSelector,
-    IRouter router
-  ) internal view {
-    assertEq(onRamp.typeAndVersion(), 'EVM2EVMOnRamp 1.5.0');
-    assertEq(onRamp.getStaticConfig().chainSelector, srcSelector);
-    assertEq(onRamp.getStaticConfig().destChainSelector, dstSelector);
-    assertEq(onRamp.getDynamicConfig().router, address(router));
-    assertEq(router.getOnRamp(dstSelector), address(onRamp));
-  }
-
-  function _assertOffRamp(
-    IEVM2EVMOffRamp_1_5 offRamp,
-    uint64 srcSelector,
-    uint64 dstSelector,
-    IRouter router
-  ) internal view {
-    assertEq(offRamp.typeAndVersion(), 'EVM2EVMOffRamp 1.5.0');
-    assertEq(offRamp.getStaticConfig().sourceChainSelector, srcSelector);
-    assertEq(offRamp.getStaticConfig().chainSelector, dstSelector);
-    assertEq(offRamp.getDynamicConfig().router, address(router));
-    assertTrue(router.isOffRamp(srcSelector, address(offRamp)));
-  }
-
-  function _assertSetRateLimit(Common memory src, address tokenPool) internal view {
-    (Common memory dst1, Common memory dst2) = _getDestination(src);
-    IUpgradeableLockReleaseTokenPool_1_5_1 _tokenPool = IUpgradeableLockReleaseTokenPool_1_5_1(
-      tokenPool
-    );
-    assertEq(
-      _tokenPool.getCurrentInboundRateLimiterState(dst1.chainSelector),
-      _getRateLimiterConfig()
-    );
-    assertEq(
-      _tokenPool.getCurrentOutboundRateLimiterState(dst1.chainSelector),
-      _getRateLimiterConfig()
-    );
-
-    assertEq(
-      _tokenPool.getCurrentInboundRateLimiterState(dst2.chainSelector),
-      _getRateLimiterConfig()
-    );
-    assertEq(
-      _tokenPool.getCurrentOutboundRateLimiterState(dst2.chainSelector),
-      _getRateLimiterConfig()
-    );
-  }
-
-  function _getDestination(Common memory src) internal view returns (Common memory, Common memory) {
-    if (src.forkId == arb.c.forkId) return (ava.c, eth.c);
-    else if (src.forkId == ava.c.forkId) return (arb.c, eth.c);
-    else return (arb.c, ava.c);
-  }
-
-  function _tokenBucketToConfig(
-    IRateLimiter.TokenBucket memory bucket
-  ) internal pure returns (IRateLimiter.Config memory) {
-    return
-      IRateLimiter.Config({
-        isEnabled: bucket.isEnabled,
-        capacity: bucket.capacity,
-        rate: bucket.rate
-      });
-  }
-
-  function _getDisabledConfig() internal pure returns (IRateLimiter.Config memory) {
-    return IRateLimiter.Config({isEnabled: false, capacity: 0, rate: 0});
-  }
-
-  function _getImplementation(address proxy) internal view returns (address) {
-    bytes32 slot = bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1);
-    return address(uint160(uint256(vm.load(proxy, slot))));
-  }
-
-  function _readInitialized(address proxy) internal view returns (uint8) {
-    return uint8(uint256(vm.load(proxy, bytes32(0))));
-  }
-
-  function _getRateLimiterConfig() internal pure returns (IRateLimiter.Config memory) {
-    return
-      IRateLimiter.Config({
-        isEnabled: true,
-        capacity: uint128(CCIP_RATE_LIMIT_CAPACITY),
-        rate: uint128(CCIP_RATE_LIMIT_REFILL_RATE)
-      });
-  }
-
-  function _getOutboundRefillTime(uint256 amount) internal pure returns (uint256) {
-    return (amount / CCIP_RATE_LIMIT_REFILL_RATE) + 1; // account for rounding
-  }
-
-  function _getInboundRefillTime(uint256 amount) internal pure returns (uint256) {
-    return (amount / CCIP_RATE_LIMIT_REFILL_RATE) + 1; // account for rounding
-  }
-
-  function _min(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a < b ? a : b;
-  }
-
-  function assertEq(
-    IRateLimiter.TokenBucket memory bucket,
-    IRateLimiter.Config memory config
-  ) internal pure {
-    assertEq(abi.encode(_tokenBucketToConfig(bucket)), abi.encode(config));
-  }
-
-  // @dev refresh token prices to the last stored such that price is not stale
-  // @dev assumed src.forkId is already active
-  function _refreshGasAndTokenPrices(Common memory src, Common memory dst) internal {
-    uint64 destChainSelector = dst.chainSelector;
-    IEVM2EVMOnRamp srcOnRamp = IEVM2EVMOnRamp(src.router.getOnRamp(destChainSelector));
-    address bridgeToken = address(src.token);
-    address feeToken = src.router.getWrappedNative(); // needed as we do tests with wrapped native as fee token
-    address linkToken = srcOnRamp.getStaticConfig().linkToken; // needed as feeTokenAmount is converted to linkTokenAmount
-    IInternal.TokenPriceUpdate[] memory tokenPriceUpdates = new IInternal.TokenPriceUpdate[](3);
-    IInternal.GasPriceUpdate[] memory gasPriceUpdates = new IInternal.GasPriceUpdate[](1);
-    IPriceRegistry priceRegistry = IPriceRegistry(srcOnRamp.getDynamicConfig().priceRegistry); // both ramps have the same price registry
-
-    tokenPriceUpdates[0] = IInternal.TokenPriceUpdate({
-      sourceToken: bridgeToken,
-      usdPerToken: priceRegistry.getTokenPrice(bridgeToken).value
-    });
-    tokenPriceUpdates[1] = IInternal.TokenPriceUpdate({
-      sourceToken: feeToken,
-      usdPerToken: priceRegistry.getTokenPrice(feeToken).value
-    });
-    tokenPriceUpdates[2] = IInternal.TokenPriceUpdate({
-      sourceToken: linkToken,
-      usdPerToken: priceRegistry.getTokenPrice(linkToken).value
-    });
-
-    gasPriceUpdates[0] = IInternal.GasPriceUpdate({
-      destChainSelector: destChainSelector,
-      usdPerUnitGas: priceRegistry.getDestinationChainGasPrice(destChainSelector).value
-    });
-
-    vm.prank(priceRegistry.owner());
-    priceRegistry.updatePrices(
-      IInternal.PriceUpdates({
-        tokenPriceUpdates: tokenPriceUpdates,
-        gasPriceUpdates: gasPriceUpdates
-      })
-    );
-  }
-}
-
-contract Base_Avalanche_AaveV3GHOLane_20250519_PostExecution is
-  Base_Avalanche_AaveV3GHOLane_20250519_Base
-{
-  function setUp() public override {
-    super.setUp();
-
-    vm.selectFork(arb.c.forkId);
-    executePayload(vm, address(arb.proposal));
-
-    vm.selectFork(eth.c.forkId);
-    executePayload(vm, address(eth.proposal));
-
-    vm.selectFork(base.c.forkId);
-    executePayload(vm, address(base.proposal));
-
-    vm.selectFork(ava.c.forkId);
-    executePayload(vm, address(ava.proposal));
-
-    _validateConfig({executed: true});
-  }
-
   function _getOffRamp(
     IRouter router,
     uint64 chainSelector
@@ -824,9 +655,311 @@ contract Base_Avalanche_AaveV3GHOLane_20250519_PostExecution is
     }
   }
 
+  function _test_e2e_BetweenAChainAndEth(ChainStruct memory chain, uint256 amount) internal {
+    {
+      vm.selectFork(eth.c.forkId);
+      IRateLimiter.TokenBucket memory rateLimits = IUpgradeableLockReleaseTokenPool_1_5_1(
+        eth.tokenPool
+      ).getCurrentInboundRateLimiterState(chain.c.chainSelector);
+      uint256 bridgeableAmount = _min(
+        IUpgradeableLockReleaseTokenPool_1_5_1(eth.tokenPool).getBridgeLimit() -
+          IUpgradeableLockReleaseTokenPool_1_5_1(eth.tokenPool).getCurrentBridgedAmount(),
+        rateLimits.capacity
+      );
+      amount = bound(amount, 1, bridgeableAmount);
+      skip(_getOutboundRefillTime(amount));
+      _refreshGasAndTokenPrices(eth.c, chain.c);
+
+      vm.prank(alice);
+      eth.c.token.approve(address(eth.c.router), amount);
+      deal(address(eth.c.token), alice, amount);
+
+      uint256 tokenPoolBalance = eth.c.token.balanceOf(address(eth.tokenPool));
+      uint256 aliceBalance = eth.c.token.balanceOf(alice);
+      uint256 bridgedAmount = IUpgradeableLockReleaseTokenPool_1_5_1(eth.tokenPool)
+        .getCurrentBridgedAmount();
+
+      (
+        IClient.EVM2AnyMessage memory message,
+        IInternal.EVM2EVMMessage memory eventArg
+      ) = _getTokenMessage(
+          CCIPSendParams({src: eth.c, dst: chain.c, sender: alice, amount: amount})
+        );
+
+      address chainOnRamp = eth.c.router.getOnRamp(chain.c.chainSelector);
+
+      vm.expectEmit(address(eth.tokenPool));
+      emit Locked(chainOnRamp, amount);
+      vm.expectEmit(chainOnRamp);
+      emit CCIPSendRequested(eventArg);
+
+      vm.prank(alice);
+      eth.c.router.ccipSend{value: eventArg.feeTokenAmount}(chain.c.chainSelector, message);
+
+      assertEq(eth.c.token.balanceOf(address(eth.tokenPool)), tokenPoolBalance + amount);
+      assertEq(eth.c.token.balanceOf(alice), aliceBalance - amount);
+      assertEq(
+        IUpgradeableLockReleaseTokenPool_1_5_1(eth.tokenPool).getCurrentBridgedAmount(),
+        bridgedAmount + amount
+      );
+
+      // chain execute message
+      vm.selectFork(chain.c.forkId);
+
+      skip(_getInboundRefillTime(amount));
+      _refreshGasAndTokenPrices(chain.c, eth.c);
+      aliceBalance = chain.c.token.balanceOf(alice);
+      uint256 bucketLevel = chain.c.token.getFacilitator(address(chain.tokenPool)).bucketLevel;
+
+      vm.expectEmit(address(chain.tokenPool));
+      emit Minted(address(chain.c.ethOffRamp), alice, amount);
+
+      vm.prank(address(chain.c.ethOffRamp));
+      chain.c.ethOffRamp.executeSingleMessage({
+        message: eventArg,
+        offchainTokenData: new bytes[](message.tokenAmounts.length),
+        tokenGasOverrides: new uint32[](0)
+      });
+
+      assertEq(chain.c.token.balanceOf(alice), aliceBalance + amount);
+      assertEq(
+        chain.c.token.getFacilitator(address(chain.tokenPool)).bucketLevel,
+        bucketLevel + amount
+      );
+    }
+
+    // send amount back to eth
+    {
+      // send back from chain
+      vm.selectFork(chain.c.forkId);
+      vm.prank(alice);
+      chain.c.token.approve(address(chain.c.router), amount);
+      skip(_getOutboundRefillTime(amount));
+      _refreshGasAndTokenPrices(chain.c, eth.c);
+
+      uint256 aliceBalance = chain.c.token.balanceOf(alice);
+      uint256 bucketLevel = chain.c.token.getFacilitator(address(chain.tokenPool)).bucketLevel;
+
+      (
+        IClient.EVM2AnyMessage memory message,
+        IInternal.EVM2EVMMessage memory eventArg
+      ) = _getTokenMessage(
+          CCIPSendParams({src: chain.c, dst: eth.c, sender: alice, amount: amount})
+        );
+
+      address chainOnRamp = chain.c.router.getOnRamp(eth.c.chainSelector);
+
+      vm.expectEmit(address(chain.tokenPool));
+      emit Burned(chainOnRamp, amount);
+      vm.expectEmit(chainOnRamp);
+      emit CCIPSendRequested(eventArg);
+
+      vm.prank(alice);
+      chain.c.router.ccipSend{value: eventArg.feeTokenAmount}(eth.c.chainSelector, message);
+
+      assertEq(chain.c.token.balanceOf(alice), aliceBalance - amount);
+      assertEq(
+        chain.c.token.getFacilitator(address(chain.tokenPool)).bucketLevel,
+        bucketLevel - amount
+      );
+      // eth execute message
+      vm.selectFork(eth.c.forkId);
+
+      skip(_getInboundRefillTime(amount));
+      _refreshGasAndTokenPrices(eth.c, chain.c);
+      uint256 bridgedAmount = IUpgradeableLockReleaseTokenPool_1_5_1(eth.tokenPool)
+        .getCurrentBridgedAmount();
+
+      address chainOffRamp = _getOffRamp(eth.c.router, chain.c.chainSelector);
+
+      vm.expectEmit(address(eth.tokenPool));
+      emit Released(address(chainOffRamp), alice, amount);
+      vm.prank(address(chainOffRamp));
+      IEVM2EVMOffRamp_1_5(chainOffRamp).executeSingleMessage({
+        message: eventArg,
+        offchainTokenData: new bytes[](message.tokenAmounts.length),
+        tokenGasOverrides: new uint32[](0)
+      });
+
+      assertEq(eth.c.token.balanceOf(alice), amount);
+      assertEq(
+        IUpgradeableLockReleaseTokenPool_1_5_1(eth.tokenPool).getCurrentBridgedAmount(),
+        bridgedAmount - amount
+      );
+    }
+  }
+
+  function _assertOnRamp(
+    IEVM2EVMOnRamp onRamp,
+    uint64 srcSelector,
+    uint64 dstSelector,
+    IRouter router
+  ) internal view {
+    assertEq(onRamp.typeAndVersion(), 'EVM2EVMOnRamp 1.5.0');
+    assertEq(onRamp.getStaticConfig().chainSelector, srcSelector);
+    assertEq(onRamp.getStaticConfig().destChainSelector, dstSelector);
+    assertEq(onRamp.getDynamicConfig().router, address(router));
+    assertEq(router.getOnRamp(dstSelector), address(onRamp));
+  }
+
+  function _assertOffRamp(
+    IEVM2EVMOffRamp_1_5 offRamp,
+    uint64 srcSelector,
+    uint64 dstSelector,
+    IRouter router
+  ) internal view {
+    assertEq(offRamp.typeAndVersion(), 'EVM2EVMOffRamp 1.5.0');
+    assertEq(offRamp.getStaticConfig().sourceChainSelector, srcSelector);
+    assertEq(offRamp.getStaticConfig().chainSelector, dstSelector);
+    assertEq(offRamp.getDynamicConfig().router, address(router));
+    assertTrue(router.isOffRamp(srcSelector, address(offRamp)));
+  }
+
+  function _assertSetRateLimit(Common memory src, address tokenPool) internal view {
+    (Common memory dst1, Common memory dst2) = _getDestination(src);
+    IUpgradeableLockReleaseTokenPool_1_5_1 _tokenPool = IUpgradeableLockReleaseTokenPool_1_5_1(
+      tokenPool
+    );
+    assertEq(
+      _tokenPool.getCurrentInboundRateLimiterState(dst1.chainSelector),
+      _getRateLimiterConfig()
+    );
+    assertEq(
+      _tokenPool.getCurrentOutboundRateLimiterState(dst1.chainSelector),
+      _getRateLimiterConfig()
+    );
+
+    assertEq(
+      _tokenPool.getCurrentInboundRateLimiterState(dst2.chainSelector),
+      _getRateLimiterConfig()
+    );
+    assertEq(
+      _tokenPool.getCurrentOutboundRateLimiterState(dst2.chainSelector),
+      _getRateLimiterConfig()
+    );
+  }
+
+  function _getDestination(Common memory src) internal view returns (Common memory, Common memory) {
+    if (src.forkId == arb.c.forkId) return (ava.c, eth.c);
+    else if (src.forkId == ava.c.forkId) return (arb.c, eth.c);
+    else return (arb.c, ava.c);
+  }
+
+  function _tokenBucketToConfig(
+    IRateLimiter.TokenBucket memory bucket
+  ) internal pure returns (IRateLimiter.Config memory) {
+    return
+      IRateLimiter.Config({
+        isEnabled: bucket.isEnabled,
+        capacity: bucket.capacity,
+        rate: bucket.rate
+      });
+  }
+
+  function _getDisabledConfig() internal pure returns (IRateLimiter.Config memory) {
+    return IRateLimiter.Config({isEnabled: false, capacity: 0, rate: 0});
+  }
+
+  function _getImplementation(address proxy) internal view returns (address) {
+    bytes32 slot = bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1);
+    return address(uint160(uint256(vm.load(proxy, slot))));
+  }
+
+  function _readInitialized(address proxy) internal view returns (uint8) {
+    return uint8(uint256(vm.load(proxy, bytes32(0))));
+  }
+
+  function _getRateLimiterConfig() internal pure returns (IRateLimiter.Config memory) {
+    return
+      IRateLimiter.Config({
+        isEnabled: true,
+        capacity: uint128(CCIP_RATE_LIMIT_CAPACITY),
+        rate: uint128(CCIP_RATE_LIMIT_REFILL_RATE)
+      });
+  }
+
+  function _getOutboundRefillTime(uint256 amount) internal pure returns (uint256) {
+    return (amount / CCIP_RATE_LIMIT_REFILL_RATE) + 1; // account for rounding
+  }
+
+  function _getInboundRefillTime(uint256 amount) internal pure returns (uint256) {
+    return (amount / CCIP_RATE_LIMIT_REFILL_RATE) + 1; // account for rounding
+  }
+
+  function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+    return a < b ? a : b;
+  }
+
+  function assertEq(
+    IRateLimiter.TokenBucket memory bucket,
+    IRateLimiter.Config memory config
+  ) internal pure {
+    assertEq(abi.encode(_tokenBucketToConfig(bucket)), abi.encode(config));
+  }
+
+  // @dev refresh token prices to the last stored such that price is not stale
+  // @dev assumed src.forkId is already active
+  function _refreshGasAndTokenPrices(Common memory src, Common memory dst) internal {
+    uint64 destChainSelector = dst.chainSelector;
+    IEVM2EVMOnRamp srcOnRamp = IEVM2EVMOnRamp(src.router.getOnRamp(destChainSelector));
+    address bridgeToken = address(src.token);
+    address feeToken = src.router.getWrappedNative(); // needed as we do tests with wrapped native as fee token
+    address linkToken = srcOnRamp.getStaticConfig().linkToken; // needed as feeTokenAmount is converted to linkTokenAmount
+    IInternal.TokenPriceUpdate[] memory tokenPriceUpdates = new IInternal.TokenPriceUpdate[](3);
+    IInternal.GasPriceUpdate[] memory gasPriceUpdates = new IInternal.GasPriceUpdate[](1);
+    IPriceRegistry priceRegistry = IPriceRegistry(srcOnRamp.getDynamicConfig().priceRegistry); // both ramps have the same price registry
+
+    tokenPriceUpdates[0] = IInternal.TokenPriceUpdate({
+      sourceToken: bridgeToken,
+      usdPerToken: priceRegistry.getTokenPrice(bridgeToken).value
+    });
+    tokenPriceUpdates[1] = IInternal.TokenPriceUpdate({
+      sourceToken: feeToken,
+      usdPerToken: priceRegistry.getTokenPrice(feeToken).value
+    });
+    tokenPriceUpdates[2] = IInternal.TokenPriceUpdate({
+      sourceToken: linkToken,
+      usdPerToken: priceRegistry.getTokenPrice(linkToken).value
+    });
+
+    gasPriceUpdates[0] = IInternal.GasPriceUpdate({
+      destChainSelector: destChainSelector,
+      usdPerUnitGas: priceRegistry.getDestinationChainGasPrice(destChainSelector).value
+    });
+
+    vm.prank(priceRegistry.owner());
+    priceRegistry.updatePrices(
+      IInternal.PriceUpdates({
+        tokenPriceUpdates: tokenPriceUpdates,
+        gasPriceUpdates: gasPriceUpdates
+      })
+    );
+  }
+}
+
+contract AaveV3Base_GHOAvalancheLaunch_20250519_PostExecution is
+  AaveV3Base_GHOAvalancheLaunch_20250519_Base
+{
+  function setUp() public override {
+    super.setUp();
+
+    vm.selectFork(arb.c.forkId);
+    executePayload(vm, address(arb.proposal));
+
+    vm.selectFork(eth.c.forkId);
+    executePayload(vm, address(eth.proposal));
+
+    vm.selectFork(base.c.forkId);
+    executePayload(vm, address(base.proposal));
+
+    vm.selectFork(ava.c.forkId);
+    executePayload(vm, address(ava.proposal));
+
+    _validateConfig({executed: true});
+  }
+
   function test_E2eEthAvax(uint256 amount) public {
-    vm.skip(true); // TOOD: Special case for ETH test
-    _test_e2e_BetweenTwoChains(eth, ava, amount);
+    _test_e2e_BetweenAChainAndEth(ava, amount);
   }
 
   function test_E2eArbAvax(uint256 amount) public {
@@ -838,7 +971,6 @@ contract Base_Avalanche_AaveV3GHOLane_20250519_PostExecution is
   }
 
   function test_E2eEthArb(uint256 amount) public {
-    vm.skip(true); // TOOD: Special case for ETH test
-    _test_e2e_BetweenTwoChains(eth, arb, amount);
+    _test_e2e_BetweenAChainAndEth(arb, amount);
   }
 }

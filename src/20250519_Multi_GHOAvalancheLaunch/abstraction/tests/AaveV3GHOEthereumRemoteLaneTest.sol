@@ -167,7 +167,7 @@ abstract contract AaveV3GHOEthereumRemoteLaneTest_PostExecution is
   ) public virtual {
     GhoCCIPChains.ChainInfo[] memory supportedChains = _expectedSupportedChains();
 
-    vm.skip(supportedChains.length == 0);
+    require(supportedChains.length > 0);
 
     chainIndex = uint8(bound(chainIndex, 0, supportedChains.length - 1));
 
