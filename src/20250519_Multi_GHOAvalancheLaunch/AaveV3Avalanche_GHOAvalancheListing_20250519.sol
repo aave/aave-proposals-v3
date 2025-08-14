@@ -8,7 +8,8 @@ import {IEmissionManager} from 'aave-v3-origin/contracts/rewards/interfaces/IEmi
 import {EngineFlags} from 'aave-v3-origin/contracts/extensions/v3-config-engine/EngineFlags.sol';
 import {AaveV3PayloadAvalanche} from 'aave-helpers/src/v3-config-engine/AaveV3PayloadAvalanche.sol';
 import {AaveV3Avalanche} from 'aave-address-book/AaveV3Avalanche.sol';
-import {GHOAvalancheLaunch} from './utils/GHOAvalancheLaunch.sol';
+import {GHOAvalancheLaunchConstants} from './GHOAvalancheLaunchConstants.sol';
+import {GhoCCIPChains} from './abstraction/constants/GhoCCIPChains.sol';
 
 /**
  * @title GHO Avalanche Listing
@@ -20,9 +21,9 @@ contract AaveV3Avalanche_GHOAvalancheListing_20250519 is AaveV3PayloadAvalanche 
   using SafeERC20 for IERC20;
 
   // https://avascan.info/blockchain/all/address/0xac140648435d03f784879cd789130F22Ef588Fcd
-  address public constant EMISSION_ADMIN = GHOAvalancheLaunch.EMISSION_ADMIN;
-  address public constant GHO_PRICE_FEED = GHOAvalancheLaunch.GHO_PRICE_FEED;
-  address public constant GHO_TOKEN = GHOAvalancheLaunch.GHO_TOKEN;
+  address public constant EMISSION_ADMIN = GHOAvalancheLaunchConstants.AVAX_EMISSION_ADMIN;
+  address public constant GHO_PRICE_FEED = GHOAvalancheLaunchConstants.AVAX_GHO_PRICE_FEED;
+  address public immutable GHO_TOKEN = GhoCCIPChains.AVALANCHE().ghoToken;
   uint256 public constant GHO_SEED_AMOUNT = 100e18;
 
   function _preExecute() internal view override {
@@ -41,7 +42,7 @@ contract AaveV3Avalanche_GHOAvalancheListing_20250519 is AaveV3PayloadAvalanche 
     IEmissionManager(AaveV3Avalanche.EMISSION_MANAGER).setEmissionAdmin(aGhoToken, EMISSION_ADMIN);
   }
 
-  function newListings() public pure override returns (IAaveV3ConfigEngine.Listing[] memory) {
+  function newListings() public view override returns (IAaveV3ConfigEngine.Listing[] memory) {
     IAaveV3ConfigEngine.Listing[] memory listings = new IAaveV3ConfigEngine.Listing[](1);
 
     // below values to match /config.ts

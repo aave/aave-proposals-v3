@@ -13,13 +13,13 @@ export const config: ConfigFile = {
     votingNetwork: 'POLYGON',
   },
   poolOptions: {
-    // below values to match /utils/GHOAvalancheLaunch.sol
+    // below values to match /GHOAvalancheLaunchConstants.sol
     AaveV3Ethereum: {configs: {OTHERS: {}}, cache: {blockNumber: 22575695}},
     AaveV3Arbitrum: {configs: {OTHERS: {}}, cache: {blockNumber: 341142215}},
     AaveV3Base: {configs: {OTHERS: {}}, cache: {blockNumber: 30789286}},
     AaveV3Avalanche: {
       configs: {
-        // below values to match /AaveV3Avalanche_GHOAvalancheListing_20250519.sol and /utils/GHOAvalancheLaunch.sol
+        // below values to match /AaveV3Avalanche_GHOAvalancheListing_20250519.sol and /GHOAvalancheLaunchConstants.sol
         ASSET_LISTING: [
           {
             assetSymbol: 'GHO',
@@ -36,7 +36,7 @@ export const config: ConfigFile = {
             withSiloedBorrowing: 'DISABLED',
             reserveFactor: '10',
             supplyCap: '10000000',
-            borrowCap: '9000000', // to match /utils/GHOAvalancheLaunch.sol
+            borrowCap: '9000000', // to match /GHOAvalancheLaunchConstants.sol
             rateStrategyParams: {
               optimalUtilizationRate: '90',
               baseVariableBorrowRate: '0',
