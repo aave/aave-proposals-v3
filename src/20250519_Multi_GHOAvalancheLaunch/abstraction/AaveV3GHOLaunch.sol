@@ -20,7 +20,7 @@ abstract contract AaveV3GHOLaunch is AaveV3GHOLane {
   address public immutable GHO_BUCKET_STEWARD;
   address public immutable GHO_AAVE_STEWARD;
   address public immutable GHO_CCIP_STEWARD;
-  address public immutable GOVERNANCE_EXECUTOR_LVL_1;
+  address public immutable OWNER;
 
   uint128 internal constant DEFAULT_CCIP_BUCKET_CAPACITY = 40_000_000e18;
 
@@ -31,7 +31,7 @@ abstract contract AaveV3GHOLaunch is AaveV3GHOLane {
     GHO_CCIP_STEWARD = localChainInfo.ghoCCIPSteward;
     ACL_MANAGER = IACLManager(localChainInfo.aclManager);
     TOKEN_ADMIN_REGISTRY = ITokenAdminRegistry(localChainInfo.tokenAdminRegistry);
-    GOVERNANCE_EXECUTOR_LVL_1 = localChainInfo.governanceExecutorLvl1;
+    OWNER = localChainInfo.owner;
   }
 
   function execute() external override {
@@ -64,11 +64,11 @@ abstract contract AaveV3GHOLaunch is AaveV3GHOLane {
   }
 
   function _setupFacilitatorManagerRoleInGhoToken() internal virtual {
-    GHO_TOKEN.grantRole(GHO_TOKEN.FACILITATOR_MANAGER_ROLE(), GOVERNANCE_EXECUTOR_LVL_1);
+    GHO_TOKEN.grantRole(GHO_TOKEN.FACILITATOR_MANAGER_ROLE(), OWNER);
   }
 
   function _setupBucketManagerRoleInGhoToken() internal virtual {
-    GHO_TOKEN.grantRole(GHO_TOKEN.BUCKET_MANAGER_ROLE(), GOVERNANCE_EXECUTOR_LVL_1);
+    GHO_TOKEN.grantRole(GHO_TOKEN.BUCKET_MANAGER_ROLE(), OWNER);
   }
 
   function _setupTokenPoolAsFacilitatorInGhoToken() internal virtual {

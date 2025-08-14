@@ -24,7 +24,7 @@ library GhoCCIPChains {
     address ghoCCIPSteward;
     address aclManager;
     address tokenAdminRegistry;
-    address governanceExecutorLvl1;
+    address owner;
     address ccipRouter;
   }
 
@@ -39,7 +39,7 @@ library GhoCCIPChains {
         ghoCCIPSteward: GhoArbitrum.GHO_CCIP_STEWARD,
         aclManager: address(AaveV3Arbitrum.ACL_MANAGER),
         tokenAdminRegistry: CCIPChainTokenAdminRegistries.ARBITRUM,
-        governanceExecutorLvl1: GovernanceV3Arbitrum.EXECUTOR_LVL_1,
+        owner: GovernanceV3Arbitrum.EXECUTOR_LVL_1,
         ccipRouter: CCIPChainRouters.ARBITRUM
       });
   }
@@ -55,7 +55,7 @@ library GhoCCIPChains {
         ghoCCIPSteward: GhoBase.GHO_CCIP_STEWARD,
         aclManager: address(AaveV3Base.ACL_MANAGER),
         tokenAdminRegistry: CCIPChainTokenAdminRegistries.BASE,
-        governanceExecutorLvl1: GovernanceV3Base.EXECUTOR_LVL_1,
+        owner: GovernanceV3Base.EXECUTOR_LVL_1,
         ccipRouter: CCIPChainRouters.BASE
       });
   }
@@ -71,7 +71,7 @@ library GhoCCIPChains {
         ghoCCIPSteward: GhoEthereum.GHO_CCIP_STEWARD,
         aclManager: address(AaveV3Ethereum.ACL_MANAGER),
         tokenAdminRegistry: CCIPChainTokenAdminRegistries.ETHEREUM,
-        governanceExecutorLvl1: GovernanceV3Ethereum.EXECUTOR_LVL_1,
+        owner: GovernanceV3Ethereum.EXECUTOR_LVL_1,
         ccipRouter: CCIPChainRouters.ETHEREUM
       });
   }
@@ -87,7 +87,7 @@ library GhoCCIPChains {
         ghoCCIPSteward: 0x20fd5f3FCac8883a3A0A2bBcD658A2d2c6EFa6B6,
         aclManager: 0xa72636CbcAa8F5FF95B2cc47F3CDEe83F3294a0B,
         tokenAdminRegistry: CCIPChainTokenAdminRegistries.AVALANCHE,
-        governanceExecutorLvl1: 0x3C06dce358add17aAf230f2234bCCC4afd50d090,
+        owner: 0x3C06dce358add17aAf230f2234bCCC4afd50d090,
         ccipRouter: CCIPChainRouters.AVALANCHE
       });
   }
