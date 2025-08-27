@@ -7,6 +7,7 @@ import {IPool} from 'aave-v3-origin/contracts/interfaces/IPool.sol';
 import {ProtocolV3TestBase, ReserveConfig} from 'aave-helpers/src/ProtocolV3TestBase.sol';
 import {IPoolAddressesProvider} from 'aave-v3-origin/contracts/interfaces/IPoolAddressesProvider.sol';
 import {IPoolConfigurator} from 'aave-v3-origin/contracts/interfaces/IPoolConfigurator.sol';
+import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 
 /**
  * @dev Adapted from ProtocolV3TestBase for the Horizon market (currently at Aave v3.3).
@@ -53,6 +54,7 @@ abstract contract ProtocolV3HorizonTestBase is ProtocolV3TestBase {
     configChangePlausibilityTest(configBefore, configAfter);
 
     e2eTest_v3_3(pool);
+    e2eTest_v3_3_emode(pool);
     return (configBefore, configAfter);
   }
 
@@ -67,6 +69,20 @@ abstract contract ProtocolV3HorizonTestBase is ProtocolV3TestBase {
     for (uint256 i; i < configs.length; i++) {
       if (_includeInE2e(configs[i])) {
         e2eTestAsset_v3_3(pool, collateralConfig, configs[i]);
+        vm.revertToState(snapshot);
+      } else {
+        console.log('E2E: TestAsset %s SKIPPED', configs[i].symbol);
+      }
+    }
+  }
+
+  function e2eTest_v3_3_emode(IPool pool) public {
+    ReserveConfig[] memory configs = _getReservesConfigs(pool);
+    ReserveConfig memory collateralConfig = _goodCollateral(configs);
+    uint256 snapshot = vm.snapshotState();
+    for (uint256 i; i < configs.length; i++) {
+      if (_includeInE2e(configs[i])) {
+        e2eTestAsset_v3_3_emode(pool, collateralConfig, configs[i]);
         vm.revertToState(snapshot);
       } else {
         console.log('E2E: TestAsset %s SKIPPED', configs[i].symbol);
@@ -120,7 +136,7 @@ abstract contract ProtocolV3HorizonTestBase is ProtocolV3TestBase {
     }
     vm.stopPrank();
 
-    _enableIfEMode(collateralConfig, pool, vars.collateralSupplier);
+    // _enableIfEMode(collateralConfig, pool, vars.collateralSupplier);
     _deposit(collateralConfig, pool, vars.collateralSupplier, vars.collateralAssetAmount);
     _deposit(testAssetConfig, pool, vars.testAssetSupplier, vars.testAssetAmount);
 
@@ -198,6 +214,229 @@ abstract contract ProtocolV3HorizonTestBase is ProtocolV3TestBase {
 
     // test borrows, repayments and liquidations
     if (testAssetConfig.borrowingEnabled) {
+      // test borrowing and repayment
+      _borrow({
+        config: testAssetConfig,
+        pool: pool,
+        user: vars.collateralSupplier,
+        amount: vars.testAssetAmount
+      });
+
+      uint256 snapshotBeforeRepay = vm.snapshotState();
+
+      _repay({
+        config: testAssetConfig,
+        pool: pool,
+        user: vars.collateralSupplier,
+        amount: vars.testAssetAmount,
+        withATokens: false
+      });
+
+      vm.revertToState(snapshotBeforeRepay);
+
+      _repay({
+        config: testAssetConfig,
+        pool: pool,
+        user: vars.collateralSupplier,
+        amount: vars.testAssetAmount,
+        withATokens: true
+      });
+
+      vm.revertToState(snapshotAfterDeposits);
+
+      // test liquidations
+      _borrow({
+        config: testAssetConfig,
+        pool: pool,
+        user: vars.collateralSupplier,
+        amount: vars.testAssetAmount
+      });
+
+      if (testAssetConfig.underlying != collateralConfig.underlying) {
+        _changeAssetPrice(pool, testAssetConfig, 1000_00); // price increases to 1'000%
+      } else {
+        _setAssetLtvAndLiquidationThreshold({
+          pool: pool,
+          config: testAssetConfig,
+          newLtv: 5_00,
+          newLiquidationThreshold: 5_00
+        });
+      }
+
+      uint256 snapshotBeforeLiquidation = vm.snapshotState();
+
+      // receive underlying tokens
+      _liquidationCall({
+        collateralConfig: collateralConfig,
+        debtConfig: testAssetConfig,
+        pool: pool,
+        liquidator: makeAddr('liquidator'),
+        borrower: vars.collateralSupplier,
+        debtToCover: type(uint256).max,
+        receiveAToken: false
+      });
+
+      vm.revertToState(snapshotBeforeLiquidation);
+
+      // receive ATokens
+      if (!_isRwaToken(collateralConfig)) {
+        // cannot receive ATokens for RWA collateral liquidations
+        _liquidationCall({
+          collateralConfig: collateralConfig,
+          debtConfig: testAssetConfig,
+          pool: pool,
+          liquidator: makeAddr('liquidator'),
+          borrower: vars.collateralSupplier,
+          debtToCover: type(uint256).max,
+          receiveAToken: true
+        });
+      }
+
+      vm.revertToState(snapshotAfterDeposits);
+    }
+
+    // test flashloans
+    if (testAssetConfig.isFlashloanable) {
+      _flashLoan({
+        config: testAssetConfig,
+        pool: pool,
+        user: vars.collateralSupplier,
+        receiverAddress: address(this),
+        amount: vars.testAssetAmount,
+        interestRateMode: 0
+      });
+
+      if (testAssetConfig.borrowingEnabled) {
+        _flashLoan({
+          config: testAssetConfig,
+          pool: pool,
+          user: vars.collateralSupplier,
+          receiverAddress: address(this),
+          amount: vars.testAssetAmount,
+          interestRateMode: 2
+        });
+      }
+    }
+  }
+
+  function e2eTestAsset_v3_3_emode(
+    IPool pool,
+    ReserveConfig memory collateralConfig,
+    ReserveConfig memory testAssetConfig
+  ) public {
+    console.log(
+      'E2E: Collateral %s, TestAsset %s',
+      collateralConfig.symbol,
+      testAssetConfig.symbol
+    );
+    E2ETestAssetLocalVars memory vars;
+    vars.collateralSupplier = makeAddr('collateralSupplier');
+    vars.testAssetSupplier = makeAddr('testAssetSupplier');
+    vars.liquidator = makeAddr('liquidator');
+    require(collateralConfig.usageAsCollateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
+    vars.collateralAssetAmount = _getTokenAmountByDollarValue(pool, collateralConfig, 100_000);
+    vars.testAssetAmount = _getTokenAmountByDollarValue(pool, testAssetConfig, 10_000);
+
+    // remove caps as they should not prevent testing
+    IPoolAddressesProvider addressesProvider = IPoolAddressesProvider(pool.ADDRESSES_PROVIDER());
+    IPoolConfigurator poolConfigurator = IPoolConfigurator(addressesProvider.getPoolConfigurator());
+    vm.startPrank(addressesProvider.getACLAdmin());
+    if (collateralConfig.supplyCap != 0) {
+      poolConfigurator.setSupplyCap(collateralConfig.underlying, 0);
+    }
+    if (testAssetConfig.supplyCap != 0) {
+      poolConfigurator.setSupplyCap(testAssetConfig.underlying, 0);
+    }
+    if (testAssetConfig.borrowCap != 0) {
+      poolConfigurator.setBorrowCap(testAssetConfig.underlying, 0);
+    }
+    vm.stopPrank();
+
+    _enableIfEMode(collateralConfig, pool, vars.collateralSupplier);
+    _deposit(collateralConfig, pool, vars.collateralSupplier, vars.collateralAssetAmount);
+    _deposit(testAssetConfig, pool, vars.testAssetSupplier, vars.testAssetAmount);
+
+    uint256 snapshotAfterDeposits = vm.snapshotState();
+
+    // test deposits and withdrawals
+    vars.aTokenTotalSupply = IERC20(testAssetConfig.aToken).totalSupply();
+    vars.variableDebtTokenTotalSupply = IERC20(testAssetConfig.variableDebtToken).totalSupply();
+
+    vm.prank(addressesProvider.getACLAdmin());
+    poolConfigurator.setSupplyCap(
+      testAssetConfig.underlying,
+      vars.aTokenTotalSupply / 10 ** testAssetConfig.decimals + 1
+    );
+    vm.prank(addressesProvider.getACLAdmin());
+    poolConfigurator.setBorrowCap(
+      testAssetConfig.underlying,
+      vars.variableDebtTokenTotalSupply / 10 ** testAssetConfig.decimals + 1
+    );
+
+    // caps should revert when supplying slightly more
+    vm.expectRevert(bytes(SUPPLY_CAP_EXCEEDED));
+    vm.prank(vars.testAssetSupplier);
+    pool.deposit({
+      asset: testAssetConfig.underlying,
+      amount: 11 ** testAssetConfig.decimals,
+      onBehalfOf: vars.testAssetSupplier,
+      referralCode: 0
+    });
+
+    if (
+      testAssetConfig.borrowingEnabled &&
+      testAssetConfig.underlying == AaveV3EthereumAssets.GHO_UNDERLYING
+    ) {
+      vars.borrowAmount = 11 ** testAssetConfig.decimals;
+
+      if (vars.aTokenTotalSupply < vars.borrowAmount) {
+        vm.prank(addressesProvider.getACLAdmin());
+        poolConfigurator.setSupplyCap(testAssetConfig.underlying, 0);
+
+        // aTokenTotalSupply == 10'000$
+        // borrowAmount > 10'000$
+        // need to add more test asset in order to be able to borrow it
+        // right now there is not enough underlying tokens in the aToken
+        _deposit(
+          testAssetConfig,
+          pool,
+          vars.testAssetSupplier,
+          vars.borrowAmount - vars.aTokenTotalSupply
+        );
+
+        // need to add more collateral in order to be able to borrow
+        // collateralAssetAmount == 100'000$
+        _deposit(
+          collateralConfig,
+          pool,
+          vars.collateralSupplier,
+          (vars.collateralAssetAmount * vars.borrowAmount) / vars.aTokenTotalSupply
+        );
+      }
+
+      vm.expectRevert(bytes(BORROW_CAP_EXCEEDED));
+      vm.prank(vars.collateralSupplier);
+      pool.borrow({
+        asset: testAssetConfig.underlying,
+        amount: vars.borrowAmount,
+        interestRateMode: 2,
+        referralCode: 0,
+        onBehalfOf: vars.collateralSupplier
+      });
+    }
+
+    vm.revertToState(snapshotAfterDeposits);
+
+    _withdraw(testAssetConfig, pool, vars.testAssetSupplier, vars.testAssetAmount / 2);
+    _withdraw(testAssetConfig, pool, vars.testAssetSupplier, type(uint256).max);
+
+    vm.revertToState(snapshotAfterDeposits);
+
+    // test borrows, repayments and liquidations
+    if (
+      testAssetConfig.borrowingEnabled &&
+      testAssetConfig.underlying == AaveV3EthereumAssets.GHO_UNDERLYING
+    ) {
       // test borrowing and repayment
       _borrow({
         config: testAssetConfig,

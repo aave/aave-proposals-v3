@@ -35,8 +35,8 @@ contract AaveV3Ethereum_HorizonRWAInstanceActivation_20250813_Test is ProtocolV3
 
   address internal constant SUPERSTATE_ALLOWLIST_V2 = 0x02f1fA8B196d21c7b733EB2700B825611d8A38E5;
   uint256 internal constant SUPERSTATE_ROOT_ENTITY_ID = 1;
-  address internal constant CENTRIFUGE_HOOK = 0x4737C3f62Cc265e786b280153fC666cEA2fBc0c0;
-  address internal constant CENTRIFUGE_WARD = 0x09ab10a9c3E6Eac1d18270a2322B6113F4C7f5E8;
+  address internal constant CENTRIFUGE_HOOK = 0xa2C98F0F76Da0C97039688CA6280d082942d0b48;
+  address internal constant CENTRIFUGE_WARD = 0xFEE13c017693a4706391D516ACAbF6789D5c3157;
   uint8 internal constant CIRCLE_INVESTOR_SDYF_INTERNATIONAL_ROLE = 3;
   address internal constant CIRCLE_SET_USER_ROLE_AUTHORIZED_CALLER =
     0xDbE01f447040F78ccbC8Dfd101BEc1a2C21f800D;
@@ -44,7 +44,7 @@ contract AaveV3Ethereum_HorizonRWAInstanceActivation_20250813_Test is ProtocolV3
   IPool internal constant POOL = IPool(0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8); // horizon pool
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 23133461);
+    vm.createSelectFork(vm.rpcUrl('mainnet'));
     proposal = new AaveV3Ethereum_HorizonRWAInstanceActivation_20250813();
     _validateConstants();
   }
@@ -185,15 +185,15 @@ contract AaveV3Ethereum_HorizonRWAInstanceActivation_20250813_Test is ProtocolV3
       _whitelistUsycRwa(callers[i]);
     }
 
-    _whitelistSuperstateRwa(POOL.getReserveAToken(proposal.USTB_TOKEN()));
-    _whitelistSuperstateRwa(POOL.getReserveAToken(proposal.USCC_TOKEN()));
+    // _whitelistSuperstateRwa(POOL.getReserveAToken(proposal.USTB_TOKEN()));
+    // _whitelistSuperstateRwa(POOL.getReserveAToken(proposal.USCC_TOKEN()));
 
     _whitelistUsycRwa(POOL.getReserveAToken(proposal.USYC_TOKEN()));
     // if `msg.sender` is not `from` in `transferFrom` then the msg.sender must be whitelisted as well
     _whitelistUsycRwa(address(POOL));
 
-    _whitelistCentrifugeRwa(POOL.getReserveAToken(proposal.JTRSY_TOKEN()));
-    _whitelistCentrifugeRwa(POOL.getReserveAToken(proposal.JAAA_TOKEN()));
+    // _whitelistCentrifugeRwa(POOL.getReserveAToken(proposal.JTRSY_TOKEN()));
+    // _whitelistCentrifugeRwa(POOL.getReserveAToken(proposal.JAAA_TOKEN()));
   }
 
   function _whitelistSuperstateRwa(address addressToWhitelist) internal {
