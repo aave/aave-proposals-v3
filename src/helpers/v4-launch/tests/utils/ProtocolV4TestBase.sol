@@ -30,12 +30,13 @@ struct V4ReserveInfo {
  * @title ProtocolV4TestBase
  * @notice E2E test base for Aave V4 hub/spoke architecture.
  *         Tests supply, withdraw, borrow, repay, and liquidation for each reserve on a spoke.
+ *         Loops over ALL good collaterals and uses randomized amounts.
  */
 contract ProtocolV4TestBase is CommonTestBase {
   using SafeERC20 for IERC20;
 
   // -------------------------------------------------------------------------
-  // Virtual hooks — override in your test contract
+  // Virtual hooks - override in your test contract
   // -------------------------------------------------------------------------
 
   /// @dev Override to make a user liquidatable (e.g. manipulate oracle prices).
@@ -66,104 +67,283 @@ contract ProtocolV4TestBase is CommonTestBase {
     }
   }
 
-  /// @notice Test all reserves on one spoke.
+  /// @notice Test all reserves on one spoke, looping over ALL good collaterals.
   function e2eTestSpoke(ISpoke spoke) public {
-    V4ReserveInfo[] memory infos = _getReserveInfos(spoke);
-    V4ReserveInfo memory collateral = _getGoodCollateral(infos);
+    V4ReserveInfo[] memory allReserves = _getReserveInfos(spoke);
+    V4ReserveInfo[] memory goodCollaterals = _getAllGoodCollaterals(allReserves);
+    require(goodCollaterals.length > 0, 'No usable collateral found');
 
-    uint256 snapshot = vm.snapshotState();
-    for (uint256 i; i < infos.length; i++) {
-      if (_includeInE2e(infos[i])) {
-        e2eTestAsset(spoke, collateral, infos[i]);
-        vm.revertToState(snapshot);
-      } else {
-        console.log('E2E: TestAsset %s SKIPPED (paused/frozen)', infos[i].symbol);
+    for (uint256 collateralIndex; collateralIndex < goodCollaterals.length; collateralIndex++) {
+      console.log('--- E2E: Using collateral %s ---', goodCollaterals[collateralIndex].symbol);
+
+      uint256 spokeSnapshot = vm.snapshotState();
+
+      for (uint256 assetIndex; assetIndex < allReserves.length; assetIndex++) {
+        if (allReserves[assetIndex].paused) {
+          e2eTestPausedAsset(spoke, allReserves[assetIndex]);
+          vm.revertToState(spokeSnapshot);
+          continue;
+        }
+
+        if (allReserves[assetIndex].frozen) {
+          // Frozen reserves: verify supply reverts
+          e2eTestFrozenAsset(spoke, allReserves[assetIndex]);
+          vm.revertToState(spokeSnapshot);
+          continue;
+        }
+
+        e2eTestAsset(spoke, goodCollaterals, collateralIndex, allReserves[assetIndex]);
+        vm.revertToState(spokeSnapshot);
       }
     }
   }
 
-  /// @notice Per-asset e2e test: supply, withdraw, borrow, repay, liquidation.
-  function e2eTestAsset(
-    ISpoke spoke,
-    V4ReserveInfo memory collateralInfo,
-    V4ReserveInfo memory testAssetInfo
-  ) public {
-    console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
+  /// @notice Test that a frozen reserve correctly reverts on supply and borrow.
+  function e2eTestFrozenAsset(ISpoke spoke, V4ReserveInfo memory frozenAsset) public {
+    console.log('E2E: Testing frozen reserve %s (should revert)', frozenAsset.symbol);
 
     address oracleAddr = spoke.ORACLE();
-    address collateralSupplier = vm.addr(3);
-    address testAssetSupplier = vm.addr(4);
+    address user = vm.randomAddress();
+    uint256 amount = _getTokenAmountByDollarValue(oracleAddr, frozenAsset, 1_000);
 
+    deal2(frozenAsset.underlying, user, amount);
+
+    // Supply should revert
+    vm.startPrank(user);
+    IERC20(frozenAsset.underlying).forceApprove(address(spoke), amount);
+    vm.expectRevert();
+    spoke.supply(frozenAsset.reserveId, amount, user);
+    vm.stopPrank();
+
+    // Borrow should revert (if borrowable)
+    if (frozenAsset.borrowable) {
+      vm.prank(user);
+      vm.expectRevert();
+      spoke.borrow(frozenAsset.reserveId, amount, user);
+    }
+  }
+
+  /// @notice Test that a paused reserve correctly reverts on all actions.
+  function e2eTestPausedAsset(ISpoke spoke, V4ReserveInfo memory pausedAsset) public {
+    console.log('E2E: Testing paused reserve %s (should revert)', pausedAsset.symbol);
+
+    address oracleAddr = spoke.ORACLE();
+    address user = vm.randomAddress();
+    uint256 amount = _getTokenAmountByDollarValue(oracleAddr, pausedAsset, 1_000);
+
+    deal2(pausedAsset.underlying, user, amount);
+
+    // Supply should revert
+    vm.startPrank(user);
+    IERC20(pausedAsset.underlying).forceApprove(address(spoke), amount);
+    vm.expectRevert();
+    spoke.supply(pausedAsset.reserveId, amount, user);
+    vm.stopPrank();
+
+    // Borrow should revert
+    vm.prank(user);
+    vm.expectRevert();
+    spoke.borrow(pausedAsset.reserveId, amount, user);
+
+    // Withdraw should revert
+    vm.prank(user);
+    vm.expectRevert();
+    spoke.withdraw(pausedAsset.reserveId, amount, user);
+
+    // Repay should revert
+    vm.startPrank(user);
+    IERC20(pausedAsset.underlying).forceApprove(address(spoke), amount);
+    vm.expectRevert();
+    spoke.repay(pausedAsset.reserveId, amount, user);
+    vm.stopPrank();
+  }
+
+  /// @notice Per-asset e2e test with randomized amounts and extra collaterals.
+  function e2eTestAsset(
+    ISpoke spoke,
+    V4ReserveInfo[] memory goodCollaterals,
+    uint256 primaryCollateralIndex,
+    V4ReserveInfo memory testAssetInfo
+  ) public {
+    V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+    console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
-    uint256 collateralAmount = _getTokenAmountByDollarValue(oracleAddr, collateralInfo, 100_000);
-    uint256 testAssetAmount = _getTokenAmountByDollarValue(oracleAddr, testAssetInfo, 10_000);
+    address oracleAddr = spoke.ORACLE();
+    address collateralSupplier = vm.randomAddress();
+    address testAssetSupplier = vm.randomAddress();
 
-    // --- Supply collateral + test asset ---
-    _supply(spoke, collateralInfo, collateralSupplier, collateralAmount);
-
-    // Enable collateral explicitly
-    vm.prank(collateralSupplier);
-    spoke.setUsingAsCollateral(collateralInfo.reserveId, true, collateralSupplier);
-
-    _supply(spoke, testAssetInfo, testAssetSupplier, testAssetAmount);
+    uint256 testAssetAmount = _setupPositions(
+      spoke,
+      goodCollaterals,
+      primaryCollateralIndex,
+      testAssetInfo,
+      oracleAddr,
+      collateralSupplier,
+      testAssetSupplier
+    );
 
     uint256 snapshotAfterDeposits = vm.snapshotState();
 
-    // --- Test partial + full withdrawal ---
-    {
-      _withdraw(spoke, testAssetInfo, testAssetSupplier, testAssetAmount / 2);
-      _withdraw(spoke, testAssetInfo, testAssetSupplier, type(uint256).max);
-      vm.revertToState(snapshotAfterDeposits);
-    }
+    _testWithdrawals(
+      spoke,
+      testAssetInfo,
+      testAssetSupplier,
+      testAssetAmount,
+      snapshotAfterDeposits
+    );
 
-    // --- Test borrows, repayments, and liquidations ---
     if (testAssetInfo.borrowable) {
-      _borrow(spoke, testAssetInfo, collateralSupplier, testAssetAmount);
-
-      uint256 snapshotBeforeRepay = vm.snapshotState();
-
-      {
-        uint256 actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
-
-        _repay(spoke, testAssetInfo, collateralSupplier, actualDebt);
-        vm.revertToState(snapshotBeforeRepay);
-      }
-
-      // --- Liquidation test ---
-      if (testAssetInfo.underlying != collateralInfo.underlying) {
-        _makeUserLiquidatable(spoke, collateralInfo, testAssetInfo, collateralSupplier);
-
-        address liquidator = vm.addr(5);
-        uint256 snapshotBeforeLiquidation = vm.snapshotState();
-
-        // Receive underlying
-        _liquidationCall(
-          spoke,
-          collateralInfo,
-          testAssetInfo,
-          liquidator,
-          collateralSupplier,
-          type(uint256).max,
-          false
-        );
-
-        vm.revertToState(snapshotBeforeLiquidation);
-
-        // Receive shares
-        _liquidationCall(
-          spoke,
-          collateralInfo,
-          testAssetInfo,
-          liquidator,
-          collateralSupplier,
-          type(uint256).max,
-          true
-        );
-      }
-
-      vm.revertToState(snapshotAfterDeposits);
+      _testBorrowRepayLiquidation(
+        spoke,
+        collateralInfo,
+        testAssetInfo,
+        collateralSupplier,
+        testAssetAmount,
+        snapshotAfterDeposits
+      );
     }
+  }
+
+  /// @dev Supply collateral(s) and test asset, return the test asset amount.
+  function _setupPositions(
+    ISpoke spoke,
+    V4ReserveInfo[] memory goodCollaterals,
+    uint256 primaryCollateralIndex,
+    V4ReserveInfo memory testAssetInfo,
+    address oracleAddr,
+    address collateralSupplier,
+    address testAssetSupplier
+  ) internal returns (uint256 testAssetAmount) {
+    V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+
+    uint256 collateralDollars = vm.randomUint(50_000, 200_000);
+    uint256 testAssetDollars = vm.randomUint(1_000, 20_000);
+    uint256 collateralAmount = _getTokenAmountByDollarValue(
+      oracleAddr,
+      collateralInfo,
+      collateralDollars
+    );
+    testAssetAmount = _getTokenAmountByDollarValue(oracleAddr, testAssetInfo, testAssetDollars);
+
+    // Supply primary collateral
+    _supply(spoke, collateralInfo, collateralSupplier, collateralAmount);
+    vm.prank(collateralSupplier);
+    spoke.setUsingAsCollateral(collateralInfo.reserveId, true, collateralSupplier);
+
+    // Supply random extra collaterals
+    _supplyRandomExtraCollaterals(
+      spoke,
+      goodCollaterals,
+      primaryCollateralIndex,
+      oracleAddr,
+      collateralSupplier
+    );
+
+    // Supply test asset
+    _supply(spoke, testAssetInfo, testAssetSupplier, testAssetAmount);
+  }
+
+  /// @dev Test partial + full withdrawal with random partial amount.
+  function _testWithdrawals(
+    ISpoke spoke,
+    V4ReserveInfo memory testAssetInfo,
+    address testAssetSupplier,
+    uint256 testAssetAmount,
+    uint256 snapshotAfterDeposits
+  ) internal {
+    uint256 partialWithdraw = testAssetAmount > 1
+      ? vm.randomUint(1, testAssetAmount - 1)
+      : testAssetAmount;
+    _withdraw(spoke, testAssetInfo, testAssetSupplier, partialWithdraw);
+    _withdraw(spoke, testAssetInfo, testAssetSupplier, type(uint256).max);
+    vm.revertToState(snapshotAfterDeposits);
+  }
+
+  /// @dev Test borrow, repay, and liquidation flows.
+  function _testBorrowRepayLiquidation(
+    ISpoke spoke,
+    V4ReserveInfo memory collateralInfo,
+    V4ReserveInfo memory testAssetInfo,
+    address collateralSupplier,
+    uint256 testAssetAmount,
+    uint256 snapshotAfterDeposits
+  ) internal {
+    uint256 borrowAmount = testAssetAmount > 1
+      ? vm.randomUint(1, testAssetAmount)
+      : testAssetAmount;
+    _borrow(spoke, testAssetInfo, collateralSupplier, borrowAmount);
+
+    uint256 snapshotBeforeRepay = vm.snapshotState();
+
+    // Partial repay
+    uint256 actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
+    if (actualDebt > 1) {
+      uint256 partialRepay = vm.randomUint(1, actualDebt - 1);
+      _repay(spoke, testAssetInfo, collateralSupplier, partialRepay);
+    }
+    vm.revertToState(snapshotBeforeRepay);
+
+    // Full repay
+    actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
+    _repay(spoke, testAssetInfo, collateralSupplier, actualDebt);
+    vm.revertToState(snapshotBeforeRepay);
+
+    // Interest accrual: warp 30 days, verify debt grew, then repay
+    {
+      uint256 debtBefore = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
+      vm.warp(block.timestamp + 30 days);
+      uint256 debtAfter = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
+      assertGe(debtAfter, debtBefore, 'INTEREST: debt should not decrease over time');
+
+      // Repay after interest accrual should still work
+      _repay(spoke, testAssetInfo, collateralSupplier, debtAfter);
+    }
+    vm.revertToState(snapshotBeforeRepay);
+
+    // Liquidation test
+    if (testAssetInfo.underlying != collateralInfo.underlying) {
+      _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+    }
+
+    vm.revertToState(snapshotAfterDeposits);
+  }
+
+  /// @dev Test liquidation with both receive-underlying and receive-shares.
+  function _testLiquidation(
+    ISpoke spoke,
+    V4ReserveInfo memory collateralInfo,
+    V4ReserveInfo memory testAssetInfo,
+    address collateralSupplier
+  ) internal {
+    _makeUserLiquidatable(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+
+    address liquidator = vm.randomAddress();
+    uint256 snapshotBeforeLiquidation = vm.snapshotState();
+
+    // Receive underlying
+    _liquidationCall(
+      spoke,
+      collateralInfo,
+      testAssetInfo,
+      liquidator,
+      collateralSupplier,
+      type(uint256).max,
+      false
+    );
+
+    vm.revertToState(snapshotBeforeLiquidation);
+
+    // Receive shares
+    _liquidationCall(
+      spoke,
+      collateralInfo,
+      testAssetInfo,
+      liquidator,
+      collateralSupplier,
+      type(uint256).max,
+      true
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -295,6 +475,39 @@ contract ProtocolV4TestBase is CommonTestBase {
     vm.stopPrank();
   }
 
+  /// @notice Supply a random number (0-2) of extra collaterals for the user.
+  function _supplyRandomExtraCollaterals(
+    ISpoke spoke,
+    V4ReserveInfo[] memory goodCollaterals,
+    uint256 primaryIndex,
+    address oracleAddr,
+    address user
+  ) internal {
+    if (goodCollaterals.length <= 1) return;
+
+    uint256 maxExtra = goodCollaterals.length - 1;
+    if (maxExtra > 2) maxExtra = 2;
+    uint256 extraCount = vm.randomUint(0, maxExtra);
+
+    uint256 supplied;
+    for (uint256 index; index < goodCollaterals.length && supplied < extraCount; index++) {
+      if (index == primaryIndex) continue;
+
+      uint256 extraDollars = vm.randomUint(10_000, 50_000);
+      uint256 extraAmount = _getTokenAmountByDollarValue(
+        oracleAddr,
+        goodCollaterals[index],
+        extraDollars
+      );
+
+      _supply(spoke, goodCollaterals[index], user, extraAmount);
+      vm.prank(user);
+      spoke.setUsingAsCollateral(goodCollaterals[index].reserveId, true, user);
+
+      supplied++;
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Query helpers
   // -------------------------------------------------------------------------
@@ -333,16 +546,28 @@ contract ProtocolV4TestBase is CommonTestBase {
     return infos;
   }
 
-  /// @notice Find the first usable collateral: not paused, not frozen, collateralFactor > 0.
-  function _getGoodCollateral(
+  /// @notice Return all usable collaterals: not paused, not frozen, collateralFactor > 0.
+  function _getAllGoodCollaterals(
     V4ReserveInfo[] memory infos
-  ) internal pure returns (V4ReserveInfo memory) {
+  ) internal pure returns (V4ReserveInfo[] memory) {
+    // First pass: count
+    uint256 count;
     for (uint256 i; i < infos.length; i++) {
-      if (_includeInE2e(infos[i]) && infos[i].collateralEnabled) {
-        return infos[i];
+      if (!infos[i].paused && !infos[i].frozen && infos[i].collateralEnabled) {
+        count++;
       }
     }
-    revert('ERROR: No usable collateral found');
+
+    // Second pass: fill
+    V4ReserveInfo[] memory result = new V4ReserveInfo[](count);
+    uint256 index;
+    for (uint256 i; i < infos.length; i++) {
+      if (!infos[i].paused && !infos[i].frozen && infos[i].collateralEnabled) {
+        result[index] = infos[i];
+        index++;
+      }
+    }
+    return result;
   }
 
   /// @notice Convert a dollar value to token amount using the spoke oracle.
@@ -351,14 +576,11 @@ contract ProtocolV4TestBase is CommonTestBase {
     V4ReserveInfo memory info,
     uint256 dollarValue
   ) internal view returns (uint256) {
-    uint256 price = IAaveOracle(oracle).getReservePrice(info.reserveId);
+    IAaveOracle oracle = IAaveOracle(oracle);
+    uint256 price = oracle.getReservePrice(info.reserveId);
+    uint256 decimals = 10 ** (oracle.DECIMALS() + info.decimals);
     // Oracle prices are 8 decimals (USD)
-    return (dollarValue * 10 ** (8 + info.decimals)) / price;
-  }
-
-  /// @notice Whether a reserve should be included in e2e tests.
-  function _includeInE2e(V4ReserveInfo memory info) internal pure returns (bool) {
-    return !info.paused && !info.frozen;
+    return (dollarValue * decimals) / price;
   }
 
   /// @notice Safely get the ERC20 symbol, fallback to "UNKNOWN".
