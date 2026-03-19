@@ -202,6 +202,24 @@ contract ProtocolV4TestBase is CommonTestBase {
         testAssetAmount,
         snapshotAfterDeposits
       );
+    } else {
+      // Non-borrowable: verify borrow reverts
+      vm.prank(collateralSupplier);
+      vm.expectRevert();
+      spoke.borrow(testAssetInfo.reserveId, testAssetAmount, collateralSupplier);
+      vm.revertToState(snapshotAfterDeposits);
+    }
+
+    // Collateral toggle: disable, verify borrow fails, re-enable, verify borrow works
+    if (collateralInfo.collateralEnabled && testAssetInfo.borrowable) {
+      _testCollateralToggle(
+        spoke,
+        collateralInfo,
+        testAssetInfo,
+        collateralSupplier,
+        testAssetAmount
+      );
+      vm.revertToState(snapshotAfterDeposits);
     }
   }
 
@@ -269,12 +287,24 @@ contract ProtocolV4TestBase is CommonTestBase {
     uint256 testAssetAmount,
     uint256 snapshotAfterDeposits
   ) internal {
-    uint256 borrowAmount = testAssetAmount > 1
-      ? vm.randomUint(1, testAssetAmount)
+    // First borrow (random partial amount)
+    uint256 firstBorrow = testAssetAmount > 2
+      ? vm.randomUint(1, testAssetAmount / 2)
       : testAssetAmount;
-    _borrow(spoke, testAssetInfo, collateralSupplier, borrowAmount);
+    _borrow(spoke, testAssetInfo, collateralSupplier, firstBorrow);
 
-    uint256 snapshotBeforeRepay = vm.snapshotState();
+    // Health factor check: should be >= 1e18 after borrow
+    ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
+    assertGe(accountData.healthFactor, 1e18, 'HEALTH: health factor below 1 after borrow');
+
+    // Second borrow on top of the first (sequential borrows)
+    uint256 remaining = testAssetAmount - firstBorrow;
+    if (remaining > 0) {
+      uint256 secondBorrow = vm.randomUint(1, remaining);
+      _borrow(spoke, testAssetInfo, collateralSupplier, secondBorrow);
+    }
+
+    uint256 snapshotAfterBorrow = vm.snapshotState();
 
     // Partial repay
     uint256 actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
@@ -282,12 +312,12 @@ contract ProtocolV4TestBase is CommonTestBase {
       uint256 partialRepay = vm.randomUint(1, actualDebt - 1);
       _repay(spoke, testAssetInfo, collateralSupplier, partialRepay);
     }
-    vm.revertToState(snapshotBeforeRepay);
+    vm.revertToState(snapshotAfterBorrow);
 
     // Full repay
     actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
     _repay(spoke, testAssetInfo, collateralSupplier, actualDebt);
-    vm.revertToState(snapshotBeforeRepay);
+    vm.revertToState(snapshotAfterBorrow);
 
     // Interest accrual: warp 30 days, verify debt grew, then repay
     {
@@ -299,7 +329,7 @@ contract ProtocolV4TestBase is CommonTestBase {
       // Repay after interest accrual should still work
       _repay(spoke, testAssetInfo, collateralSupplier, debtAfter);
     }
-    vm.revertToState(snapshotBeforeRepay);
+    vm.revertToState(snapshotAfterBorrow);
 
     // Liquidation test
     if (testAssetInfo.underlying != collateralInfo.underlying) {
@@ -309,7 +339,7 @@ contract ProtocolV4TestBase is CommonTestBase {
     vm.revertToState(snapshotAfterDeposits);
   }
 
-  /// @dev Test liquidation with both receive-underlying and receive-shares.
+  /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).
   function _testLiquidation(
     ISpoke spoke,
     V4ReserveInfo memory collateralInfo,
@@ -318,10 +348,32 @@ contract ProtocolV4TestBase is CommonTestBase {
   ) internal {
     _makeUserLiquidatable(spoke, collateralInfo, testAssetInfo, collateralSupplier);
 
+    // Verify health factor is below 1 after making liquidatable
+    ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
+    assertLt(accountData.healthFactor, 1e18, 'HEALTH: should be below 1 for liquidation');
+
     address liquidator = vm.randomAddress();
     uint256 snapshotBeforeLiquidation = vm.snapshotState();
 
-    // Receive underlying
+    // Partial liquidation with random fraction of debt
+    {
+      uint256 totalDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
+      if (totalDebt > 1) {
+        uint256 partialDebt = vm.randomUint(1, totalDebt - 1);
+        _liquidationCall(
+          spoke,
+          collateralInfo,
+          testAssetInfo,
+          liquidator,
+          collateralSupplier,
+          partialDebt,
+          false
+        );
+      }
+    }
+    vm.revertToState(snapshotBeforeLiquidation);
+
+    // Full liquidation - receive underlying
     _liquidationCall(
       spoke,
       collateralInfo,
@@ -331,10 +383,9 @@ contract ProtocolV4TestBase is CommonTestBase {
       type(uint256).max,
       false
     );
-
     vm.revertToState(snapshotBeforeLiquidation);
 
-    // Receive shares
+    // Full liquidation - receive shares
     _liquidationCall(
       spoke,
       collateralInfo,
@@ -344,6 +395,32 @@ contract ProtocolV4TestBase is CommonTestBase {
       type(uint256).max,
       true
     );
+  }
+
+  /// @dev Disable collateral, verify borrow reverts, re-enable, verify borrow works.
+  function _testCollateralToggle(
+    ISpoke spoke,
+    V4ReserveInfo memory collateralInfo,
+    V4ReserveInfo memory testAssetInfo,
+    address collateralSupplier,
+    uint256 testAssetAmount
+  ) internal {
+    // Disable collateral
+    vm.prank(collateralSupplier);
+    spoke.setUsingAsCollateral(collateralInfo.reserveId, false, collateralSupplier);
+
+    // Borrow should revert (no collateral backing)
+    uint256 smallBorrow = testAssetAmount > 10 ? testAssetAmount / 10 : testAssetAmount;
+    vm.prank(collateralSupplier);
+    vm.expectRevert();
+    spoke.borrow(testAssetInfo.reserveId, smallBorrow, collateralSupplier);
+
+    // Re-enable collateral
+    vm.prank(collateralSupplier);
+    spoke.setUsingAsCollateral(collateralInfo.reserveId, true, collateralSupplier);
+
+    // Borrow should succeed now
+    _borrow(spoke, testAssetInfo, collateralSupplier, smallBorrow);
   }
 
   // -------------------------------------------------------------------------
@@ -572,15 +649,14 @@ contract ProtocolV4TestBase is CommonTestBase {
 
   /// @notice Convert a dollar value to token amount using the spoke oracle.
   function _getTokenAmountByDollarValue(
-    address oracle,
+    address oracleAddr,
     V4ReserveInfo memory info,
     uint256 dollarValue
   ) internal view returns (uint256) {
-    IAaveOracle oracle = IAaveOracle(oracle);
+    IAaveOracle oracle = IAaveOracle(oracleAddr);
     uint256 price = oracle.getReservePrice(info.reserveId);
-    uint256 decimals = 10 ** (oracle.DECIMALS() + info.decimals);
-    // Oracle prices are 8 decimals (USD)
-    return (dollarValue * decimals) / price;
+    uint8 oracleDecimals = oracle.DECIMALS();
+    return (dollarValue * 10 ** (oracleDecimals + info.decimals)) / price;
   }
 
   /// @notice Safely get the ERC20 symbol, fallback to "UNKNOWN".
