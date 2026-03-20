@@ -45,8 +45,12 @@ abstract contract V4Actions is CommonTestBase {
     V4Types.V4ReserveInfo memory reserveInfo
   ) internal view returns (V4Types.Accounting memory) {
     IHubBase hub = IHubBase(reserveInfo.hub);
-    (uint256 drawnDebt, uint256 premiumDebt) = spoke.getReserveDebt(reserveInfo.reserveId);
-    (uint256 premiumShares, int256 premiumOffsetRay) = hub.getAssetPremiumData(reserveInfo.assetId);
+    uint16 assetId = reserveInfo.assetId;
+    (uint256 drawnDebt, uint256 premiumDebt) = hub.getSpokeOwed(assetId, address(spoke));
+    (uint256 premiumShares, int256 premiumOffsetRay) = hub.getSpokePremiumData(
+      assetId,
+      address(spoke)
+    );
     return
       V4Types.Accounting({
         collateralShares: spoke.getReserveSuppliedShares(reserveInfo.reserveId),
@@ -54,7 +58,7 @@ abstract contract V4Actions is CommonTestBase {
         drawnDebt: drawnDebt,
         premiumDebt: premiumDebt,
         totalDebt: spoke.getReserveTotalDebt(reserveInfo.reserveId),
-        drawnShares: hub.getAssetDrawnShares(reserveInfo.assetId),
+        drawnShares: hub.getSpokeDrawnShares(assetId, address(spoke)),
         premiumShares: premiumShares,
         premiumOffsetRay: premiumOffsetRay
       });
@@ -169,7 +173,7 @@ abstract contract V4Actions is CommonTestBase {
     deal2(reserveInfo.underlying, user, amount);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount);
     console.log('SUPPLY: %s, Amount: %s', reserveInfo.symbol, amount);
-    spoke.supply(reserveInfo.reserveId, amount, user);
+    spoke.supply({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
     V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
@@ -210,7 +214,11 @@ abstract contract V4Actions is CommonTestBase {
 
     vm.startPrank(user);
     console.log('WITHDRAW: %s, Amount: %s', reserveInfo.symbol, amount);
-    (, uint256 withdrawnAmount) = spoke.withdraw(reserveInfo.reserveId, amount, user);
+    (, uint256 withdrawnAmount) = spoke.withdraw({
+      reserveId: reserveInfo.reserveId,
+      amount: amount,
+      onBehalfOf: user
+    });
     vm.stopPrank();
 
     V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
@@ -249,7 +257,7 @@ abstract contract V4Actions is CommonTestBase {
 
     vm.startPrank(user);
     console.log('BORROW: %s, Amount: %s', reserveInfo.symbol, amount);
-    spoke.borrow(reserveInfo.reserveId, amount, user);
+    spoke.borrow({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
     V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
@@ -291,7 +299,7 @@ abstract contract V4Actions is CommonTestBase {
     deal2(reserveInfo.underlying, user, amount + 2);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount + 2);
     console.log('REPAY: %s, Amount: %s', reserveInfo.symbol, amount);
-    spoke.repay(reserveInfo.reserveId, amount, user);
+    spoke.repay({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
     V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
@@ -345,13 +353,13 @@ abstract contract V4Actions is CommonTestBase {
       debtBefore.user.totalDebt
     );
 
-    spoke.liquidationCall(
-      collateralInfo.reserveId,
-      debtInfo.reserveId,
-      borrower,
-      debtToCover,
-      receiveShares
-    );
+    spoke.liquidationCall({
+      collateralReserveId: collateralInfo.reserveId,
+      debtReserveId: debtInfo.reserveId,
+      user: borrower,
+      debtToCover: debtToCover,
+      receiveShares: receiveShares
+    });
     vm.stopPrank();
 
     V4Types.PositionSnapshot memory collAfter = _getPositionSnapshot(
