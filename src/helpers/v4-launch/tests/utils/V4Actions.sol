@@ -16,6 +16,12 @@ abstract contract V4Actions is CommonTestBase {
 
   uint256 constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18;
 
+  modifier revertToSnapshot() {
+    uint256 currentSnapshot = vm.snapshotState();
+    _;
+    vm.revertToState(currentSnapshot);
+  }
+
   // -------------------------------------------------------------------------
   // Accounting getters
   // -------------------------------------------------------------------------
@@ -255,10 +261,9 @@ abstract contract V4Actions is CommonTestBase {
   ) internal {
     V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
 
-    vm.startPrank(user);
     console.log('BORROW: %s, Amount: %s', reserveInfo.symbol, amount);
+    vm.prank(user);
     spoke.borrow({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
-    vm.stopPrank();
 
     V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
 

@@ -54,11 +54,31 @@ abstract contract V4Helpers is V4Actions {
         count++;
       }
     }
-
     V4Types.V4ReserveInfo[] memory result = new V4Types.V4ReserveInfo[](count);
     uint256 index;
     for (uint256 i; i < infos.length; i++) {
       if (!infos[i].paused && !infos[i].frozen && infos[i].collateralEnabled) {
+        result[index] = infos[i];
+        index++;
+      }
+    }
+    return result;
+  }
+
+  /// @notice Return all usable debt reserves: not paused, not frozen, borrowable.
+  function _getAllUsableDebtReserves(
+    V4Types.V4ReserveInfo[] memory infos
+  ) internal pure returns (V4Types.V4ReserveInfo[] memory) {
+    uint256 count;
+    for (uint256 i; i < infos.length; i++) {
+      if (!infos[i].paused && !infos[i].frozen && infos[i].borrowable) {
+        count++;
+      }
+    }
+    V4Types.V4ReserveInfo[] memory result = new V4Types.V4ReserveInfo[](count);
+    uint256 index;
+    for (uint256 i; i < infos.length; i++) {
+      if (!infos[i].paused && !infos[i].frozen && infos[i].borrowable) {
         result[index] = infos[i];
         index++;
       }
@@ -148,16 +168,17 @@ abstract contract V4Helpers is V4Actions {
     }
   }
 
-  /// @notice Borrow from a random number of extra borrowable reserves for the user.
+  /// @notice Borrow from a random number of extra debt reserves for the user.
+  ///         Supplies liquidity from a separate provider before each borrow.
   function _borrowRandomExtraReserves(
     ISpoke spoke,
-    V4Types.V4ReserveInfo[] memory allReserves,
+    V4Types.V4ReserveInfo[] memory usableDebtReserves,
     uint256 primaryReserveId,
     address oracleAddr,
     address user,
     uint256 extraCount
   ) internal {
-    if (allReserves.length <= 1 || extraCount == 0) {
+    if (usableDebtReserves.length <= 1 || extraCount == 0) {
       return;
     }
 
@@ -167,16 +188,10 @@ abstract contract V4Helpers is V4Actions {
     uint256 expectedBorrowCount = accountBefore.borrowCount;
 
     uint256 borrowed;
-    for (uint256 index; index < allReserves.length && borrowed < extraCount; index++) {
-      V4Types.V4ReserveInfo memory candidate = allReserves[index];
+    for (uint256 index; index < usableDebtReserves.length && borrowed < extraCount; index++) {
+      V4Types.V4ReserveInfo memory candidate = usableDebtReserves[index];
 
-      // Skip primary, non-borrowable, paused, frozen
-      if (
-        candidate.reserveId == primaryReserveId ||
-        !candidate.borrowable ||
-        candidate.paused ||
-        candidate.frozen
-      ) {
+      if (candidate.reserveId == primaryReserveId) {
         continue;
       }
 
@@ -198,6 +213,10 @@ abstract contract V4Helpers is V4Actions {
         reserveInfo: candidate,
         dollarValue: extraDollars
       });
+
+      // Ensure sufficient liquidity by supplying from a separate provider
+      address liquidityProvider = vm.randomAddress();
+      _supply({spoke: spoke, reserveInfo: candidate, user: liquidityProvider, amount: extraAmount});
 
       _borrow({spoke: spoke, reserveInfo: candidate, user: user, amount: extraAmount});
 
@@ -222,9 +241,7 @@ abstract contract V4Helpers is V4Actions {
     address oracleAddr,
     address user,
     bool isCollateral
-  ) internal {
-    uint256 snapshotId = vm.snapshot();
-
+  ) internal revertToSnapshot {
     uint256 dollarValue = isCollateral
       ? vm.randomUint(10_000, 50_000)
       : vm.randomUint(1_000, 10_000);
@@ -247,8 +264,6 @@ abstract contract V4Helpers is V4Actions {
       vm.expectRevert(ISpoke.MaximumUserReservesExceeded.selector);
       _borrow({spoke: spoke, reserveInfo: reserveInfo, user: user, amount: amount});
     }
-
-    vm.revertTo(snapshotId);
   }
 
   /// @notice Safely get the ERC20 symbol, fallback to "UNKNOWN".

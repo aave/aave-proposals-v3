@@ -158,14 +158,11 @@ contract ProtocolV4TestBase is V4Scenarios {
       testAssetSupplier: testAssetSupplier
     });
 
-    uint256 snapshotAfterDeposits = vm.snapshotState();
-
     _testWithdrawals({
       spoke: spoke,
       testAssetInfo: testAssetInfo,
       testAssetSupplier: testAssetSupplier,
-      testAssetAmount: testAssetAmount,
-      snapshotAfterDeposits: snapshotAfterDeposits
+      testAssetAmount: testAssetAmount
     });
 
     if (testAssetInfo.borrowable) {
@@ -174,8 +171,7 @@ contract ProtocolV4TestBase is V4Scenarios {
         collateralInfo: collateralInfo,
         testAssetInfo: testAssetInfo,
         collateralSupplier: collateralSupplier,
-        testAssetAmount: testAssetAmount,
-        snapshotAfterDeposits: snapshotAfterDeposits
+        testAssetAmount: testAssetAmount
       });
     } else {
       // Non-borrowable: verify borrow reverts with ReserveNotBorrowable
@@ -186,7 +182,6 @@ contract ProtocolV4TestBase is V4Scenarios {
         amount: testAssetAmount,
         onBehalfOf: collateralSupplier
       });
-      vm.revertToState(snapshotAfterDeposits);
     }
 
     // Collateral toggle: disable, verify borrow fails, re-enable, verify borrow works
@@ -198,7 +193,6 @@ contract ProtocolV4TestBase is V4Scenarios {
         collateralSupplier: collateralSupplier,
         testAssetAmount: testAssetAmount
       });
-      vm.revertToState(snapshotAfterDeposits);
     }
 
     // Cap tests: fill addCap/drawCap incrementally, verify overflow reverts
