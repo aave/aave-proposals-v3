@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {GovV3Helpers} from 'aave-helpers/src/GovV3Helpers.sol';
-import {ProtocolV3TestBase} from 'aave-helpers/src/ProtocolV3TestBase.sol';
+import {ProtocolV4TestBase} from 'src/helpers/v4-launch/tests/utils/ProtocolV4TestBase.sol';
 import {IHub} from './interfaces/IHub.sol';
 import {IHubConfigurator} from './interfaces/IHubConfigurator.sol';
 import {AaveV4EthereumAddresses} from './AaveV4EthereumAddresses.sol';
@@ -13,7 +13,7 @@ import {AaveV4Ethereum_ActivateV4Ethereum_20260319} from './AaveV4Ethereum_Activ
  * @dev Test for AaveV4Ethereum_ActivateV4Ethereum_20260319
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4Ethereum_ActivateV4Ethereum_20260319.t.sol -vv
  */
-contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
+contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   AaveV4Ethereum_ActivateV4Ethereum_20260319 internal proposal;
 
   function setUp() public {
@@ -34,6 +34,17 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     // Deactivate all spokes so we start from a clean inactive state
     // todo: remove this once we migrate from dry run to final deploymennt
     _deactivateAllSpokes();
+  }
+
+  /**
+   * @dev executes the generic test suite including e2e and config snapshots
+   */
+  function test_defaultProposalExecution() public {
+    defaultTest(
+      'AaveV4Ethereum_ActivateV4Ethereum_20260319',
+      AaveV4EthereumAddresses.getSpokes(),
+      address(proposal)
+    );
   }
 
   function test_allSpokesActiveOnAllHubs() public {

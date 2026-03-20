@@ -404,8 +404,7 @@ abstract contract V4Scenarios is V4Helpers {
   function _testCaps(
     ISpoke spoke,
     V4Types.V4ReserveInfo memory reserveInfo,
-    address collateralSupplier,
-    uint256 snapshotAfterDeposits
+    address collateralSupplier
   ) internal {
     IHub.SpokeConfig memory spokeConfig = IHub(reserveInfo.hub).getSpokeConfig(
       reserveInfo.assetId,
@@ -414,7 +413,6 @@ abstract contract V4Scenarios is V4Helpers {
 
     if (spokeConfig.addCap > 0 && spokeConfig.addCap < type(uint40).max) {
       _testAddCap({spoke: spoke, reserveInfo: reserveInfo, addCap: spokeConfig.addCap});
-      vm.revertToState(snapshotAfterDeposits);
     }
 
     if (
@@ -426,8 +424,13 @@ abstract contract V4Scenarios is V4Helpers {
         drawCap: spokeConfig.drawCap,
         borrower: collateralSupplier
       });
-      vm.revertToState(snapshotAfterDeposits);
     }
+  }
+
+  modifier revertToSnapshot() {
+    uint256 currentSnapshot = vm.snapshotState();
+    _;
+    vm.revertToState(currentSnapshot);
   }
 
   /// @dev Fill supply up to addCap in random chunks, then verify overflow reverts.
@@ -435,7 +438,7 @@ abstract contract V4Scenarios is V4Helpers {
     ISpoke spoke,
     V4Types.V4ReserveInfo memory reserveInfo,
     uint40 addCap
-  ) internal {
+  ) internal revertToSnapshot {
     uint256 addCapScaled = uint256(addCap) * 10 ** reserveInfo.decimals;
     uint256 currentSupply = spoke.getReserveSuppliedAssets(reserveInfo.reserveId);
     if (addCapScaled <= currentSupply) {
@@ -446,7 +449,7 @@ abstract contract V4Scenarios is V4Helpers {
     address supplier = vm.randomAddress();
 
     // Fill incrementally with random-sized chunks (2-4 chunks)
-    uint256 chunks = vm.randomUint(2, 4);
+    uint256 chunks = vm.randomUint(2, 10);
     uint256 filled;
     for (uint256 chunk; chunk < chunks && filled < room; chunk++) {
       uint256 remainingRoom = room - filled;
@@ -458,7 +461,7 @@ abstract contract V4Scenarios is V4Helpers {
     // Next supply should revert with AddCapExceeded
     uint256 overflowAmount = 10 ** reserveInfo.decimals;
     vm.startPrank(supplier);
-    deal2(reserveInfo.underlying, supplier, overflowAmount);
+    deal2({asset: reserveInfo.underlying, user: supplier, amount: overflowAmount});
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), overflowAmount);
     vm.expectRevert(abi.encodeWithSelector(IHub.AddCapExceeded.selector, uint256(addCap)));
     spoke.supply({reserveId: reserveInfo.reserveId, amount: overflowAmount, onBehalfOf: supplier});
@@ -471,7 +474,7 @@ abstract contract V4Scenarios is V4Helpers {
     V4Types.V4ReserveInfo memory reserveInfo,
     uint40 drawCap,
     address borrower
-  ) internal {
+  ) internal revertToSnapshot {
     uint256 drawCapScaled = uint256(drawCap) * 10 ** reserveInfo.decimals;
     uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
     if (drawCapScaled <= currentDebt) {

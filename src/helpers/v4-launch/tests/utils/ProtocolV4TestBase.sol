@@ -15,13 +15,17 @@ import {V4Scenarios} from './V4Scenarios.sol';
 contract ProtocolV4TestBase is V4Scenarios {
   using SafeERC20 for IERC20;
   /// @notice Run e2e tests on a single spoke, optionally executing a payload first.
-  function defaultTest(string memory /* reportName */, address spoke, address payload) public {
+  function defaultTest(
+    string memory /* reportName */,
+    address[] memory spokes,
+    address payload
+  ) public {
     executePayload(vm, payload);
-    e2eTestSpoke(ISpoke(spoke));
+    e2eTestAllSpokes(spokes);
   }
 
   /// @notice Test all reserves on every spoke in the array.
-  function e2eTestAllSpokes(address[10] memory spokes) public {
+  function e2eTestAllSpokes(address[] memory spokes) public {
     for (uint256 i; i < spokes.length; i++) {
       console.log('--- E2E: Testing spoke %s ---', spokes[i]);
       e2eTestSpoke(ISpoke(spokes[i]));
@@ -198,11 +202,6 @@ contract ProtocolV4TestBase is V4Scenarios {
     }
 
     // Cap tests: fill addCap/drawCap incrementally, verify overflow reverts
-    _testCaps({
-      spoke: spoke,
-      reserveInfo: testAssetInfo,
-      collateralSupplier: collateralSupplier,
-      snapshotAfterDeposits: snapshotAfterDeposits
-    });
+    _testCaps({spoke: spoke, reserveInfo: testAssetInfo, collateralSupplier: collateralSupplier});
   }
 }
