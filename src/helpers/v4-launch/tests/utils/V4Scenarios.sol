@@ -282,13 +282,17 @@ abstract contract V4Scenarios is V4Helpers {
     );
 
     address liquidator = vm.randomAddress();
-    uint256 snapshotBeforeLiquidation = vm.snapshotState();
 
-    // Partial liquidation — cover ~10% of debt
+    // Partial liquidation — cover ~10% of debt. Only execute if no dust is left behind
     {
       uint256 totalDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
       uint256 partialDebt = totalDebt / 10;
-      if (partialDebt > 0) {
+      uint256 remainingDebt = totalDebt - partialDebt;
+      IAaveOracle oracle = IAaveOracle(spoke.ORACLE());
+      uint256 remainingDebtDollars = (remainingDebt *
+        oracle.getReservePrice(testAssetInfo.reserveId)) /
+        10 ** (oracle.decimals() + testAssetInfo.decimals);
+      if (remainingDebtDollars >= 1_000) {
         _liquidationCall({
           spoke: spoke,
           collateralInfo: collateralInfo,
@@ -300,7 +304,6 @@ abstract contract V4Scenarios is V4Helpers {
         });
       }
     }
-    vm.revertToState(snapshotBeforeLiquidation);
 
     // Full liquidation - receive underlying
     _liquidationCall({
@@ -312,7 +315,6 @@ abstract contract V4Scenarios is V4Helpers {
       debtToCover: type(uint256).max,
       receiveShares: false
     });
-    vm.revertToState(snapshotBeforeLiquidation);
 
     // Full liquidation - receive shares
     _liquidationCall({

@@ -347,7 +347,7 @@ abstract contract V4Actions is CommonTestBase {
     address borrower,
     uint256 debtToCover,
     bool receiveShares
-  ) internal {
+  ) internal revertToSnapshot {
     V4Types.PositionSnapshot memory collBefore = _getPositionSnapshot(
       spoke,
       collateralInfo,
@@ -357,9 +357,7 @@ abstract contract V4Actions is CommonTestBase {
     assertGt(debtBefore.user.totalDebt, 0, 'LIQUIDATE: borrower has no debt');
 
     vm.startPrank(liquidator);
-    uint256 dealAmount = debtToCover > debtBefore.user.totalDebt
-      ? debtBefore.user.totalDebt
-      : debtToCover;
+    uint256 dealAmount = debtBefore.user.totalDebt * 2; // ensure enough buffer to cover debt
     deal2(debtInfo.underlying, liquidator, dealAmount);
     IERC20(debtInfo.underlying).forceApprove(address(spoke), debtToCover);
 
