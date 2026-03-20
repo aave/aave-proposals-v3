@@ -294,7 +294,7 @@ contract ProtocolV4TestBase is CommonTestBase {
       ? vm.randomUint(1, testAssetAmount - 1)
       : testAssetAmount;
     _withdraw(spoke, testAssetInfo, testAssetSupplier, partialWithdraw);
-    _withdraw(spoke, testAssetInfo, testAssetSupplier, type(uint256).max);
+    _withdraw(spoke, testAssetInfo, testAssetSupplier, UINT256_MAX);
     vm.revertToState(snapshotAfterDeposits);
   }
 
@@ -404,7 +404,7 @@ contract ProtocolV4TestBase is CommonTestBase {
       testAssetInfo,
       liquidator,
       collateralSupplier,
-      type(uint256).max,
+      UINT256_MAX,
       false
     );
     vm.revertToState(snapshotBeforeLiquidation);
@@ -416,7 +416,7 @@ contract ProtocolV4TestBase is CommonTestBase {
       testAssetInfo,
       liquidator,
       collateralSupplier,
-      type(uint256).max,
+      UINT256_MAX,
       true
     );
   }
