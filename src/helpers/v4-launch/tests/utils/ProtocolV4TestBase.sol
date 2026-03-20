@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import 'forge-std/Test.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {ISpoke} from '../interfaces/ISpoke.sol';
 import {V4ReserveInfo} from './V4Types.sol';
 import {V4Scenarios} from './V4Scenarios.sol';
@@ -12,6 +13,7 @@ import {V4Scenarios} from './V4Scenarios.sol';
 ///         Tests supply, withdraw, borrow, repay, and liquidation for each reserve on a spoke.
 ///         Loops over ALL good collaterals and uses randomized amounts.
 contract ProtocolV4TestBase is V4Scenarios {
+  using SafeERC20 for IERC20;
   /// @notice Run e2e tests on a single spoke, optionally executing a payload first.
   function defaultTest(string memory /* reportName */, address spoke, address payload) public {
     executePayload(vm, payload);
@@ -69,7 +71,7 @@ contract ProtocolV4TestBase is V4Scenarios {
     address user = vm.randomAddress();
     uint256 amount = _getTokenAmountByDollarValue({
       oracleAddr: oracleAddr,
-      info: frozenAsset,
+      reserveInfo: frozenAsset,
       dollarValue: 1_000
     });
 
@@ -98,7 +100,7 @@ contract ProtocolV4TestBase is V4Scenarios {
     address user = vm.randomAddress();
     uint256 amount = _getTokenAmountByDollarValue({
       oracleAddr: oracleAddr,
-      info: pausedAsset,
+      reserveInfo: pausedAsset,
       dollarValue: 1_000
     });
 
@@ -196,7 +198,7 @@ contract ProtocolV4TestBase is V4Scenarios {
     // Cap tests: fill addCap/drawCap incrementally, verify overflow reverts
     _testCaps({
       spoke: spoke,
-      info: testAssetInfo,
+      reserveInfo: testAssetInfo,
       collateralSupplier: collateralSupplier,
       snapshotAfterDeposits: snapshotAfterDeposits
     });

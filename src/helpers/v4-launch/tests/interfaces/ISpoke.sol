@@ -47,6 +47,12 @@ interface ISpoke {
     uint256 borrowCount;
   }
 
+  // --- Errors ---
+  error ReservePaused();
+  error ReserveFrozen();
+  error ReserveNotBorrowable();
+  error HealthFactorBelowThreshold();
+
   // --- View functions ---
   function getReserveCount() external view returns (uint256);
   function getReserve(uint256 reserveId) external view returns (Reserve memory);

@@ -35,6 +35,9 @@ interface IHub is IHubBase {
     bool halted;
   }
 
+  error AddCapExceeded(uint256 addCap);
+  error DrawCapExceeded(uint256 drawCap);
+
   function getAssetCount() external view returns (uint256);
   function getAsset(uint256 assetId) external view returns (Asset memory);
   function isSpokeListed(uint256 assetId, address spoke) external view returns (bool);

@@ -69,13 +69,13 @@ abstract contract V4Helpers is V4Actions {
   /// @notice Convert a dollar value to token amount using the spoke oracle.
   function _getTokenAmountByDollarValue(
     address oracleAddr,
-    V4ReserveInfo memory info,
+    V4ReserveInfo memory reserveInfo,
     uint256 dollarValue
   ) internal view returns (uint256) {
     IAaveOracle oracle = IAaveOracle(oracleAddr);
-    uint256 price = oracle.getReservePrice(info.reserveId);
+    uint256 price = oracle.getReservePrice(reserveInfo.reserveId);
     uint8 oracleDecimals = oracle.DECIMALS();
-    return (dollarValue * 10 ** (oracleDecimals + info.decimals)) / price;
+    return (dollarValue * 10 ** (oracleDecimals + reserveInfo.decimals)) / price;
   }
 
   /// @notice Supply a random number (0-2) of extra collaterals for the user.
@@ -97,13 +97,13 @@ abstract contract V4Helpers is V4Actions {
       if (index == primaryIndex) continue;
 
       uint256 extraDollars = vm.randomUint(10_000, 50_000);
-      uint256 extraAmount = _getTokenAmountByDollarValue(
-        oracleAddr,
-        goodCollaterals[index],
-        extraDollars
-      );
+      uint256 extraAmount = _getTokenAmountByDollarValue({
+        oracleAddr: oracleAddr,
+        reserveInfo: goodCollaterals[index],
+        dollarValue: extraDollars
+      });
 
-      _supply(spoke, goodCollaterals[index], user, extraAmount);
+      _supply({spoke: spoke, reserveInfo: goodCollaterals[index], user: user, amount: extraAmount});
       vm.prank(user);
       spoke.setUsingAsCollateral(goodCollaterals[index].reserveId, true, user);
 

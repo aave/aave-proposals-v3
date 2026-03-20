@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import 'forge-std/Test.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {ISpoke} from '../interfaces/ISpoke.sol';
 import {IHub} from '../interfaces/IHub.sol';
 import {IAaveOracle} from '../interfaces/IAaveOracle.sol';
@@ -13,6 +14,8 @@ import {V4Helpers} from './V4Helpers.sol';
 /// @title V4Scenarios
 /// @notice Test scenario orchestration for V4 e2e tests.
 abstract contract V4Scenarios is V4Helpers {
+  using SafeERC20 for IERC20;
+
   /// @dev Makes a user liquidatable by mocking the debt asset's oracle price to 10x.
   ///      Override in your test if you need a different strategy.
   function _makeUserLiquidatable(
@@ -56,19 +59,19 @@ abstract contract V4Scenarios is V4Helpers {
     uint256 testAssetDollars = vm.randomUint(1_000, 20_000);
     uint256 collateralAmount = _getTokenAmountByDollarValue({
       oracleAddr: oracleAddr,
-      info: collateralInfo,
+      reserveInfo: collateralInfo,
       dollarValue: collateralDollars
     });
     testAssetAmount = _getTokenAmountByDollarValue({
       oracleAddr: oracleAddr,
-      info: testAssetInfo,
+      reserveInfo: testAssetInfo,
       dollarValue: testAssetDollars
     });
 
     // Supply primary collateral
     _supply({
       spoke: spoke,
-      info: collateralInfo,
+      reserveInfo: collateralInfo,
       user: collateralSupplier,
       amount: collateralAmount
     });
@@ -85,7 +88,12 @@ abstract contract V4Scenarios is V4Helpers {
     });
 
     // Supply test asset
-    _supply({spoke: spoke, info: testAssetInfo, user: testAssetSupplier, amount: testAssetAmount});
+    _supply({
+      spoke: spoke,
+      reserveInfo: testAssetInfo,
+      user: testAssetSupplier,
+      amount: testAssetAmount
+    });
   }
 
   /// @dev Test partial + full withdrawal with random partial amount.
@@ -117,7 +125,12 @@ abstract contract V4Scenarios is V4Helpers {
     uint256 firstBorrow = testAssetAmount > 2
       ? vm.randomUint(1, testAssetAmount / 2)
       : testAssetAmount;
-    _borrow({spoke: spoke, info: testAssetInfo, user: collateralSupplier, amount: firstBorrow});
+    _borrow({
+      spoke: spoke,
+      reserveInfo: testAssetInfo,
+      user: collateralSupplier,
+      amount: firstBorrow
+    });
 
     // Health factor check
     ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
@@ -131,7 +144,12 @@ abstract contract V4Scenarios is V4Helpers {
     uint256 remaining = testAssetAmount - firstBorrow;
     if (remaining > 0) {
       uint256 secondBorrow = vm.randomUint(1, remaining);
-      _borrow({spoke: spoke, info: testAssetInfo, user: collateralSupplier, amount: secondBorrow});
+      _borrow({
+        spoke: spoke,
+        reserveInfo: testAssetInfo,
+        user: collateralSupplier,
+        amount: secondBorrow
+      });
     }
 
     uint256 snapshotAfterBorrow = vm.snapshotState();
@@ -140,13 +158,23 @@ abstract contract V4Scenarios is V4Helpers {
     uint256 actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
     if (actualDebt > 1) {
       uint256 partialRepay = vm.randomUint(1, actualDebt - 1);
-      _repay({spoke: spoke, info: testAssetInfo, user: collateralSupplier, amount: partialRepay});
+      _repay({
+        spoke: spoke,
+        reserveInfo: testAssetInfo,
+        user: collateralSupplier,
+        amount: partialRepay
+      });
     }
     vm.revertToState(snapshotAfterBorrow);
 
     // Full repay
     actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
-    _repay({spoke: spoke, info: testAssetInfo, user: collateralSupplier, amount: actualDebt});
+    _repay({
+      spoke: spoke,
+      reserveInfo: testAssetInfo,
+      user: collateralSupplier,
+      amount: actualDebt
+    });
     vm.revertToState(snapshotAfterBorrow);
 
     // Interest accrual: skip random 1-365 days, verify debt grew, then repay
@@ -156,7 +184,12 @@ abstract contract V4Scenarios is V4Helpers {
       vm.warp(block.timestamp + skipDays * 1 days);
       uint256 debtAfter = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
       assertGe(debtAfter, debtBefore, 'INTEREST: debt should not decrease over time');
-      _repay({spoke: spoke, info: testAssetInfo, user: collateralSupplier, amount: debtAfter});
+      _repay({
+        spoke: spoke,
+        reserveInfo: testAssetInfo,
+        user: collateralSupplier,
+        amount: debtAfter
+      });
     }
     vm.revertToState(snapshotAfterBorrow);
 
@@ -257,30 +290,35 @@ abstract contract V4Scenarios is V4Helpers {
     spoke.setUsingAsCollateral(collateralInfo.reserveId, true, collateralSupplier);
 
     // Borrow should succeed now
-    _borrow({spoke: spoke, info: testAssetInfo, user: collateralSupplier, amount: smallBorrow});
+    _borrow({
+      spoke: spoke,
+      reserveInfo: testAssetInfo,
+      user: collateralSupplier,
+      amount: smallBorrow
+    });
   }
 
   /// @dev Test spoke addCap and drawCap by incrementally filling to the cap, then verify overflow reverts.
   function _testCaps(
     ISpoke spoke,
-    V4ReserveInfo memory info,
+    V4ReserveInfo memory reserveInfo,
     address collateralSupplier,
     uint256 snapshotAfterDeposits
   ) internal {
-    IHub.SpokeConfig memory spokeConfig = IHub(info.hub).getSpokeConfig(
-      info.assetId,
+    IHub.SpokeConfig memory spokeConfig = IHub(reserveInfo.hub).getSpokeConfig(
+      reserveInfo.assetId,
       address(spoke)
     );
 
     if (spokeConfig.addCap < type(uint40).max) {
-      _testAddCap({spoke: spoke, info: info, addCap: spokeConfig.addCap});
+      _testAddCap({spoke: spoke, reserveInfo: reserveInfo, addCap: spokeConfig.addCap});
       vm.revertToState(snapshotAfterDeposits);
     }
 
-    if (spokeConfig.drawCap < type(uint40).max && info.borrowable) {
+    if (spokeConfig.drawCap < type(uint40).max && reserveInfo.borrowable) {
       _testDrawCap({
         spoke: spoke,
-        info: info,
+        reserveInfo: reserveInfo,
         drawCap: spokeConfig.drawCap,
         borrower: collateralSupplier
       });
@@ -289,9 +327,9 @@ abstract contract V4Scenarios is V4Helpers {
   }
 
   /// @dev Fill supply up to addCap in random chunks, then verify overflow reverts.
-  function _testAddCap(ISpoke spoke, V4ReserveInfo memory info, uint40 addCap) internal {
-    uint256 addCapScaled = uint256(addCap) * 10 ** info.decimals;
-    uint256 currentSupply = spoke.getReserveSuppliedAssets(info.reserveId);
+  function _testAddCap(ISpoke spoke, V4ReserveInfo memory reserveInfo, uint40 addCap) internal {
+    uint256 addCapScaled = uint256(addCap) * 10 ** reserveInfo.decimals;
+    uint256 currentSupply = spoke.getReserveSuppliedAssets(reserveInfo.reserveId);
     if (addCapScaled <= currentSupply) return;
 
     uint256 room = addCapScaled - currentSupply;
@@ -303,29 +341,29 @@ abstract contract V4Scenarios is V4Helpers {
     for (uint256 chunk; chunk < chunks && filled < room; chunk++) {
       uint256 remainingRoom = room - filled;
       uint256 chunkAmount = chunk == chunks - 1 ? remainingRoom : vm.randomUint(1, remainingRoom);
-      _supply({spoke: spoke, info: info, user: supplier, amount: chunkAmount});
+      _supply({spoke: spoke, reserveInfo: reserveInfo, user: supplier, amount: chunkAmount});
       filled += chunkAmount;
     }
 
     // Next supply should revert with AddCapExceeded
-    uint256 overflowAmount = 10 ** info.decimals;
+    uint256 overflowAmount = 10 ** reserveInfo.decimals;
     vm.startPrank(supplier);
-    deal2(info.underlying, supplier, overflowAmount);
-    IERC20(info.underlying).forceApprove(address(spoke), overflowAmount);
+    deal2(reserveInfo.underlying, supplier, overflowAmount);
+    IERC20(reserveInfo.underlying).forceApprove(address(spoke), overflowAmount);
     vm.expectRevert(abi.encodeWithSelector(IHub.AddCapExceeded.selector, uint256(addCap)));
-    spoke.supply(info.reserveId, overflowAmount, supplier);
+    spoke.supply(reserveInfo.reserveId, overflowAmount, supplier);
     vm.stopPrank();
   }
 
   /// @dev Fill borrows up to drawCap in random chunks, then verify overflow reverts.
   function _testDrawCap(
     ISpoke spoke,
-    V4ReserveInfo memory info,
+    V4ReserveInfo memory reserveInfo,
     uint40 drawCap,
     address borrower
   ) internal {
-    uint256 drawCapScaled = uint256(drawCap) * 10 ** info.decimals;
-    uint256 currentDebt = spoke.getReserveTotalDebt(info.reserveId);
+    uint256 drawCapScaled = uint256(drawCap) * 10 ** reserveInfo.decimals;
+    uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
     if (drawCapScaled <= currentDebt) return;
 
     uint256 room = drawCapScaled - currentDebt;
@@ -336,14 +374,14 @@ abstract contract V4Scenarios is V4Helpers {
     for (uint256 chunk; chunk < chunks && filled < room; chunk++) {
       uint256 remainingRoom = room - filled;
       uint256 chunkAmount = chunk == chunks - 1 ? remainingRoom : vm.randomUint(1, remainingRoom);
-      _borrow(spoke, info, borrower, chunkAmount);
+      _borrow({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: chunkAmount});
       filled += chunkAmount;
     }
 
     // Next borrow should revert with DrawCapExceeded
-    uint256 overflowAmount = 10 ** info.decimals;
+    uint256 overflowAmount = 10 ** reserveInfo.decimals;
     vm.prank(borrower);
     vm.expectRevert(abi.encodeWithSelector(IHub.DrawCapExceeded.selector, uint256(drawCap)));
-    spoke.borrow(info.reserveId, overflowAmount, borrower);
+    spoke.borrow(reserveInfo.reserveId, overflowAmount, borrower);
   }
 }

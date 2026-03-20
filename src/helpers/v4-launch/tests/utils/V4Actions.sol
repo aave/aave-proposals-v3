@@ -15,21 +15,26 @@ abstract contract V4Actions is CommonTestBase {
 
   uint256 constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18;
 
-  function _supply(ISpoke spoke, V4ReserveInfo memory info, address user, uint256 amount) internal {
-    require(!info.paused, 'SUPPLY: PAUSED_RESERVE');
-    require(!info.frozen, 'SUPPLY: FROZEN_RESERVE');
+  function _supply(
+    ISpoke spoke,
+    V4ReserveInfo memory reserveInfo,
+    address user,
+    uint256 amount
+  ) internal {
+    require(!reserveInfo.paused, 'SUPPLY: PAUSED_RESERVE');
+    require(!reserveInfo.frozen, 'SUPPLY: FROZEN_RESERVE');
 
     vm.startPrank(user);
 
-    uint256 supplyBefore = spoke.getUserSuppliedAssets(info.reserveId, user);
+    uint256 supplyBefore = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
 
-    deal2(info.underlying, user, amount);
-    IERC20(info.underlying).forceApprove(address(spoke), amount);
+    deal2(reserveInfo.underlying, user, amount);
+    IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount);
 
-    console.log('SUPPLY: %s, Amount: %s', info.symbol, amount);
-    spoke.supply(info.reserveId, amount, user);
+    console.log('SUPPLY: %s, Amount: %s', reserveInfo.symbol, amount);
+    spoke.supply(reserveInfo.reserveId, amount, user);
 
-    uint256 supplyAfter = spoke.getUserSuppliedAssets(info.reserveId, user);
+    uint256 supplyAfter = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
     assertApproxEqAbs(supplyAfter, supplyBefore + amount, 2, 'SUPPLY: balance mismatch');
 
     vm.stopPrank();
@@ -37,18 +42,18 @@ abstract contract V4Actions is CommonTestBase {
 
   function _withdraw(
     ISpoke spoke,
-    V4ReserveInfo memory info,
+    V4ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
     vm.startPrank(user);
 
-    uint256 supplyBefore = spoke.getUserSuppliedAssets(info.reserveId, user);
+    uint256 supplyBefore = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
 
-    console.log('WITHDRAW: %s, Amount: %s', info.symbol, amount);
-    (, uint256 withdrawnAmount) = spoke.withdraw(info.reserveId, amount, user);
+    console.log('WITHDRAW: %s, Amount: %s', reserveInfo.symbol, amount);
+    (, uint256 withdrawnAmount) = spoke.withdraw(reserveInfo.reserveId, amount, user);
 
-    uint256 supplyAfter = spoke.getUserSuppliedAssets(info.reserveId, user);
+    uint256 supplyAfter = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
 
     if (amount >= supplyBefore) {
       assertEq(supplyAfter, 0, 'WITHDRAW: dust remaining after full withdrawal');
@@ -64,32 +69,42 @@ abstract contract V4Actions is CommonTestBase {
     vm.stopPrank();
   }
 
-  function _borrow(ISpoke spoke, V4ReserveInfo memory info, address user, uint256 amount) internal {
+  function _borrow(
+    ISpoke spoke,
+    V4ReserveInfo memory reserveInfo,
+    address user,
+    uint256 amount
+  ) internal {
     vm.startPrank(user);
 
-    uint256 debtBefore = spoke.getUserTotalDebt(info.reserveId, user);
+    uint256 debtBefore = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
 
-    console.log('BORROW: %s, Amount: %s', info.symbol, amount);
-    spoke.borrow(info.reserveId, amount, user);
+    console.log('BORROW: %s, Amount: %s', reserveInfo.symbol, amount);
+    spoke.borrow(reserveInfo.reserveId, amount, user);
 
-    uint256 debtAfter = spoke.getUserTotalDebt(info.reserveId, user);
+    uint256 debtAfter = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
     assertApproxEqAbs(debtAfter, debtBefore + amount, 2, 'BORROW: debt mismatch');
 
     vm.stopPrank();
   }
 
-  function _repay(ISpoke spoke, V4ReserveInfo memory info, address user, uint256 amount) internal {
+  function _repay(
+    ISpoke spoke,
+    V4ReserveInfo memory reserveInfo,
+    address user,
+    uint256 amount
+  ) internal {
     vm.startPrank(user);
 
-    uint256 debtBefore = spoke.getUserTotalDebt(info.reserveId, user);
+    uint256 debtBefore = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
 
-    deal2(info.underlying, user, amount + 2);
-    IERC20(info.underlying).forceApprove(address(spoke), amount + 2);
+    deal2(reserveInfo.underlying, user, amount + 2);
+    IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount + 2);
 
-    console.log('REPAY: %s, Amount: %s', info.symbol, amount);
-    spoke.repay(info.reserveId, amount, user);
+    console.log('REPAY: %s, Amount: %s', reserveInfo.symbol, amount);
+    spoke.repay(reserveInfo.reserveId, amount, user);
 
-    uint256 debtAfter = spoke.getUserTotalDebt(info.reserveId, user);
+    uint256 debtAfter = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
 
     if (amount >= debtBefore) {
       assertEq(debtAfter, 0, 'REPAY: debt should be zero');
