@@ -16,23 +16,29 @@ import {V4Helpers} from './V4Helpers.sol';
 abstract contract V4Scenarios is V4Helpers {
   using SafeERC20 for IERC20;
 
-  /// @dev Makes a user liquidatable by mocking the debt asset's oracle price to 10x.
+  /// @dev Makes a user liquidatable by mocking all debt asset oracle prices to 10x.
   ///      Override in your test if you need a different strategy.
   function _makeUserLiquidatable(
     ISpoke spoke,
     V4Types.V4ReserveInfo memory collateral,
-    V4Types.V4ReserveInfo memory debt,
     address user
   ) internal virtual {
     address oracle = spoke.ORACLE();
-    uint256 currentDebtPrice = IAaveOracle(oracle).getReservePrice(debt.reserveId);
+    uint256 reserveCount = spoke.getReserveCount();
 
-    // Mock debt price to 10x so the user becomes undercollateralized
-    vm.mockCall(
-      oracle,
-      abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, debt.reserveId),
-      abi.encode(currentDebtPrice * 10)
-    );
+    for (uint256 i; i < reserveCount; i++) {
+      uint256 userDebt = spoke.getUserTotalDebt(i, user);
+      if (userDebt == 0) {
+        continue;
+      }
+
+      uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
+      vm.mockCall(
+        oracle,
+        abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
+        abi.encode(currentPrice * 2)
+      );
+    }
 
     // Verify the user is actually liquidatable
     ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
@@ -258,7 +264,7 @@ abstract contract V4Scenarios is V4Helpers {
     V4Types.V4ReserveInfo memory testAssetInfo,
     address collateralSupplier
   ) internal revertToSnapshot {
-    _makeUserLiquidatable(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+    _makeUserLiquidatable(spoke, collateralInfo, collateralSupplier);
 
     // Skip random 1-90 days to let interest accrue before liquidation
     uint256 skipDays = vm.randomUint(1, 90);
