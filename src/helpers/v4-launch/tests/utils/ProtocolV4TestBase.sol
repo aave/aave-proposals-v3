@@ -7,7 +7,9 @@ import {IERC20Metadata} from 'openzeppelin-contracts/contracts/token/ERC20/exten
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {CommonTestBase} from 'aave-helpers/src/CommonTestBase.sol';
 import {ISpoke} from '../interfaces/ISpoke.sol';
+import {IHub} from '../interfaces/IHub.sol';
 import {IAaveOracle} from '../interfaces/IAaveOracle.sol';
+import {IPriceOracle} from '../interfaces/IPriceOracle.sol';
 
 /// @notice Per-reserve info struct used throughout e2e tests.
 struct V4ReserveInfo {
@@ -34,19 +36,37 @@ struct V4ReserveInfo {
  */
 contract ProtocolV4TestBase is CommonTestBase {
   using SafeERC20 for IERC20;
+  uint256 constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18;
 
   // -------------------------------------------------------------------------
   // Virtual hooks - override in your test contract
   // -------------------------------------------------------------------------
 
-  /// @dev Override to make a user liquidatable (e.g. manipulate oracle prices).
+  /// @dev Makes a user liquidatable by mocking the debt asset's oracle price to 10x.
+  ///      Override in your test if you need a different strategy.
   function _makeUserLiquidatable(
     ISpoke spoke,
     V4ReserveInfo memory collateral,
     V4ReserveInfo memory debt,
     address user
   ) internal virtual {
-    revert('_makeUserLiquidatable: not implemented - override in your test');
+    address oracle = spoke.ORACLE();
+    uint256 currentDebtPrice = IAaveOracle(oracle).getReservePrice(debt.reserveId);
+
+    // Mock debt price to 10x so the user becomes undercollateralized
+    vm.mockCall(
+      oracle,
+      abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, debt.reserveId),
+      abi.encode(currentDebtPrice * 10)
+    );
+
+    // Verify the user is actually liquidatable
+    ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
+    assertLt(
+      accountData.healthFactor,
+      HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
+      'MAKE_LIQUIDATABLE: health factor not below 1'
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -293,9 +313,13 @@ contract ProtocolV4TestBase is CommonTestBase {
       : testAssetAmount;
     _borrow(spoke, testAssetInfo, collateralSupplier, firstBorrow);
 
-    // Health factor check: should be >= 1e18 after borrow
+    // Health factor check: should be >= HEALTH_FACTOR_LIQUIDATION_THRESHOLD after borrow
     ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
-    assertGe(accountData.healthFactor, 1e18, 'HEALTH: health factor below 1 after borrow');
+    assertGe(
+      accountData.healthFactor,
+      HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
+      'HEALTH: health factor below 1 after borrow'
+    );
 
     // Second borrow on top of the first (sequential borrows)
     uint256 remaining = testAssetAmount - firstBorrow;
