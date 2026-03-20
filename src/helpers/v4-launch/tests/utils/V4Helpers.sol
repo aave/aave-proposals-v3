@@ -103,8 +103,15 @@ abstract contract V4Helpers is V4Actions {
         continue;
       }
 
-      // Respect max user reserves limit
+      // When at the limit, assert the next collateral enable reverts, then restore state
       if (expectedCollateralCount + 1 > maxUserReserves) {
+        _assertMaxUserReservesReverts({
+          spoke: spoke,
+          reserveInfo: goodCollaterals[index],
+          oracleAddr: oracleAddr,
+          user: user,
+          isCollateral: true
+        });
         break;
       }
 
@@ -117,7 +124,11 @@ abstract contract V4Helpers is V4Actions {
 
       _supply({spoke: spoke, reserveInfo: goodCollaterals[index], user: user, amount: extraAmount});
       vm.prank(user);
-      spoke.setUsingAsCollateral(goodCollaterals[index].reserveId, true, user);
+      spoke.setUsingAsCollateral({
+        reserveId: goodCollaterals[index].reserveId,
+        usingAsCollateral: true,
+        onBehalfOf: user
+      });
 
       supplied++;
       expectedCollateralCount++;
@@ -138,7 +149,7 @@ abstract contract V4Helpers is V4Actions {
   }
 
   /// @notice Borrow from a random number of extra borrowable reserves for the user.
-  function _borrowRandomExtras(
+  function _borrowRandomExtraReserves(
     ISpoke spoke,
     V4Types.V4ReserveInfo[] memory allReserves,
     uint256 primaryReserveId,
@@ -171,19 +182,13 @@ abstract contract V4Helpers is V4Actions {
 
       // When at the limit, assert the next borrow reverts, then restore state
       if (expectedBorrowCount + 1 > maxUserReserves) {
-        uint256 snapshotId = vm.snapshot();
-
-        uint256 extraDollars = vm.randomUint(1_000, 10_000);
-        uint256 extraAmount = _getTokenAmountByDollarValue({
-          oracleAddr: oracleAddr,
+        _assertMaxUserReservesReverts({
+          spoke: spoke,
           reserveInfo: candidate,
-          dollarValue: extraDollars
+          oracleAddr: oracleAddr,
+          user: user,
+          isCollateral: false
         });
-
-        vm.expectRevert(ISpoke.MaximumUserReservesExceeded.selector);
-        _borrow({spoke: spoke, reserveInfo: candidate, user: user, amount: extraAmount});
-
-        vm.revertTo(snapshotId);
         break;
       }
 
@@ -206,7 +211,44 @@ abstract contract V4Helpers is V4Actions {
         maxUserReserves,
         'EXTRA_BORROW: exceeds MAX_USER_RESERVES_LIMIT'
       );
+      assertEq(accountAfter.borrowCount, expectedBorrowCount, 'EXTRA_BORROW: borrowCount mismatch');
     }
+  }
+
+  /// @notice Assert that exceeding MAX_USER_RESERVES_LIMIT reverts, then restore state.
+  function _assertMaxUserReservesReverts(
+    ISpoke spoke,
+    V4Types.V4ReserveInfo memory reserveInfo,
+    address oracleAddr,
+    address user,
+    bool isCollateral
+  ) internal {
+    uint256 snapshotId = vm.snapshot();
+
+    uint256 dollarValue = isCollateral
+      ? vm.randomUint(10_000, 50_000)
+      : vm.randomUint(1_000, 10_000);
+    uint256 amount = _getTokenAmountByDollarValue({
+      oracleAddr: oracleAddr,
+      reserveInfo: reserveInfo,
+      dollarValue: dollarValue
+    });
+
+    if (isCollateral) {
+      _supply({spoke: spoke, reserveInfo: reserveInfo, user: user, amount: amount});
+      vm.prank(user);
+      vm.expectRevert(ISpoke.MaximumUserReservesExceeded.selector);
+      spoke.setUsingAsCollateral({
+        reserveId: reserveInfo.reserveId,
+        usingAsCollateral: true,
+        onBehalfOf: user
+      });
+    } else {
+      vm.expectRevert(ISpoke.MaximumUserReservesExceeded.selector);
+      _borrow({spoke: spoke, reserveInfo: reserveInfo, user: user, amount: amount});
+    }
+
+    vm.revertTo(snapshotId);
   }
 
   /// @notice Safely get the ERC20 symbol, fallback to "UNKNOWN".

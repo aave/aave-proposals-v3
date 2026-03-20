@@ -49,21 +49,21 @@ abstract contract V4Scenarios is V4Helpers {
     V4Types.V4ReserveInfo[] memory goodCollaterals,
     uint256 primaryCollateralIndex,
     V4Types.V4ReserveInfo memory testAssetInfo,
-    address oracleAddr,
     address collateralSupplier,
     address testAssetSupplier
   ) internal returns (uint256 testAssetAmount) {
     V4Types.V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+    address oracle = spoke.ORACLE();
 
     uint256 collateralDollars = vm.randomUint(50_000, 200_000);
     uint256 testAssetDollars = vm.randomUint(1_000, 20_000);
     uint256 collateralAmount = _getTokenAmountByDollarValue({
-      oracleAddr: oracleAddr,
+      oracleAddr: oracle,
       reserveInfo: collateralInfo,
       dollarValue: collateralDollars
     });
     testAssetAmount = _getTokenAmountByDollarValue({
-      oracleAddr: oracleAddr,
+      oracleAddr: oracle,
       reserveInfo: testAssetInfo,
       dollarValue: testAssetDollars
     });
@@ -76,22 +76,37 @@ abstract contract V4Scenarios is V4Helpers {
       amount: collateralAmount
     });
     vm.prank(collateralSupplier);
-    spoke.setUsingAsCollateral(collateralInfo.reserveId, true, collateralSupplier);
+    spoke.setUsingAsCollateral({
+      reserveId: collateralInfo.reserveId,
+      usingAsCollateral: true,
+      onBehalfOf: collateralSupplier
+    });
 
-    // Supply random extra collaterals (0-2)
     {
-      uint256 maxExtra = goodCollaterals.length > 1 ? goodCollaterals.length - 1 : 0;
-      if (maxExtra > 2) {
-        maxExtra = 2;
-      }
-      uint256 extraCollateralCount = maxExtra > 0 ? vm.randomUint(0, maxExtra) : 0;
+      ISpoke.UserAccountData memory accountAfterCollateral = spoke.getUserAccountData(
+        collateralSupplier
+      );
+      assertEq(
+        accountAfterCollateral.activeCollateralCount,
+        1,
+        'SETUP: activeCollateralCount should be 1 after primary collateral'
+      );
+    }
+
+    // Supply random extra collaterals up to remaining capacity
+    {
+      uint256 extraCount = _randomExtraCount({
+        spoke: spoke,
+        user: collateralSupplier,
+        available: goodCollaterals.length > 1 ? goodCollaterals.length - 1 : 0
+      });
       _supplyRandomExtraCollaterals({
         spoke: spoke,
         goodCollaterals: goodCollaterals,
         primaryIndex: primaryCollateralIndex,
-        oracleAddr: oracleAddr,
+        oracleAddr: oracle,
         user: collateralSupplier,
-        extraCount: extraCollateralCount
+        extraCount: extraCount
       });
     }
 
@@ -123,15 +138,12 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test borrow, repay, and liquidation flows.
   function _testBorrowRepayLiquidation(
     ISpoke spoke,
-    V4Types.V4ReserveInfo[] memory allReserves,
     V4Types.V4ReserveInfo memory collateralInfo,
     V4Types.V4ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount,
     uint256 snapshotAfterDeposits
   ) internal {
-    uint16 maxUserReserves = spoke.MAX_USER_RESERVES_LIMIT();
-
     // First borrow (random partial amount)
     uint256 firstBorrow = testAssetAmount > 2
       ? vm.randomUint(1, testAssetAmount / 2)
@@ -153,7 +165,7 @@ abstract contract V4Scenarios is V4Helpers {
       );
       assertLe(
         accountData.borrowCount,
-        maxUserReserves,
+        spoke.MAX_USER_RESERVES_LIMIT(),
         'BORROW: borrowCount exceeds MAX_USER_RESERVES_LIMIT'
       );
     }
@@ -175,23 +187,17 @@ abstract contract V4Scenarios is V4Helpers {
       );
       assertLe(
         accountAfterSecond.borrowCount,
-        maxUserReserves,
+        spoke.MAX_USER_RESERVES_LIMIT(),
         'BORROW: borrowCount exceeds MAX_USER_RESERVES_LIMIT after second borrow'
       );
     }
 
-    // Borrow from random extra borrowable reserves (0-2)
-    {
-      uint256 extraBorrowCount = vm.randomUint(0, 2);
-      _borrowRandomExtras({
-        spoke: spoke,
-        allReserves: allReserves,
-        primaryReserveId: testAssetInfo.reserveId,
-        oracleAddr: spoke.ORACLE(),
-        user: collateralSupplier,
-        extraCount: extraBorrowCount
-      });
-    }
+    // Borrow from random extra borrowable reserves up to remaining capacity
+    _borrowExtrasWithinLimit({
+      spoke: spoke,
+      primaryReserveId: testAssetInfo.reserveId,
+      user: collateralSupplier
+    });
 
     uint256 snapshotAfterBorrow = vm.snapshotState();
 
@@ -326,17 +332,29 @@ abstract contract V4Scenarios is V4Helpers {
   ) internal {
     // Disable collateral
     vm.prank(collateralSupplier);
-    spoke.setUsingAsCollateral(collateralInfo.reserveId, false, collateralSupplier);
+    spoke.setUsingAsCollateral({
+      reserveId: collateralInfo.reserveId,
+      usingAsCollateral: false,
+      onBehalfOf: collateralSupplier
+    });
 
     // Borrow should revert with HealthFactorBelowThreshold (no collateral backing)
     uint256 smallBorrow = testAssetAmount > 10 ? testAssetAmount / 10 : testAssetAmount;
     vm.prank(collateralSupplier);
     vm.expectRevert(ISpoke.HealthFactorBelowThreshold.selector);
-    spoke.borrow(testAssetInfo.reserveId, smallBorrow, collateralSupplier);
+    spoke.borrow({
+      reserveId: testAssetInfo.reserveId,
+      amount: smallBorrow,
+      onBehalfOf: collateralSupplier
+    });
 
     // Re-enable collateral
     vm.prank(collateralSupplier);
-    spoke.setUsingAsCollateral(collateralInfo.reserveId, true, collateralSupplier);
+    spoke.setUsingAsCollateral({
+      reserveId: collateralInfo.reserveId,
+      usingAsCollateral: true,
+      onBehalfOf: collateralSupplier
+    });
 
     // Borrow should succeed now
     _borrow({
@@ -344,6 +362,41 @@ abstract contract V4Scenarios is V4Helpers {
       reserveInfo: testAssetInfo,
       user: collateralSupplier,
       amount: smallBorrow
+    });
+  }
+
+  /// @dev Compute a random extra count bounded by remaining reserve slots and available reserves.
+  function _randomExtraCount(
+    ISpoke spoke,
+    address user,
+    uint256 available
+  ) internal returns (uint256) {
+    uint16 maxUserReserves = spoke.MAX_USER_RESERVES_LIMIT();
+    uint256 currentCount = spoke.getUserAccountData(user).activeCollateralCount;
+    uint256 remainingSlots = currentCount < maxUserReserves ? maxUserReserves - currentCount : 0;
+    uint256 maxExtra = remainingSlots < available ? remainingSlots : available;
+    return maxExtra > 0 ? vm.randomUint(0, maxExtra) : 0;
+  }
+
+  /// @dev Borrow from random extra reserves, respecting MAX_USER_RESERVES_LIMIT.
+  function _borrowExtrasWithinLimit(ISpoke spoke, uint256 primaryReserveId, address user) internal {
+    V4Types.V4ReserveInfo[] memory allReserves = _getReserveInfos(spoke);
+    uint16 maxUserReserves = spoke.MAX_USER_RESERVES_LIMIT();
+    uint256 currentBorrowCount = spoke.getUserAccountData(user).borrowCount;
+    uint256 remainingSlots = currentBorrowCount < maxUserReserves
+      ? maxUserReserves - currentBorrowCount
+      : 0;
+    if (remainingSlots == 0) {
+      return;
+    }
+    uint256 extraBorrowCount = vm.randomUint(0, remainingSlots);
+    _borrowRandomExtraReserves({
+      spoke: spoke,
+      allReserves: allReserves,
+      primaryReserveId: primaryReserveId,
+      oracleAddr: spoke.ORACLE(),
+      user: user,
+      extraCount: extraBorrowCount
     });
   }
 
@@ -408,7 +461,7 @@ abstract contract V4Scenarios is V4Helpers {
     deal2(reserveInfo.underlying, supplier, overflowAmount);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), overflowAmount);
     vm.expectRevert(abi.encodeWithSelector(IHub.AddCapExceeded.selector, uint256(addCap)));
-    spoke.supply(reserveInfo.reserveId, overflowAmount, supplier);
+    spoke.supply({reserveId: reserveInfo.reserveId, amount: overflowAmount, onBehalfOf: supplier});
     vm.stopPrank();
   }
 
@@ -441,6 +494,6 @@ abstract contract V4Scenarios is V4Helpers {
     uint256 overflowAmount = 10 ** reserveInfo.decimals;
     vm.prank(borrower);
     vm.expectRevert(abi.encodeWithSelector(IHub.DrawCapExceeded.selector, uint256(drawCap)));
-    spoke.borrow(reserveInfo.reserveId, overflowAmount, borrower);
+    spoke.borrow({reserveId: reserveInfo.reserveId, amount: overflowAmount, onBehalfOf: borrower});
   }
 }
