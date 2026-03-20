@@ -86,6 +86,16 @@ abstract contract V4Helpers is V4Actions {
     return result;
   }
 
+  /// @notice Supply liquidity from a fresh provider so the spoke has enough to lend.
+  function _ensureLiquidity(
+    ISpoke spoke,
+    V4Types.V4ReserveInfo memory reserveInfo,
+    uint256 amount
+  ) internal {
+    address liquidityProvider = vm.randomAddress();
+    _supply({spoke: spoke, reserveInfo: reserveInfo, user: liquidityProvider, amount: amount});
+  }
+
   /// @notice Convert a dollar value to token amount using the spoke oracle.
   function _getTokenAmountByDollarValue(
     address oracleAddr,
@@ -189,9 +199,9 @@ abstract contract V4Helpers is V4Actions {
 
     uint256 borrowed;
     for (uint256 index; index < usableDebtReserves.length && borrowed < extraCount; index++) {
-      V4Types.V4ReserveInfo memory candidate = usableDebtReserves[index];
+      V4Types.V4ReserveInfo memory debtReserve = usableDebtReserves[index];
 
-      if (candidate.reserveId == primaryReserveId) {
+      if (debtReserve.reserveId == primaryReserveId) {
         continue;
       }
 
@@ -199,7 +209,7 @@ abstract contract V4Helpers is V4Actions {
       if (expectedBorrowCount + 1 > maxUserReserves) {
         _assertMaxUserReservesReverts({
           spoke: spoke,
-          reserveInfo: candidate,
+          reserveInfo: debtReserve,
           oracleAddr: oracleAddr,
           user: user,
           isCollateral: false
@@ -210,15 +220,12 @@ abstract contract V4Helpers is V4Actions {
       uint256 extraDollars = vm.randomUint(1_000, 10_000);
       uint256 extraAmount = _getTokenAmountByDollarValue({
         oracleAddr: oracleAddr,
-        reserveInfo: candidate,
+        reserveInfo: debtReserve,
         dollarValue: extraDollars
       });
 
-      // Ensure sufficient liquidity by supplying from a separate provider
-      address liquidityProvider = vm.randomAddress();
-      _supply({spoke: spoke, reserveInfo: candidate, user: liquidityProvider, amount: extraAmount});
-
-      _borrow({spoke: spoke, reserveInfo: candidate, user: user, amount: extraAmount});
+      _ensureLiquidity({spoke: spoke, reserveInfo: debtReserve, amount: extraAmount});
+      _borrow({spoke: spoke, reserveInfo: debtReserve, user: user, amount: extraAmount});
 
       borrowed++;
       expectedBorrowCount++;

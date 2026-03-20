@@ -317,24 +317,34 @@ abstract contract V4Scenarios is V4Helpers {
     });
   }
 
-  /// @dev Disable collateral, verify borrow reverts, re-enable, verify borrow works.
+  /// @dev Disable all collaterals, verify borrow reverts, re-enable all, verify borrow works.
   function _testCollateralToggle(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory collateralInfo,
+    V4Types.V4ReserveInfo[] memory goodCollaterals,
     V4Types.V4ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
-    // Disable collateral
-    vm.prank(collateralSupplier);
-    spoke.setUsingAsCollateral({
-      reserveId: collateralInfo.reserveId,
-      usingAsCollateral: false,
-      onBehalfOf: collateralSupplier
-    });
+    // Disable all active collaterals
+    for (uint256 i; i < goodCollaterals.length; i++) {
+      uint256 supplied = spoke.getUserSuppliedAssets(
+        goodCollaterals[i].reserveId,
+        collateralSupplier
+      );
+      if (supplied == 0) {
+        continue;
+      }
+      vm.prank(collateralSupplier);
+      spoke.setUsingAsCollateral({
+        reserveId: goodCollaterals[i].reserveId,
+        usingAsCollateral: false,
+        onBehalfOf: collateralSupplier
+      });
+    }
 
     // Borrow should revert with HealthFactorBelowThreshold (no collateral backing)
     uint256 smallBorrow = testAssetAmount > 10 ? testAssetAmount / 10 : testAssetAmount;
+    _ensureLiquidity({spoke: spoke, reserveInfo: testAssetInfo, amount: smallBorrow});
     vm.prank(collateralSupplier);
     vm.expectRevert(ISpoke.HealthFactorBelowThreshold.selector);
     spoke.borrow({
@@ -343,13 +353,22 @@ abstract contract V4Scenarios is V4Helpers {
       onBehalfOf: collateralSupplier
     });
 
-    // Re-enable collateral
-    vm.prank(collateralSupplier);
-    spoke.setUsingAsCollateral({
-      reserveId: collateralInfo.reserveId,
-      usingAsCollateral: true,
-      onBehalfOf: collateralSupplier
-    });
+    // Re-enable all collaterals
+    for (uint256 i; i < goodCollaterals.length; i++) {
+      uint256 supplied = spoke.getUserSuppliedAssets(
+        goodCollaterals[i].reserveId,
+        collateralSupplier
+      );
+      if (supplied == 0) {
+        continue;
+      }
+      vm.prank(collateralSupplier);
+      spoke.setUsingAsCollateral({
+        reserveId: goodCollaterals[i].reserveId,
+        usingAsCollateral: true,
+        onBehalfOf: collateralSupplier
+      });
+    }
 
     // Borrow should succeed now
     _borrow({
@@ -472,6 +491,15 @@ abstract contract V4Scenarios is V4Helpers {
     }
 
     uint256 room = drawCapScaled - currentDebt;
+
+    // Supply to borrower: gives spoke liquidity AND borrower collateral
+    _supply({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: room});
+    vm.prank(borrower);
+    spoke.setUsingAsCollateral({
+      reserveId: reserveInfo.reserveId,
+      usingAsCollateral: true,
+      onBehalfOf: borrower
+    });
 
     // Fill incrementally with random-sized chunks (2-4 chunks)
     uint256 chunks = vm.randomUint(2, 4);

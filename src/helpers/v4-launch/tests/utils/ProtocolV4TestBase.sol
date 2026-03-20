@@ -184,11 +184,11 @@ contract ProtocolV4TestBase is V4Scenarios {
       });
     }
 
-    // Collateral toggle: disable, verify borrow fails, re-enable, verify borrow works
+    // Collateral toggle: disable all, verify borrow fails, re-enable all, verify borrow works
     if (collateralInfo.collateralEnabled && testAssetInfo.borrowable) {
       _testCollateralToggle({
         spoke: spoke,
-        collateralInfo: collateralInfo,
+        goodCollaterals: goodCollaterals,
         testAssetInfo: testAssetInfo,
         collateralSupplier: collateralSupplier,
         testAssetAmount: testAssetAmount
