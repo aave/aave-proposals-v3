@@ -11,5 +11,5 @@ interface IPriceOracle {
 
   /// @notice Returns the number of decimals the oracle prices are denominated in.
   /// @return The number of decimals.
-  function DECIMALS() external view returns (uint8);
+  function decimals() external view returns (uint8);
 }

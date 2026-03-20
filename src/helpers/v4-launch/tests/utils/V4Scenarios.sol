@@ -310,12 +310,14 @@ abstract contract V4Scenarios is V4Helpers {
       address(spoke)
     );
 
-    if (spokeConfig.addCap < type(uint40).max) {
+    if (spokeConfig.addCap > 0 && spokeConfig.addCap < type(uint40).max) {
       _testAddCap({spoke: spoke, reserveInfo: reserveInfo, addCap: spokeConfig.addCap});
       vm.revertToState(snapshotAfterDeposits);
     }
 
-    if (spokeConfig.drawCap < type(uint40).max && reserveInfo.borrowable) {
+    if (
+      spokeConfig.drawCap > 0 && spokeConfig.drawCap < type(uint40).max && reserveInfo.borrowable
+    ) {
       _testDrawCap({
         spoke: spoke,
         reserveInfo: reserveInfo,
@@ -330,7 +332,9 @@ abstract contract V4Scenarios is V4Helpers {
   function _testAddCap(ISpoke spoke, V4ReserveInfo memory reserveInfo, uint40 addCap) internal {
     uint256 addCapScaled = uint256(addCap) * 10 ** reserveInfo.decimals;
     uint256 currentSupply = spoke.getReserveSuppliedAssets(reserveInfo.reserveId);
-    if (addCapScaled <= currentSupply) return;
+    if (addCapScaled <= currentSupply) {
+      return;
+    }
 
     uint256 room = addCapScaled - currentSupply;
     address supplier = vm.randomAddress();
@@ -364,7 +368,9 @@ abstract contract V4Scenarios is V4Helpers {
   ) internal {
     uint256 drawCapScaled = uint256(drawCap) * 10 ** reserveInfo.decimals;
     uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
-    if (drawCapScaled <= currentDebt) return;
+    if (drawCapScaled <= currentDebt) {
+      return;
+    }
 
     uint256 room = drawCapScaled - currentDebt;
 

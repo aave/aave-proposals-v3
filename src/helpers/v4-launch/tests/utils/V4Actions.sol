@@ -6,10 +6,11 @@ import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {CommonTestBase} from 'aave-helpers/src/CommonTestBase.sol';
 import {ISpoke} from '../interfaces/ISpoke.sol';
+import {IHubBase} from '../interfaces/IHubBase.sol';
 import {V4ReserveInfo} from './V4Types.sol';
 
 /// @title V4Actions
-/// @notice Low-level spoke actions (supply, withdraw, borrow, repay, liquidation) with assertions.
+/// @notice Low-level spoke actions with hub and spoke accounting assertions.
 abstract contract V4Actions is CommonTestBase {
   using SafeERC20 for IERC20;
 
@@ -24,20 +25,50 @@ abstract contract V4Actions is CommonTestBase {
     require(!reserveInfo.paused, 'SUPPLY: PAUSED_RESERVE');
     require(!reserveInfo.frozen, 'SUPPLY: FROZEN_RESERVE');
 
+    IHubBase hub = IHubBase(reserveInfo.hub);
+    uint256 reserveId = reserveInfo.reserveId;
+    uint16 assetId = reserveInfo.assetId;
+
+    // --- Snapshot before ---
+    uint256[3] memory before;
+    before[0] = spoke.getUserSuppliedAssets(reserveId, user);
+    before[1] = spoke.getUserSuppliedShares(reserveId, user);
+    before[2] = hub.getSpokeAddedAssets(assetId, address(spoke));
+    uint256 hubSharesBefore = hub.getSpokeAddedShares(assetId, address(spoke));
+
     vm.startPrank(user);
-
-    uint256 supplyBefore = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
-
     deal2(reserveInfo.underlying, user, amount);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount);
 
     console.log('SUPPLY: %s, Amount: %s', reserveInfo.symbol, amount);
-    spoke.supply(reserveInfo.reserveId, amount, user);
-
-    uint256 supplyAfter = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
-    assertApproxEqAbs(supplyAfter, supplyBefore + amount, 2, 'SUPPLY: balance mismatch');
-
+    spoke.supply(reserveId, amount, user);
     vm.stopPrank();
+
+    // --- Spoke user assertions ---
+    assertApproxEqAbs(
+      spoke.getUserSuppliedAssets(reserveId, user),
+      before[0] + amount,
+      2,
+      'SUPPLY: user assets mismatch'
+    );
+    assertGt(
+      spoke.getUserSuppliedShares(reserveId, user),
+      before[1],
+      'SUPPLY: user shares did not increase'
+    );
+
+    // --- Hub assertions ---
+    assertApproxEqAbs(
+      hub.getSpokeAddedAssets(assetId, address(spoke)),
+      before[2] + amount,
+      2,
+      'SUPPLY: hub added assets mismatch'
+    );
+    assertGt(
+      hub.getSpokeAddedShares(assetId, address(spoke)),
+      hubSharesBefore,
+      'SUPPLY: hub shares did not increase'
+    );
   }
 
   function _withdraw(
@@ -46,27 +77,42 @@ abstract contract V4Actions is CommonTestBase {
     address user,
     uint256 amount
   ) internal {
+    IHubBase hub = IHubBase(reserveInfo.hub);
+
+    // --- Before snapshots ---
+    uint256 userSupplyBefore = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
+    uint256 userSharesBefore = spoke.getUserSuppliedShares(reserveInfo.reserveId, user);
+    uint256 hubSpokeAddedBefore = hub.getSpokeAddedAssets(reserveInfo.assetId, address(spoke));
+
     vm.startPrank(user);
-
-    uint256 supplyBefore = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
-
     console.log('WITHDRAW: %s, Amount: %s', reserveInfo.symbol, amount);
     (, uint256 withdrawnAmount) = spoke.withdraw(reserveInfo.reserveId, amount, user);
+    vm.stopPrank();
 
-    uint256 supplyAfter = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
+    // --- After assertions ---
+    uint256 userSupplyAfter = spoke.getUserSuppliedAssets(reserveInfo.reserveId, user);
+    uint256 userSharesAfter = spoke.getUserSuppliedShares(reserveInfo.reserveId, user);
+    uint256 hubSpokeAddedAfter = hub.getSpokeAddedAssets(reserveInfo.assetId, address(spoke));
 
-    if (amount >= supplyBefore) {
-      assertEq(supplyAfter, 0, 'WITHDRAW: dust remaining after full withdrawal');
+    if (amount >= userSupplyBefore) {
+      // Full withdrawal
+      assertEq(userSupplyAfter, 0, 'WITHDRAW: user assets should be zero');
+      assertEq(userSharesAfter, 0, 'WITHDRAW: user shares should be zero');
     } else {
       assertApproxEqAbs(
-        supplyAfter,
-        supplyBefore - withdrawnAmount,
+        userSupplyAfter,
+        userSupplyBefore - withdrawnAmount,
         2,
-        'WITHDRAW: balance mismatch'
+        'WITHDRAW: user assets mismatch'
       );
+      assertLt(userSharesAfter, userSharesBefore, 'WITHDRAW: user shares did not decrease');
     }
-
-    vm.stopPrank();
+    // Hub spoke added assets decreased
+    assertLe(
+      hubSpokeAddedAfter,
+      hubSpokeAddedBefore,
+      'WITHDRAW: hub added assets did not decrease'
+    );
   }
 
   function _borrow(
@@ -75,17 +121,36 @@ abstract contract V4Actions is CommonTestBase {
     address user,
     uint256 amount
   ) internal {
+    IHubBase hub = IHubBase(reserveInfo.hub);
+
+    // --- Before snapshots ---
+    uint256 userDebtBefore = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
+    uint256 hubSpokeOwedBefore = hub.getSpokeTotalOwed(reserveInfo.assetId, address(spoke));
+    uint256 hubSpokeDrawnSharesBefore = hub.getSpokeDrawnShares(
+      reserveInfo.assetId,
+      address(spoke)
+    );
+
     vm.startPrank(user);
-
-    uint256 debtBefore = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
-
     console.log('BORROW: %s, Amount: %s', reserveInfo.symbol, amount);
     spoke.borrow(reserveInfo.reserveId, amount, user);
-
-    uint256 debtAfter = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
-    assertApproxEqAbs(debtAfter, debtBefore + amount, 2, 'BORROW: debt mismatch');
-
     vm.stopPrank();
+
+    // --- After assertions ---
+    uint256 userDebtAfter = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
+    uint256 hubSpokeOwedAfter = hub.getSpokeTotalOwed(reserveInfo.assetId, address(spoke));
+    uint256 hubSpokeDrawnSharesAfter = hub.getSpokeDrawnShares(reserveInfo.assetId, address(spoke));
+
+    // User debt increased
+    assertApproxEqAbs(userDebtAfter, userDebtBefore + amount, 2, 'BORROW: user debt mismatch');
+    // Hub spoke owed increased
+    assertGt(hubSpokeOwedAfter, hubSpokeOwedBefore, 'BORROW: hub spoke owed did not increase');
+    // Hub spoke drawn shares increased
+    assertGt(
+      hubSpokeDrawnSharesAfter,
+      hubSpokeDrawnSharesBefore,
+      'BORROW: hub drawn shares did not increase'
+    );
   }
 
   function _repay(
@@ -94,25 +159,32 @@ abstract contract V4Actions is CommonTestBase {
     address user,
     uint256 amount
   ) internal {
+    IHubBase hub = IHubBase(reserveInfo.hub);
+
+    // --- Before snapshots ---
+    uint256 userDebtBefore = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
+    uint256 hubSpokeOwedBefore = hub.getSpokeTotalOwed(reserveInfo.assetId, address(spoke));
+
     vm.startPrank(user);
-
-    uint256 debtBefore = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
-
     deal2(reserveInfo.underlying, user, amount + 2);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount + 2);
 
     console.log('REPAY: %s, Amount: %s', reserveInfo.symbol, amount);
     spoke.repay(reserveInfo.reserveId, amount, user);
-
-    uint256 debtAfter = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
-
-    if (amount >= debtBefore) {
-      assertEq(debtAfter, 0, 'REPAY: debt should be zero');
-    } else {
-      assertApproxEqAbs(debtAfter, debtBefore - amount, 2, 'REPAY: debt mismatch');
-    }
-
     vm.stopPrank();
+
+    // --- After assertions ---
+    uint256 userDebtAfter = spoke.getUserTotalDebt(reserveInfo.reserveId, user);
+    uint256 hubSpokeOwedAfter = hub.getSpokeTotalOwed(reserveInfo.assetId, address(spoke));
+
+    // User debt decreased
+    if (amount >= userDebtBefore) {
+      assertEq(userDebtAfter, 0, 'REPAY: user debt should be zero');
+    } else {
+      assertApproxEqAbs(userDebtAfter, userDebtBefore - amount, 2, 'REPAY: user debt mismatch');
+    }
+    // Hub spoke owed decreased
+    assertLe(hubSpokeOwedAfter, hubSpokeOwedBefore, 'REPAY: hub spoke owed did not decrease');
   }
 
   function _liquidationCall(
@@ -124,11 +196,12 @@ abstract contract V4Actions is CommonTestBase {
     uint256 debtToCover,
     bool receiveShares
   ) internal {
-    vm.startPrank(liquidator);
-
+    // --- Before snapshots ---
     uint256 debtBefore = spoke.getUserTotalDebt(debtInfo.reserveId, borrower);
     assertGt(debtBefore, 0, 'LIQUIDATE: borrower has no debt');
+    uint256 collateralBefore = spoke.getUserSuppliedAssets(collateralInfo.reserveId, borrower);
 
+    vm.startPrank(liquidator);
     uint256 dealAmount = debtToCover > debtBefore ? debtBefore : debtToCover;
     deal2(debtInfo.underlying, liquidator, dealAmount);
     IERC20(debtInfo.underlying).forceApprove(address(spoke), debtToCover);
@@ -147,10 +220,15 @@ abstract contract V4Actions is CommonTestBase {
       debtToCover,
       receiveShares
     );
-
-    uint256 debtAfter = spoke.getUserTotalDebt(debtInfo.reserveId, borrower);
-    assertLt(debtAfter, debtBefore, 'LIQUIDATE: debt did not decrease');
-
     vm.stopPrank();
+
+    // --- After assertions ---
+    uint256 debtAfter = spoke.getUserTotalDebt(debtInfo.reserveId, borrower);
+    uint256 collateralAfter = spoke.getUserSuppliedAssets(collateralInfo.reserveId, borrower);
+
+    // Debt decreased
+    assertLt(debtAfter, debtBefore, 'LIQUIDATE: debt did not decrease');
+    // Collateral decreased
+    assertLt(collateralAfter, collateralBefore, 'LIQUIDATE: collateral did not decrease');
   }
 }

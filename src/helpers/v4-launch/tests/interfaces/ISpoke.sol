@@ -63,9 +63,11 @@ interface ISpoke {
   ) external view returns (DynamicReserveConfig memory);
 
   function getUserSuppliedAssets(uint256 reserveId, address user) external view returns (uint256);
+  function getUserSuppliedShares(uint256 reserveId, address user) external view returns (uint256);
   function getUserTotalDebt(uint256 reserveId, address user) external view returns (uint256);
   function getUserAccountData(address user) external view returns (UserAccountData memory);
   function getReserveSuppliedAssets(uint256 reserveId) external view returns (uint256);
+  function getReserveSuppliedShares(uint256 reserveId) external view returns (uint256);
   function getReserveTotalDebt(uint256 reserveId) external view returns (uint256);
 
   function ORACLE() external view returns (address);

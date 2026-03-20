@@ -74,7 +74,7 @@ abstract contract V4Helpers is V4Actions {
   ) internal view returns (uint256) {
     IAaveOracle oracle = IAaveOracle(oracleAddr);
     uint256 price = oracle.getReservePrice(reserveInfo.reserveId);
-    uint8 oracleDecimals = oracle.DECIMALS();
+    uint8 oracleDecimals = oracle.decimals();
     return (dollarValue * 10 ** (oracleDecimals + reserveInfo.decimals)) / price;
   }
 
@@ -86,15 +86,21 @@ abstract contract V4Helpers is V4Actions {
     address oracleAddr,
     address user
   ) internal {
-    if (goodCollaterals.length <= 1) return;
+    if (goodCollaterals.length <= 1) {
+      return;
+    }
 
     uint256 maxExtra = goodCollaterals.length - 1;
-    if (maxExtra > 2) maxExtra = 2;
+    if (maxExtra > 2) {
+      maxExtra = 2;
+    }
     uint256 extraCount = vm.randomUint(0, maxExtra);
 
     uint256 supplied;
     for (uint256 index; index < goodCollaterals.length && supplied < extraCount; index++) {
-      if (index == primaryIndex) continue;
+      if (index == primaryIndex) {
+        continue;
+      }
 
       uint256 extraDollars = vm.randomUint(10_000, 50_000);
       uint256 extraAmount = _getTokenAmountByDollarValue({

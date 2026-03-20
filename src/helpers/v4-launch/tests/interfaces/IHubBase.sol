@@ -20,5 +20,7 @@ interface IHubBase {
   function getAssetTotalOwed(uint256 assetId) external view returns (uint256);
   function getAssetLiquidity(uint256 assetId) external view returns (uint256);
   function getSpokeAddedAssets(uint256 assetId, address spoke) external view returns (uint256);
+  function getSpokeAddedShares(uint256 assetId, address spoke) external view returns (uint256);
+  function getSpokeDrawnShares(uint256 assetId, address spoke) external view returns (uint256);
   function getSpokeTotalOwed(uint256 assetId, address spoke) external view returns (uint256);
 }
