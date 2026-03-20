@@ -32,26 +32,20 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     );
 
     // Deactivate all spokes so we start from a clean inactive state
+    // todo: remove this once we migrate from dry run to final deploymennt
     _deactivateAllSpokes();
   }
 
-  function test_allSpokesActiveOnCoreHub() public {
+  function test_allSpokesActiveOnAllHubs() public {
     GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumAddresses.CORE_HUB);
-  }
-
-  function test_allSpokesActiveOnPlusHub() public {
-    GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumAddresses.PLUS_HUB);
-  }
-
-  function test_allSpokesActiveOnPrimeHub() public {
-    GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumAddresses.PRIME_HUB);
+    address[] memory hubs = AaveV4EthereumAddresses.getHubs();
+    for (uint256 h = 0; h < hubs.length; ++h) {
+      _assertAllSpokesActiveOnHub(hubs[h]);
+    }
   }
 
   function test_allSpokesInactiveBeforeExecution() public view {
-    address[3] memory hubs = AaveV4EthereumAddresses.getHubs();
+    address[] memory hubs = AaveV4EthereumAddresses.getHubs();
 
     for (uint256 h = 0; h < hubs.length; ++h) {
       uint256 assetCount = IHub(hubs[h]).getAssetCount();
@@ -67,7 +61,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
   }
 
   function _deactivateAllSpokes() internal {
-    address[3] memory hubs = AaveV4EthereumAddresses.getHubs();
+    address[] memory hubs = AaveV4EthereumAddresses.getHubs();
 
     vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     for (uint256 h = 0; h < hubs.length; ++h) {
@@ -94,6 +88,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
 
     for (uint256 a = 0; a < assetCount; ++a) {
       uint256 spokeCount = IHub(hub).getSpokeCount(a);
+      assertGt(spokeCount, 0, 'Hub should have at least one spoke for asset');
+
       for (uint256 s = 0; s < spokeCount; ++s) {
         address spoke = IHub(hub).getSpokeAddress(a, s);
         IHub.SpokeConfig memory config = IHub(hub).getSpokeConfig(a, spoke);

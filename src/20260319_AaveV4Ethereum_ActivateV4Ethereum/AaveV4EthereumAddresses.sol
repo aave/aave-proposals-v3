@@ -53,22 +53,26 @@ library AaveV4EthereumAddresses {
   address internal constant PT_sUSDE_7MAY2026 = 0x3de0ff76E8b528C092d47b9DaC775931cef80F49;
   address internal constant PT_USDe_7MAY2026 = 0xAeBf0Bb9f57E89260d57f31AF34eB58657d96Ce0;
 
-  function getHubs() internal pure returns (address[3] memory) {
-    return [CORE_HUB, PLUS_HUB, PRIME_HUB];
+  function getHubs() internal pure returns (address[] memory hubs) {
+    hubs = new address[](3);
+    hubs[0] = CORE_HUB;
+    hubs[1] = PLUS_HUB;
+    hubs[2] = PRIME_HUB;
+    return hubs;
   }
 
-  function getSpokes() internal pure returns (address[10] memory) {
-    return [
-      MAIN_SPOKE,
-      BLUECHIP_SPOKE,
-      ETHENA_CORRELATED_SPOKE,
-      ETHENA_ECOSYSTEM_SPOKE,
-      ETHERFI_ESPOKE,
-      FOREX_SPOKE,
-      GOLD_SPOKE,
-      KELP_ESPOKE,
-      LIDO_ESPOKE,
-      LOMBARD_BTC_SPOKE
-    ];
+  function getSpokes() internal pure returns (address[] memory spokes) {
+    spokes = new address[](10);
+    spokes[0] = MAIN_SPOKE;
+    spokes[1] = BLUECHIP_SPOKE;
+    spokes[2] = ETHENA_CORRELATED_SPOKE;
+    spokes[3] = ETHENA_ECOSYSTEM_SPOKE;
+    spokes[4] = ETHERFI_ESPOKE;
+    spokes[5] = FOREX_SPOKE;
+    spokes[6] = GOLD_SPOKE;
+    spokes[7] = KELP_ESPOKE;
+    spokes[8] = LIDO_ESPOKE;
+    spokes[9] = LOMBARD_BTC_SPOKE;
+    return spokes;
   }
 }
