@@ -23,6 +23,18 @@ abstract contract V4Actions is CommonTestBase {
   }
 
   // -------------------------------------------------------------------------
+  // Logging
+  // -------------------------------------------------------------------------
+
+  function _logAction(string memory action, string memory symbol, uint256 amount) internal pure {
+    if (amount == type(uint256).max) {
+      console.log('%s: %s, Amount: UINT256_MAX', action, symbol);
+    } else {
+      console.log('%s: %s, Amount: %e', action, symbol, amount);
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Accounting getters
   // -------------------------------------------------------------------------
 
@@ -178,7 +190,7 @@ abstract contract V4Actions is CommonTestBase {
     vm.startPrank(user);
     deal2(reserveInfo.underlying, user, amount);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount);
-    console.log('SUPPLY: %s, Amount: %s', reserveInfo.symbol, amount);
+    _logAction('SUPPLY', reserveInfo.symbol, amount);
     spoke.supply({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
@@ -219,7 +231,7 @@ abstract contract V4Actions is CommonTestBase {
     V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
 
     vm.startPrank(user);
-    console.log('WITHDRAW: %s, Amount: %s', reserveInfo.symbol, amount);
+    _logAction('WITHDRAW', reserveInfo.symbol, amount);
     (, uint256 withdrawnAmount) = spoke.withdraw({
       reserveId: reserveInfo.reserveId,
       amount: amount,
@@ -261,7 +273,7 @@ abstract contract V4Actions is CommonTestBase {
   ) internal {
     V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
 
-    console.log('BORROW: %s, Amount: %s', reserveInfo.symbol, amount);
+    _logAction('BORROW', reserveInfo.symbol, amount);
     vm.prank(user);
     spoke.borrow({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
 
@@ -303,7 +315,7 @@ abstract contract V4Actions is CommonTestBase {
     vm.startPrank(user);
     deal2(reserveInfo.underlying, user, amount + 2);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount + 2);
-    console.log('REPAY: %s, Amount: %s', reserveInfo.symbol, amount);
+    _logAction('REPAY', reserveInfo.symbol, amount);
     spoke.repay({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
@@ -351,12 +363,20 @@ abstract contract V4Actions is CommonTestBase {
     deal2(debtInfo.underlying, liquidator, dealAmount);
     IERC20(debtInfo.underlying).forceApprove(address(spoke), debtToCover);
 
-    console.log(
-      'LIQUIDATE: %s, DebtToCover: %s, TotalDebt: %s',
-      debtInfo.symbol,
-      debtToCover,
-      debtBefore.user.totalDebt
-    );
+    if (debtToCover == type(uint256).max) {
+      console.log(
+        'LIQUIDATE: %s, DebtToCover: UINT256_MAX, TotalDebt: %e',
+        debtInfo.symbol,
+        debtBefore.user.totalDebt
+      );
+    } else {
+      console.log(
+        'LIQUIDATE: %s, DebtToCover: %e, TotalDebt: %e',
+        debtInfo.symbol,
+        debtToCover,
+        debtBefore.user.totalDebt
+      );
+    }
 
     spoke.liquidationCall({
       collateralReserveId: collateralInfo.reserveId,
