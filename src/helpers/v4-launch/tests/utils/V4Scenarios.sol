@@ -8,7 +8,7 @@ import {ISpoke} from '../interfaces/ISpoke.sol';
 import {IHub} from '../interfaces/IHub.sol';
 import {IAaveOracle} from '../interfaces/IAaveOracle.sol';
 import {IPriceOracle} from '../interfaces/IPriceOracle.sol';
-import {V4ReserveInfo} from './V4Types.sol';
+import {V4Types} from './V4Types.sol';
 import {V4Helpers} from './V4Helpers.sol';
 
 /// @title V4Scenarios
@@ -20,8 +20,8 @@ abstract contract V4Scenarios is V4Helpers {
   ///      Override in your test if you need a different strategy.
   function _makeUserLiquidatable(
     ISpoke spoke,
-    V4ReserveInfo memory collateral,
-    V4ReserveInfo memory debt,
+    V4Types.V4ReserveInfo memory collateral,
+    V4Types.V4ReserveInfo memory debt,
     address user
   ) internal virtual {
     address oracle = spoke.ORACLE();
@@ -46,14 +46,14 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Supply collateral(s) and test asset, return the test asset amount.
   function _setupPositions(
     ISpoke spoke,
-    V4ReserveInfo[] memory goodCollaterals,
+    V4Types.V4ReserveInfo[] memory goodCollaterals,
     uint256 primaryCollateralIndex,
-    V4ReserveInfo memory testAssetInfo,
+    V4Types.V4ReserveInfo memory testAssetInfo,
     address oracleAddr,
     address collateralSupplier,
     address testAssetSupplier
   ) internal returns (uint256 testAssetAmount) {
-    V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+    V4Types.V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
 
     uint256 collateralDollars = vm.randomUint(50_000, 200_000);
     uint256 testAssetDollars = vm.randomUint(1_000, 20_000);
@@ -78,14 +78,22 @@ abstract contract V4Scenarios is V4Helpers {
     vm.prank(collateralSupplier);
     spoke.setUsingAsCollateral(collateralInfo.reserveId, true, collateralSupplier);
 
-    // Supply random extra collaterals
-    _supplyRandomExtraCollaterals({
-      spoke: spoke,
-      goodCollaterals: goodCollaterals,
-      primaryIndex: primaryCollateralIndex,
-      oracleAddr: oracleAddr,
-      user: collateralSupplier
-    });
+    // Supply random extra collaterals (0-2)
+    {
+      uint256 maxExtra = goodCollaterals.length > 1 ? goodCollaterals.length - 1 : 0;
+      if (maxExtra > 2) {
+        maxExtra = 2;
+      }
+      uint256 extraCollateralCount = maxExtra > 0 ? vm.randomUint(0, maxExtra) : 0;
+      _supplyRandomExtraCollaterals({
+        spoke: spoke,
+        goodCollaterals: goodCollaterals,
+        primaryIndex: primaryCollateralIndex,
+        oracleAddr: oracleAddr,
+        user: collateralSupplier,
+        extraCount: extraCollateralCount
+      });
+    }
 
     // Supply test asset
     _supply({
@@ -99,7 +107,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test partial + full withdrawal with random partial amount.
   function _testWithdrawals(
     ISpoke spoke,
-    V4ReserveInfo memory testAssetInfo,
+    V4Types.V4ReserveInfo memory testAssetInfo,
     address testAssetSupplier,
     uint256 testAssetAmount,
     uint256 snapshotAfterDeposits
@@ -115,12 +123,15 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test borrow, repay, and liquidation flows.
   function _testBorrowRepayLiquidation(
     ISpoke spoke,
-    V4ReserveInfo memory collateralInfo,
-    V4ReserveInfo memory testAssetInfo,
+    V4Types.V4ReserveInfo[] memory allReserves,
+    V4Types.V4ReserveInfo memory collateralInfo,
+    V4Types.V4ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount,
     uint256 snapshotAfterDeposits
   ) internal {
+    uint16 maxUserReserves = spoke.MAX_USER_RESERVES_LIMIT();
+
     // First borrow (random partial amount)
     uint256 firstBorrow = testAssetAmount > 2
       ? vm.randomUint(1, testAssetAmount / 2)
@@ -132,15 +143,22 @@ abstract contract V4Scenarios is V4Helpers {
       amount: firstBorrow
     });
 
-    // Health factor check
-    ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
-    assertGe(
-      accountData.healthFactor,
-      HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
-      'HEALTH: health factor below 1 after borrow'
-    );
+    // Health factor + reserves limit check after first borrow
+    {
+      ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
+      assertGe(
+        accountData.healthFactor,
+        HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
+        'HEALTH: health factor below 1 after borrow'
+      );
+      assertLe(
+        accountData.borrowCount,
+        maxUserReserves,
+        'BORROW: borrowCount exceeds MAX_USER_RESERVES_LIMIT'
+      );
+    }
 
-    // Second borrow on top of the first (sequential borrows)
+    // Second borrow on top of the first (sequential borrows on same reserve)
     uint256 remaining = testAssetAmount - firstBorrow;
     if (remaining > 0) {
       uint256 secondBorrow = vm.randomUint(1, remaining);
@@ -149,6 +167,29 @@ abstract contract V4Scenarios is V4Helpers {
         reserveInfo: testAssetInfo,
         user: collateralSupplier,
         amount: secondBorrow
+      });
+
+      // Verify borrow count unchanged (same reserve, not a new borrow position)
+      ISpoke.UserAccountData memory accountAfterSecond = spoke.getUserAccountData(
+        collateralSupplier
+      );
+      assertLe(
+        accountAfterSecond.borrowCount,
+        maxUserReserves,
+        'BORROW: borrowCount exceeds MAX_USER_RESERVES_LIMIT after second borrow'
+      );
+    }
+
+    // Borrow from random extra borrowable reserves (0-2)
+    {
+      uint256 extraBorrowCount = vm.randomUint(0, 2);
+      _borrowRandomExtras({
+        spoke: spoke,
+        allReserves: allReserves,
+        primaryReserveId: testAssetInfo.reserveId,
+        oracleAddr: spoke.ORACLE(),
+        user: collateralSupplier,
+        extraCount: extraBorrowCount
       });
     }
 
@@ -177,18 +218,26 @@ abstract contract V4Scenarios is V4Helpers {
     });
     vm.revertToState(snapshotAfterBorrow);
 
-    // Interest accrual: skip random 1-365 days, verify debt grew, then repay
+    // Interest accrual: check all accounting after random time skip (snapshots internally)
+    _skipTimeAndCheckAccounting({
+      spoke: spoke,
+      reserveInfo: testAssetInfo,
+      user: collateralSupplier,
+      skipDays: vm.randomUint(1, 365)
+    });
+
+    // Repay after interest accrual should still work
     {
-      uint256 debtBefore = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
-      uint256 skipDays = vm.randomUint(1, 365);
-      vm.warp(block.timestamp + skipDays * 1 days);
-      uint256 debtAfter = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
-      assertGe(debtAfter, debtBefore, 'INTEREST: debt should not decrease over time');
+      vm.warp(block.timestamp + vm.randomUint(1, 30) * 1 days);
+      uint256 debtAfterAccrual = spoke.getUserTotalDebt(
+        testAssetInfo.reserveId,
+        collateralSupplier
+      );
       _repay({
         spoke: spoke,
         reserveInfo: testAssetInfo,
         user: collateralSupplier,
-        amount: debtAfter
+        amount: debtAfterAccrual
       });
     }
     vm.revertToState(snapshotAfterBorrow);
@@ -204,8 +253,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).
   function _testLiquidation(
     ISpoke spoke,
-    V4ReserveInfo memory collateralInfo,
-    V4ReserveInfo memory testAssetInfo,
+    V4Types.V4ReserveInfo memory collateralInfo,
+    V4Types.V4ReserveInfo memory testAssetInfo,
     address collateralSupplier
   ) internal {
     _makeUserLiquidatable(spoke, collateralInfo, testAssetInfo, collateralSupplier);
@@ -270,8 +319,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Disable collateral, verify borrow reverts, re-enable, verify borrow works.
   function _testCollateralToggle(
     ISpoke spoke,
-    V4ReserveInfo memory collateralInfo,
-    V4ReserveInfo memory testAssetInfo,
+    V4Types.V4ReserveInfo memory collateralInfo,
+    V4Types.V4ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
   ) internal {
@@ -301,7 +350,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test spoke addCap and drawCap by incrementally filling to the cap, then verify overflow reverts.
   function _testCaps(
     ISpoke spoke,
-    V4ReserveInfo memory reserveInfo,
+    V4Types.V4ReserveInfo memory reserveInfo,
     address collateralSupplier,
     uint256 snapshotAfterDeposits
   ) internal {
@@ -329,7 +378,11 @@ abstract contract V4Scenarios is V4Helpers {
   }
 
   /// @dev Fill supply up to addCap in random chunks, then verify overflow reverts.
-  function _testAddCap(ISpoke spoke, V4ReserveInfo memory reserveInfo, uint40 addCap) internal {
+  function _testAddCap(
+    ISpoke spoke,
+    V4Types.V4ReserveInfo memory reserveInfo,
+    uint40 addCap
+  ) internal {
     uint256 addCapScaled = uint256(addCap) * 10 ** reserveInfo.decimals;
     uint256 currentSupply = spoke.getReserveSuppliedAssets(reserveInfo.reserveId);
     if (addCapScaled <= currentSupply) {
@@ -362,7 +415,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Fill borrows up to drawCap in random chunks, then verify overflow reverts.
   function _testDrawCap(
     ISpoke spoke,
-    V4ReserveInfo memory reserveInfo,
+    V4Types.V4ReserveInfo memory reserveInfo,
     uint40 drawCap,
     address borrower
   ) internal {

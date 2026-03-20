@@ -37,6 +37,14 @@ interface ISpoke {
     uint16 liquidationBonusFactor;
   }
 
+  struct UserPosition {
+    uint120 drawnShares;
+    uint120 premiumShares;
+    int200 premiumOffsetRay;
+    uint120 suppliedShares;
+    uint32 dynamicConfigKey;
+  }
+
   struct UserAccountData {
     uint256 riskPremium;
     uint256 avgCollateralFactor;
@@ -64,13 +72,23 @@ interface ISpoke {
 
   function getUserSuppliedAssets(uint256 reserveId, address user) external view returns (uint256);
   function getUserSuppliedShares(uint256 reserveId, address user) external view returns (uint256);
+  function getUserDebt(
+    uint256 reserveId,
+    address user
+  ) external view returns (uint256 drawn, uint256 premium);
   function getUserTotalDebt(uint256 reserveId, address user) external view returns (uint256);
+  function getUserPosition(
+    uint256 reserveId,
+    address user
+  ) external view returns (UserPosition memory);
   function getUserAccountData(address user) external view returns (UserAccountData memory);
   function getReserveSuppliedAssets(uint256 reserveId) external view returns (uint256);
   function getReserveSuppliedShares(uint256 reserveId) external view returns (uint256);
+  function getReserveDebt(uint256 reserveId) external view returns (uint256 drawn, uint256 premium);
   function getReserveTotalDebt(uint256 reserveId) external view returns (uint256);
 
   function ORACLE() external view returns (address);
+  function MAX_USER_RESERVES_LIMIT() external view returns (uint16);
 
   // --- State-changing functions ---
   function supply(

@@ -5,7 +5,7 @@ import 'forge-std/Test.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {ISpoke} from '../interfaces/ISpoke.sol';
-import {V4ReserveInfo} from './V4Types.sol';
+import {V4Types} from './V4Types.sol';
 import {V4Scenarios} from './V4Scenarios.sol';
 
 /// @title ProtocolV4TestBase
@@ -30,8 +30,8 @@ contract ProtocolV4TestBase is V4Scenarios {
 
   /// @notice Test all reserves on one spoke, looping over ALL good collaterals.
   function e2eTestSpoke(ISpoke spoke) public {
-    V4ReserveInfo[] memory allReserves = _getReserveInfos(spoke);
-    V4ReserveInfo[] memory goodCollaterals = _getAllGoodCollaterals(allReserves);
+    V4Types.V4ReserveInfo[] memory allReserves = _getReserveInfos(spoke);
+    V4Types.V4ReserveInfo[] memory goodCollaterals = _getAllGoodCollaterals(allReserves);
     require(goodCollaterals.length > 0, 'No usable collateral found');
 
     for (uint256 collateralIndex; collateralIndex < goodCollaterals.length; collateralIndex++) {
@@ -54,6 +54,7 @@ contract ProtocolV4TestBase is V4Scenarios {
 
         e2eTestAsset({
           spoke: spoke,
+          allReserves: allReserves,
           goodCollaterals: goodCollaterals,
           primaryCollateralIndex: collateralIndex,
           testAssetInfo: allReserves[assetIndex]
@@ -64,7 +65,7 @@ contract ProtocolV4TestBase is V4Scenarios {
   }
 
   /// @notice Test that a frozen reserve correctly reverts on supply and borrow.
-  function e2eTestFrozenAsset(ISpoke spoke, V4ReserveInfo memory frozenAsset) public {
+  function e2eTestFrozenAsset(ISpoke spoke, V4Types.V4ReserveInfo memory frozenAsset) public {
     console.log('E2E: Testing frozen reserve %s (should revert)', frozenAsset.symbol);
 
     address oracleAddr = spoke.ORACLE();
@@ -93,7 +94,7 @@ contract ProtocolV4TestBase is V4Scenarios {
   }
 
   /// @notice Test that a paused reserve correctly reverts on all actions.
-  function e2eTestPausedAsset(ISpoke spoke, V4ReserveInfo memory pausedAsset) public {
+  function e2eTestPausedAsset(ISpoke spoke, V4Types.V4ReserveInfo memory pausedAsset) public {
     console.log('E2E: Testing paused reserve %s (should revert)', pausedAsset.symbol);
 
     address oracleAddr = spoke.ORACLE();
@@ -134,17 +135,18 @@ contract ProtocolV4TestBase is V4Scenarios {
   /// @notice Per-asset e2e test with randomized amounts and extra collaterals.
   function e2eTestAsset(
     ISpoke spoke,
-    V4ReserveInfo[] memory goodCollaterals,
+    V4Types.V4ReserveInfo[] memory allReserves,
+    V4Types.V4ReserveInfo[] memory goodCollaterals,
     uint256 primaryCollateralIndex,
-    V4ReserveInfo memory testAssetInfo
+    V4Types.V4ReserveInfo memory testAssetInfo
   ) public {
-    V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+    V4Types.V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
     console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
     address oracleAddr = spoke.ORACLE();
-    address collateralSupplier = vm.randomAddress();
-    address testAssetSupplier = vm.randomAddress();
+    address collateralSupplier = makeAddr('COLLATERAL_SUPPLIER');
+    address testAssetSupplier = makeAddr('TEST_ASSET_SUPPLIER');
 
     uint256 testAssetAmount = _setupPositions({
       spoke: spoke,
@@ -169,6 +171,7 @@ contract ProtocolV4TestBase is V4Scenarios {
     if (testAssetInfo.borrowable) {
       _testBorrowRepayLiquidation({
         spoke: spoke,
+        allReserves: allReserves,
         collateralInfo: collateralInfo,
         testAssetInfo: testAssetInfo,
         collateralSupplier: collateralSupplier,

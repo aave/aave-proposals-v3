@@ -23,4 +23,18 @@ interface IHubBase {
   function getSpokeAddedShares(uint256 assetId, address spoke) external view returns (uint256);
   function getSpokeDrawnShares(uint256 assetId, address spoke) external view returns (uint256);
   function getSpokeTotalOwed(uint256 assetId, address spoke) external view returns (uint256);
+  function getSpokeOwed(
+    uint256 assetId,
+    address spoke
+  ) external view returns (uint256 drawn, uint256 premium);
+  function getSpokePremiumRay(uint256 assetId, address spoke) external view returns (uint256);
+  function getSpokePremiumData(
+    uint256 assetId,
+    address spoke
+  ) external view returns (uint256 premiumShares, int256 premiumOffset);
+  function getAssetPremiumRay(uint256 assetId) external view returns (uint256);
+  function getAssetPremiumData(
+    uint256 assetId
+  ) external view returns (uint256 premiumShares, int256 premiumOffset);
+  function getAssetDrawnShares(uint256 assetId) external view returns (uint256);
 }
