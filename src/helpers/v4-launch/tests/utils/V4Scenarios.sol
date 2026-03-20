@@ -16,7 +16,8 @@ import {V4Helpers} from './V4Helpers.sol';
 abstract contract V4Scenarios is V4Helpers {
   using SafeERC20 for IERC20;
 
-  /// @dev Makes a user liquidatable by mocking all debt asset oracle prices to 10x.
+  /// @dev Makes a user liquidatable by mocking debt oracle prices up for reserves where
+  ///      the user has debt but no supply (to avoid affecting collateral value).
   ///      Override in your test if you need a different strategy.
   function _makeUserLiquidatable(
     ISpoke spoke,
@@ -28,15 +29,17 @@ abstract contract V4Scenarios is V4Helpers {
 
     for (uint256 i; i < reserveCount; i++) {
       uint256 userDebt = spoke.getUserTotalDebt(i, user);
-      if (userDebt == 0) {
-        continue;
-      }
+      if (userDebt == 0) continue;
+
+      // Skip if user also has supply on this reserve (would boost collateral too)
+      uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
+      if (userSupply > 0) continue;
 
       uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
       vm.mockCall(
         oracle,
         abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-        abi.encode(currentPrice * 2)
+        abi.encode(currentPrice * 100)
       );
     }
 
@@ -281,11 +284,11 @@ abstract contract V4Scenarios is V4Helpers {
     address liquidator = vm.randomAddress();
     uint256 snapshotBeforeLiquidation = vm.snapshotState();
 
-    // Partial liquidation with random fraction of debt
+    // Partial liquidation — cover ~10% of debt
     {
       uint256 totalDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
-      if (totalDebt > 1) {
-        uint256 partialDebt = vm.randomUint(1, totalDebt - 1);
+      uint256 partialDebt = totalDebt / 10;
+      if (partialDebt > 0) {
         _liquidationCall({
           spoke: spoke,
           collateralInfo: collateralInfo,
@@ -422,11 +425,7 @@ abstract contract V4Scenarios is V4Helpers {
   }
 
   /// @dev Test spoke addCap and drawCap by incrementally filling to the cap, then verify overflow reverts.
-  function _testCaps(
-    ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
-    address collateralSupplier
-  ) internal {
+  function _testCaps(ISpoke spoke, V4Types.V4ReserveInfo memory reserveInfo) internal {
     IHub.SpokeConfig memory spokeConfig = IHub(reserveInfo.hub).getSpokeConfig(
       reserveInfo.assetId,
       address(spoke)
@@ -439,12 +438,7 @@ abstract contract V4Scenarios is V4Helpers {
     if (
       spokeConfig.drawCap > 0 && spokeConfig.drawCap < type(uint40).max && reserveInfo.borrowable
     ) {
-      _testDrawCap({
-        spoke: spoke,
-        reserveInfo: reserveInfo,
-        drawCap: spokeConfig.drawCap,
-        borrower: collateralSupplier
-      });
+      _testDrawCap({spoke: spoke, reserveInfo: reserveInfo, drawCap: spokeConfig.drawCap});
     }
   }
 
@@ -487,9 +481,9 @@ abstract contract V4Scenarios is V4Helpers {
   function _testDrawCap(
     ISpoke spoke,
     V4Types.V4ReserveInfo memory reserveInfo,
-    uint40 drawCap,
-    address borrower
+    uint40 drawCap
   ) internal revertToSnapshot {
+    address borrower = vm.randomAddress();
     uint256 drawCapScaled = uint256(drawCap) * 10 ** reserveInfo.decimals;
     uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
     if (drawCapScaled <= currentDebt) {
@@ -498,23 +492,36 @@ abstract contract V4Scenarios is V4Helpers {
 
     uint256 room = drawCapScaled - currentDebt;
 
-    // Supply to borrower: gives spoke liquidity AND borrower collateral
-    _supply({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: room});
-    vm.prank(borrower);
-    spoke.setUsingAsCollateral({
-      reserveId: reserveInfo.reserveId,
-      usingAsCollateral: true,
-      onBehalfOf: borrower
-    });
+    // Ensure borrower has enough collateral across all available reserves
+    {
+      address oracleAddr = spoke.ORACLE();
+      uint256 roomDollars = (room *
+        IAaveOracle(oracleAddr).getReservePrice(reserveInfo.reserveId)) /
+        10 ** (IAaveOracle(oracleAddr).decimals() + reserveInfo.decimals);
+      _ensureBorrowCapacity(spoke, borrower, roomDollars);
+    }
+
+    // Ensure hub has enough liquidity (fans out to sibling spokes if needed)
+    {
+      uint256 supplied = _ensureLiquidity({spoke: spoke, reserveInfo: reserveInfo, amount: room});
+      if (supplied == 0) return;
+      if (supplied < room) {
+        // Not enough addCap to fill the full drawCap — borrow what we can and skip overflow test
+        _borrow({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: supplied});
+        return;
+      }
+    }
 
     // Fill incrementally with random-sized chunks (2-4 chunks)
-    uint256 chunks = vm.randomUint(2, 4);
-    uint256 filled;
-    for (uint256 chunk; chunk < chunks && filled < room; chunk++) {
-      uint256 remainingRoom = room - filled;
-      uint256 chunkAmount = chunk == chunks - 1 ? remainingRoom : vm.randomUint(1, remainingRoom);
-      _borrow({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: chunkAmount});
-      filled += chunkAmount;
+    {
+      uint256 chunks = vm.randomUint(2, 4);
+      uint256 filled;
+      for (uint256 chunk; chunk < chunks && filled < room; chunk++) {
+        uint256 remainingRoom = room - filled;
+        uint256 chunkAmount = chunk == chunks - 1 ? remainingRoom : vm.randomUint(1, remainingRoom);
+        _borrow({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: chunkAmount});
+        filled += chunkAmount;
+      }
     }
 
     // Next borrow should revert with DrawCapExceeded

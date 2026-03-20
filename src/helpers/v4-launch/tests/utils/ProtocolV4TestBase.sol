@@ -146,6 +146,8 @@ contract ProtocolV4TestBase is V4Scenarios {
     console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
+    _testCaps({spoke: spoke, reserveInfo: testAssetInfo});
+
     address collateralSupplier = makeAddr('COLLATERAL_SUPPLIER');
     address testAssetSupplier = makeAddr('TEST_ASSET_SUPPLIER');
 
@@ -194,8 +196,5 @@ contract ProtocolV4TestBase is V4Scenarios {
         testAssetAmount: testAssetAmount
       });
     }
-
-    // Cap tests: fill addCap/drawCap incrementally, verify overflow reverts
-    _testCaps({spoke: spoke, reserveInfo: testAssetInfo, collateralSupplier: collateralSupplier});
   }
 }
