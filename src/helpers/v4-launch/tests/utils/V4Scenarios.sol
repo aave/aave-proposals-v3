@@ -16,8 +16,9 @@ import {V4Helpers} from './V4Helpers.sol';
 abstract contract V4Scenarios is V4Helpers {
   using SafeERC20 for IERC20;
 
-  /// @dev Makes a user liquidatable by mocking debt oracle prices up for reserves where
-  ///      the user has debt but no supply (to avoid affecting collateral value).
+  /// @dev Makes a user liquidatable by iteratively manipulating oracle prices.
+  ///      Phase 1: repeatedly reduce collateral reserve prices by 50% until HF < 1.
+  ///      Phase 2: repeatedly increase debt-only reserve prices by 1000% until HF < 1.
   ///      Override in your test if you need a different strategy.
   function _makeUserLiquidatable(
     ISpoke spoke,
@@ -27,26 +28,51 @@ abstract contract V4Scenarios is V4Helpers {
     address oracle = spoke.ORACLE();
     uint256 reserveCount = spoke.getReserveCount();
 
-    for (uint256 i; i < reserveCount; i++) {
-      uint256 userDebt = spoke.getUserTotalDebt(i, user);
-      if (userDebt == 0) continue;
+    // Phase 1: reduce collateral reserve prices by 50% per pass (works for overlapping
+    // positions too, since CF < 1 means collateral drops proportionally more than debt)
+    for (uint256 pass; pass < 2; pass++) {
+      for (uint256 i; i < reserveCount; i++) {
+        uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
+        if (userSupply == 0) continue;
 
-      // Skip if user also has supply on this reserve (would boost collateral too)
-      uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
-      if (userSupply > 0) continue;
+        uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
+        vm.mockCall(
+          oracle,
+          abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
+          abi.encode((currentPrice * 50) / 100)
+        );
 
-      uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
-      vm.mockCall(
-        oracle,
-        abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-        abi.encode(currentPrice * 100)
-      );
+        ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
+        if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
+          return;
+        }
+      }
+      // Phase 2: increase debt-only reserve prices by 30% per pass
+      for (uint256 i; i < reserveCount; i++) {
+        uint256 userDebt = spoke.getUserTotalDebt(i, user);
+        if (userDebt == 0) continue;
+
+        uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
+        if (userSupply > 0) continue;
+
+        uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
+        vm.mockCall(
+          oracle,
+          abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
+          abi.encode((currentPrice * 1000) / 100)
+        );
+
+        ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
+        if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
+          return;
+        }
+      }
     }
 
     // Verify the user is actually liquidatable
-    ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
+    ISpoke.UserAccountData memory finalAccountData = spoke.getUserAccountData(user);
     assertLt(
-      accountData.healthFactor,
+      finalAccountData.healthFactor,
       HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
       'MAKE_LIQUIDATABLE: health factor not below 1'
     );
@@ -235,7 +261,7 @@ abstract contract V4Scenarios is V4Helpers {
       spoke: spoke,
       reserveInfo: testAssetInfo,
       user: collateralSupplier,
-      skipDays: vm.randomUint(1, 365)
+      skipDays: vm.randomUint(1, 450)
     });
 
     // Repay after interest accrual should still work
@@ -254,10 +280,7 @@ abstract contract V4Scenarios is V4Helpers {
     }
     vm.revertToState(snapshotAfterBorrow);
 
-    // Liquidation test
-    if (testAssetInfo.underlying != collateralInfo.underlying) {
-      _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
-    }
+    _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
   }
 
   /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).
@@ -326,6 +349,9 @@ abstract contract V4Scenarios is V4Helpers {
       debtToCover: type(uint256).max,
       receiveShares: true
     });
+
+    // Clear oracle price mocks
+    vm.clearMockedCalls();
   }
 
   /// @dev Disable all collaterals, verify borrow reverts, re-enable all, verify borrow works.
