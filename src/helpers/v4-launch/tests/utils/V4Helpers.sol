@@ -180,7 +180,7 @@ abstract contract V4Helpers is V4Actions {
           dollarValue: extraDollars
         });
 
-        vm.expectRevert();
+        vm.expectRevert(ISpoke.MaximumUserReservesExceeded.selector);
         _borrow({spoke: spoke, reserveInfo: candidate, user: user, amount: extraAmount});
 
         vm.revertTo(snapshotId);

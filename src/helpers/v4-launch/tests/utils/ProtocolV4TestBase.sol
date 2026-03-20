@@ -78,17 +78,17 @@ contract ProtocolV4TestBase is V4Scenarios {
 
     deal2(frozenAsset.underlying, user, amount);
 
-    // Supply should revert
+    // Supply should revert with ReserveFrozen
     vm.startPrank(user);
     IERC20(frozenAsset.underlying).forceApprove(address(spoke), amount);
-    vm.expectRevert();
+    vm.expectRevert(ISpoke.ReserveFrozen.selector);
     spoke.supply(frozenAsset.reserveId, amount, user);
     vm.stopPrank();
 
-    // Borrow should revert (if borrowable)
+    // Borrow should revert with ReserveFrozen (if borrowable)
     if (frozenAsset.borrowable) {
       vm.prank(user);
-      vm.expectRevert();
+      vm.expectRevert(ISpoke.ReserveFrozen.selector);
       spoke.borrow(frozenAsset.reserveId, amount, user);
     }
   }
@@ -107,27 +107,27 @@ contract ProtocolV4TestBase is V4Scenarios {
 
     deal2(pausedAsset.underlying, user, amount);
 
-    // Supply should revert
+    // Supply should revert with ReservePaused
     vm.startPrank(user);
     IERC20(pausedAsset.underlying).forceApprove(address(spoke), amount);
-    vm.expectRevert();
+    vm.expectRevert(ISpoke.ReservePaused.selector);
     spoke.supply(pausedAsset.reserveId, amount, user);
     vm.stopPrank();
 
-    // Borrow should revert
+    // Borrow should revert with ReservePaused
     vm.prank(user);
-    vm.expectRevert();
+    vm.expectRevert(ISpoke.ReservePaused.selector);
     spoke.borrow(pausedAsset.reserveId, amount, user);
 
-    // Withdraw should revert
+    // Withdraw should revert with ReservePaused
     vm.prank(user);
-    vm.expectRevert();
+    vm.expectRevert(ISpoke.ReservePaused.selector);
     spoke.withdraw(pausedAsset.reserveId, amount, user);
 
-    // Repay should revert
+    // Repay should revert with ReservePaused
     vm.startPrank(user);
     IERC20(pausedAsset.underlying).forceApprove(address(spoke), amount);
-    vm.expectRevert();
+    vm.expectRevert(ISpoke.ReservePaused.selector);
     spoke.repay(pausedAsset.reserveId, amount, user);
     vm.stopPrank();
   }
@@ -179,9 +179,9 @@ contract ProtocolV4TestBase is V4Scenarios {
         snapshotAfterDeposits: snapshotAfterDeposits
       });
     } else {
-      // Non-borrowable: verify borrow reverts
+      // Non-borrowable: verify borrow reverts with ReserveNotBorrowable
       vm.prank(collateralSupplier);
-      vm.expectRevert();
+      vm.expectRevert(ISpoke.ReserveNotBorrowable.selector);
       spoke.borrow(testAssetInfo.reserveId, testAssetAmount, collateralSupplier);
       vm.revertToState(snapshotAfterDeposits);
     }

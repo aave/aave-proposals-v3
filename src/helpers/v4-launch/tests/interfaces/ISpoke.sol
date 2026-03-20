@@ -60,6 +60,7 @@ interface ISpoke {
   error ReserveFrozen();
   error ReserveNotBorrowable();
   error HealthFactorBelowThreshold();
+  error MaximumUserReservesExceeded();
 
   // --- View functions ---
   function getReserveCount() external view returns (uint256);

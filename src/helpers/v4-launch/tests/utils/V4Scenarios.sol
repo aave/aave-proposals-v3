@@ -328,10 +328,10 @@ abstract contract V4Scenarios is V4Helpers {
     vm.prank(collateralSupplier);
     spoke.setUsingAsCollateral(collateralInfo.reserveId, false, collateralSupplier);
 
-    // Borrow should revert (no collateral backing)
+    // Borrow should revert with HealthFactorBelowThreshold (no collateral backing)
     uint256 smallBorrow = testAssetAmount > 10 ? testAssetAmount / 10 : testAssetAmount;
     vm.prank(collateralSupplier);
-    vm.expectRevert();
+    vm.expectRevert(ISpoke.HealthFactorBelowThreshold.selector);
     spoke.borrow(testAssetInfo.reserveId, smallBorrow, collateralSupplier);
 
     // Re-enable collateral
