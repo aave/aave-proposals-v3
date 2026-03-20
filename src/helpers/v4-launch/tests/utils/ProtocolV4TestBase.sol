@@ -343,10 +343,11 @@ contract ProtocolV4TestBase is CommonTestBase {
     _repay(spoke, testAssetInfo, collateralSupplier, actualDebt);
     vm.revertToState(snapshotAfterBorrow);
 
-    // Interest accrual: warp 30 days, verify debt grew, then repay
+    // Interest accrual: skip random 1-365 days, verify debt grew, then repay
     {
       uint256 debtBefore = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
-      vm.warp(block.timestamp + 30 days);
+      uint256 skipDays = vm.randomUint(1, 365);
+      vm.skip(skipDays * 1 days);
       uint256 debtAfter = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
       assertGe(debtAfter, debtBefore, 'INTEREST: debt should not decrease over time');
 
@@ -371,6 +372,10 @@ contract ProtocolV4TestBase is CommonTestBase {
     address collateralSupplier
   ) internal {
     _makeUserLiquidatable(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+
+    // Skip random 1-90 days to let interest accrue before liquidation
+    uint256 skipDays = vm.randomUint(1, 90);
+    vm.skip(skipDays * 1 days);
 
     // Verify health factor is below 1 after making liquidatable
     ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
