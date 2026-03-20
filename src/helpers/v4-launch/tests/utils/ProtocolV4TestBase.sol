@@ -54,7 +54,6 @@ contract ProtocolV4TestBase is V4Scenarios {
 
         e2eTestAsset({
           spoke: spoke,
-          allReserves: allReserves,
           goodCollaterals: goodCollaterals,
           primaryCollateralIndex: collateralIndex,
           testAssetInfo: allReserves[assetIndex]
@@ -82,14 +81,14 @@ contract ProtocolV4TestBase is V4Scenarios {
     vm.startPrank(user);
     IERC20(frozenAsset.underlying).forceApprove(address(spoke), amount);
     vm.expectRevert(ISpoke.ReserveFrozen.selector);
-    spoke.supply(frozenAsset.reserveId, amount, user);
+    spoke.supply({reserveId: frozenAsset.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
     // Borrow should revert with ReserveFrozen (if borrowable)
     if (frozenAsset.borrowable) {
       vm.prank(user);
       vm.expectRevert(ISpoke.ReserveFrozen.selector);
-      spoke.borrow(frozenAsset.reserveId, amount, user);
+      spoke.borrow({reserveId: frozenAsset.reserveId, amount: amount, onBehalfOf: user});
     }
   }
 
@@ -111,31 +110,30 @@ contract ProtocolV4TestBase is V4Scenarios {
     vm.startPrank(user);
     IERC20(pausedAsset.underlying).forceApprove(address(spoke), amount);
     vm.expectRevert(ISpoke.ReservePaused.selector);
-    spoke.supply(pausedAsset.reserveId, amount, user);
+    spoke.supply({reserveId: pausedAsset.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
     // Borrow should revert with ReservePaused
     vm.prank(user);
     vm.expectRevert(ISpoke.ReservePaused.selector);
-    spoke.borrow(pausedAsset.reserveId, amount, user);
+    spoke.borrow({reserveId: pausedAsset.reserveId, amount: amount, onBehalfOf: user});
 
     // Withdraw should revert with ReservePaused
     vm.prank(user);
     vm.expectRevert(ISpoke.ReservePaused.selector);
-    spoke.withdraw(pausedAsset.reserveId, amount, user);
+    spoke.withdraw({reserveId: pausedAsset.reserveId, amount: amount, onBehalfOf: user});
 
     // Repay should revert with ReservePaused
     vm.startPrank(user);
     IERC20(pausedAsset.underlying).forceApprove(address(spoke), amount);
     vm.expectRevert(ISpoke.ReservePaused.selector);
-    spoke.repay(pausedAsset.reserveId, amount, user);
+    spoke.repay({reserveId: pausedAsset.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
   }
 
   /// @notice Per-asset e2e test with randomized amounts and extra collaterals.
   function e2eTestAsset(
     ISpoke spoke,
-    V4Types.V4ReserveInfo[] memory allReserves,
     V4Types.V4ReserveInfo[] memory goodCollaterals,
     uint256 primaryCollateralIndex,
     V4Types.V4ReserveInfo memory testAssetInfo
@@ -144,7 +142,6 @@ contract ProtocolV4TestBase is V4Scenarios {
     console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
-    address oracleAddr = spoke.ORACLE();
     address collateralSupplier = makeAddr('COLLATERAL_SUPPLIER');
     address testAssetSupplier = makeAddr('TEST_ASSET_SUPPLIER');
 
@@ -153,7 +150,6 @@ contract ProtocolV4TestBase is V4Scenarios {
       goodCollaterals: goodCollaterals,
       primaryCollateralIndex: primaryCollateralIndex,
       testAssetInfo: testAssetInfo,
-      oracleAddr: oracleAddr,
       collateralSupplier: collateralSupplier,
       testAssetSupplier: testAssetSupplier
     });
@@ -171,7 +167,6 @@ contract ProtocolV4TestBase is V4Scenarios {
     if (testAssetInfo.borrowable) {
       _testBorrowRepayLiquidation({
         spoke: spoke,
-        allReserves: allReserves,
         collateralInfo: collateralInfo,
         testAssetInfo: testAssetInfo,
         collateralSupplier: collateralSupplier,
@@ -182,7 +177,11 @@ contract ProtocolV4TestBase is V4Scenarios {
       // Non-borrowable: verify borrow reverts with ReserveNotBorrowable
       vm.prank(collateralSupplier);
       vm.expectRevert(ISpoke.ReserveNotBorrowable.selector);
-      spoke.borrow(testAssetInfo.reserveId, testAssetAmount, collateralSupplier);
+      spoke.borrow({
+        reserveId: testAssetInfo.reserveId,
+        amount: testAssetAmount,
+        onBehalfOf: collateralSupplier
+      });
       vm.revertToState(snapshotAfterDeposits);
     }
 
