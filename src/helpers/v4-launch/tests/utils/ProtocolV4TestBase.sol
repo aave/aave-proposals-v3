@@ -35,7 +35,7 @@ contract ProtocolV4TestBase is V4Scenarios {
   /// @notice Test all reserves on one spoke, looping over ALL good collaterals.
   function e2eTestSpoke(ISpoke spoke) public {
     V4Types.V4ReserveInfo[] memory allReserves = _getReserveInfos(spoke);
-    V4Types.V4ReserveInfo[] memory goodCollaterals = _getAllGoodCollaterals(allReserves);
+    V4Types.V4ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(allReserves);
     require(goodCollaterals.length > 0, 'No usable collateral found');
 
     for (uint256 collateralIndex; collateralIndex < goodCollaterals.length; collateralIndex++) {

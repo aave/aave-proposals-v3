@@ -130,37 +130,45 @@ abstract contract V4Actions is CommonTestBase {
   ) internal {
     uint256 snapshot = vm.snapshotState();
 
-    V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     skip(skipDays * 1 days);
 
-    V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     // User debt should not decrease over time
-    assertGe(after_.user.totalDebt, before.user.totalDebt, 'TIME_SKIP: user total debt decreased');
-    assertGe(after_.user.drawnDebt, before.user.drawnDebt, 'TIME_SKIP: user drawn debt decreased');
+    assertGe(
+      snapshotAfter.user.totalDebt,
+      snapshotBefore.user.totalDebt,
+      'TIME_SKIP: user total debt decreased'
+    );
+    assertGe(
+      snapshotAfter.user.drawnDebt,
+      snapshotBefore.user.drawnDebt,
+      'TIME_SKIP: user drawn debt decreased'
+    );
 
     // Reserve debt should not decrease over time
     assertGe(
-      after_.reserve.totalDebt,
-      before.reserve.totalDebt,
+      snapshotAfter.reserve.totalDebt,
+      snapshotBefore.reserve.totalDebt,
       'TIME_SKIP: reserve total debt decreased'
     );
     assertGe(
-      after_.reserve.drawnDebt,
-      before.reserve.drawnDebt,
+      snapshotAfter.reserve.drawnDebt,
+      snapshotBefore.reserve.drawnDebt,
       'TIME_SKIP: reserve drawn debt decreased'
     );
 
     // Hub spoke owed should not decrease over time
     assertGe(
-      after_.hubSpoke.totalDebt,
-      before.hubSpoke.totalDebt,
+      snapshotAfter.hubSpoke.totalDebt,
+      snapshotBefore.hubSpoke.totalDebt,
       'TIME_SKIP: hub spoke owed decreased'
     );
     assertGe(
-      after_.hubSpoke.drawnDebt,
-      before.hubSpoke.drawnDebt,
+      snapshotAfter.hubSpoke.drawnDebt,
+      snapshotBefore.hubSpoke.drawnDebt,
       'TIME_SKIP: hub spoke drawn decreased'
     );
 
@@ -185,7 +193,7 @@ abstract contract V4Actions is CommonTestBase {
     require(!reserveInfo.paused, 'SUPPLY: PAUSED_RESERVE');
     require(!reserveInfo.frozen, 'SUPPLY: FROZEN_RESERVE');
 
-    V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     vm.startPrank(user);
     deal2(reserveInfo.underlying, user, amount);
@@ -194,24 +202,24 @@ abstract contract V4Actions is CommonTestBase {
     spoke.supply({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     // User
     assertApproxEqAbs(
-      after_.user.collateralAssets,
-      before.user.collateralAssets + amount,
+      snapshotAfter.user.collateralAssets,
+      snapshotBefore.user.collateralAssets + amount,
       2,
       'SUPPLY: user assets mismatch'
     );
     assertGt(
-      after_.user.collateralShares,
-      before.user.collateralShares,
+      snapshotAfter.user.collateralShares,
+      snapshotBefore.user.collateralShares,
       'SUPPLY: user shares did not increase'
     );
     // Hub spoke
     assertApproxEqAbs(
-      after_.hubSpoke.collateralAssets,
-      before.hubSpoke.collateralAssets + amount,
+      snapshotAfter.hubSpoke.collateralAssets,
+      snapshotBefore.hubSpoke.collateralAssets + amount,
       2,
       'SUPPLY: hub assets mismatch'
     );
@@ -221,8 +229,8 @@ abstract contract V4Actions is CommonTestBase {
         amount
       );
       assertApproxEqAbs(
-        after_.hubSpoke.collateralShares,
-        before.hubSpoke.collateralShares + expectedAddedShares,
+        snapshotAfter.hubSpoke.collateralShares,
+        snapshotBefore.hubSpoke.collateralShares + expectedAddedShares,
         2,
         'SUPPLY: hub shares mismatch'
       );
@@ -235,7 +243,7 @@ abstract contract V4Actions is CommonTestBase {
     address user,
     uint256 amount
   ) internal {
-    V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     vm.startPrank(user);
     _logAction('WITHDRAW', reserveInfo.symbol, amount);
@@ -246,27 +254,27 @@ abstract contract V4Actions is CommonTestBase {
     });
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
-    if (amount >= before.user.collateralAssets) {
-      assertEq(after_.user.collateralAssets, 0, 'WITHDRAW: user assets should be zero');
-      assertEq(after_.user.collateralShares, 0, 'WITHDRAW: user shares should be zero');
+    if (amount >= snapshotBefore.user.collateralAssets) {
+      assertEq(snapshotAfter.user.collateralAssets, 0, 'WITHDRAW: user assets should be zero');
+      assertEq(snapshotAfter.user.collateralShares, 0, 'WITHDRAW: user shares should be zero');
     } else {
       assertApproxEqAbs(
-        after_.user.collateralAssets,
-        before.user.collateralAssets - withdrawnAmount,
+        snapshotAfter.user.collateralAssets,
+        snapshotBefore.user.collateralAssets - withdrawnAmount,
         2,
         'WITHDRAW: user assets mismatch'
       );
       assertLt(
-        after_.user.collateralShares,
-        before.user.collateralShares,
+        snapshotAfter.user.collateralShares,
+        snapshotBefore.user.collateralShares,
         'WITHDRAW: user shares did not decrease'
       );
     }
     // Hub spoke
     assertApproxEqAbs(
-      before.hubSpoke.collateralAssets - after_.hubSpoke.collateralAssets,
+      snapshotBefore.hubSpoke.collateralAssets - snapshotAfter.hubSpoke.collateralAssets,
       withdrawnAmount,
       2,
       'WITHDRAW: hub assets mismatch'
@@ -277,7 +285,7 @@ abstract contract V4Actions is CommonTestBase {
         withdrawnAmount
       );
       assertApproxEqAbs(
-        before.hubSpoke.collateralShares - after_.hubSpoke.collateralShares,
+        snapshotBefore.hubSpoke.collateralShares - snapshotAfter.hubSpoke.collateralShares,
         expectedSharesDelta,
         2,
         'WITHDRAW: hub shares mismatch'
@@ -291,7 +299,7 @@ abstract contract V4Actions is CommonTestBase {
     address user,
     uint256 amount
   ) internal {
-    V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
     uint256 expectedDrawnShares = IHubBase(reserveInfo.hub).previewDrawByAssets(
       reserveInfo.assetId,
       amount
@@ -301,30 +309,30 @@ abstract contract V4Actions is CommonTestBase {
     vm.prank(user);
     spoke.borrow({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
 
-    V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     // User debt
     assertApproxEqAbs(
-      after_.user.totalDebt,
-      before.user.totalDebt + amount,
+      snapshotAfter.user.totalDebt,
+      snapshotBefore.user.totalDebt + amount,
       2,
       'BORROW: user debt mismatch'
     );
     assertGe(
-      after_.user.drawnDebt,
-      before.user.drawnDebt,
+      snapshotAfter.user.drawnDebt,
+      snapshotBefore.user.drawnDebt,
       'BORROW: user drawn debt did not increase'
     );
     // Hub spoke
     assertApproxEqAbs(
-      after_.hubSpoke.totalDebt,
-      before.hubSpoke.totalDebt + amount,
+      snapshotAfter.hubSpoke.totalDebt,
+      snapshotBefore.hubSpoke.totalDebt + amount,
       2,
       'BORROW: hub debt mismatch'
     );
     assertApproxEqAbs(
-      after_.hubSpoke.drawnShares,
-      before.hubSpoke.drawnShares + expectedDrawnShares,
+      snapshotAfter.hubSpoke.drawnShares,
+      snapshotBefore.hubSpoke.drawnShares + expectedDrawnShares,
       2,
       'BORROW: hub drawn shares mismatch'
     );
@@ -336,8 +344,10 @@ abstract contract V4Actions is CommonTestBase {
     address user,
     uint256 amount
   ) internal {
-    V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
-    uint256 effectiveRepayAmount = amount >= before.user.totalDebt ? before.user.totalDebt : amount;
+    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
+    uint256 effectiveRepayAmount = amount >= snapshotBefore.user.totalDebt
+      ? snapshotBefore.user.totalDebt
+      : amount;
     uint256 expectedRestoredShares = IHubBase(reserveInfo.hub).previewRestoreByAssets(
       reserveInfo.assetId,
       effectiveRepayAmount
@@ -350,27 +360,27 @@ abstract contract V4Actions is CommonTestBase {
     spoke.repay({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
+    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
-    if (amount >= before.user.totalDebt) {
-      assertEq(after_.user.totalDebt, 0, 'REPAY: user debt should be zero');
+    if (amount >= snapshotBefore.user.totalDebt) {
+      assertEq(snapshotAfter.user.totalDebt, 0, 'REPAY: user debt should be zero');
     } else {
       assertApproxEqAbs(
-        after_.user.totalDebt,
-        before.user.totalDebt - amount,
+        snapshotAfter.user.totalDebt,
+        snapshotBefore.user.totalDebt - amount,
         2,
         'REPAY: user debt mismatch'
       );
     }
     // Hub spoke
     assertApproxEqAbs(
-      before.hubSpoke.totalDebt - after_.hubSpoke.totalDebt,
+      snapshotBefore.hubSpoke.totalDebt - snapshotAfter.hubSpoke.totalDebt,
       effectiveRepayAmount,
       2,
       'REPAY: hub debt mismatch'
     );
     assertApproxEqAbs(
-      before.hubSpoke.drawnShares - after_.hubSpoke.drawnShares,
+      snapshotBefore.hubSpoke.drawnShares - snapshotAfter.hubSpoke.drawnShares,
       expectedRestoredShares,
       2,
       'REPAY: hub drawn shares mismatch'
@@ -386,16 +396,20 @@ abstract contract V4Actions is CommonTestBase {
     uint256 debtToCover,
     bool receiveShares
   ) internal {
-    V4Types.PositionSnapshot memory collBefore = _getPositionSnapshot(
+    V4Types.PositionSnapshot memory collateralSnapshotBefore = _getPositionSnapshot(
       spoke,
       collateralInfo,
       borrower
     );
-    V4Types.PositionSnapshot memory debtBefore = _getPositionSnapshot(spoke, debtInfo, borrower);
-    assertGt(debtBefore.user.totalDebt, 0, 'LIQUIDATE: borrower has no debt');
+    V4Types.PositionSnapshot memory debtSnapshotBefore = _getPositionSnapshot(
+      spoke,
+      debtInfo,
+      borrower
+    );
+    assertGt(debtSnapshotBefore.user.totalDebt, 0, 'LIQUIDATE: borrower has no debt');
 
     vm.startPrank(liquidator);
-    uint256 dealAmount = debtBefore.user.totalDebt * 2; // ensure enough buffer to cover debt
+    uint256 dealAmount = debtSnapshotBefore.user.totalDebt * 2;
     deal2(debtInfo.underlying, liquidator, dealAmount);
     IERC20(debtInfo.underlying).forceApprove(address(spoke), debtToCover);
 
@@ -403,14 +417,14 @@ abstract contract V4Actions is CommonTestBase {
       console.log(
         'LIQUIDATE: %s, DebtToCover: UINT256_MAX, TotalDebt: %e',
         debtInfo.symbol,
-        debtBefore.user.totalDebt
+        debtSnapshotBefore.user.totalDebt
       );
     } else {
       console.log(
         'LIQUIDATE: %s, DebtToCover: %e, TotalDebt: %e',
         debtInfo.symbol,
         debtToCover,
-        debtBefore.user.totalDebt
+        debtSnapshotBefore.user.totalDebt
       );
     }
 
@@ -423,28 +437,32 @@ abstract contract V4Actions is CommonTestBase {
     });
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory collAfter = _getPositionSnapshot(
+    V4Types.PositionSnapshot memory collateralSnapshotAfter = _getPositionSnapshot(
       spoke,
       collateralInfo,
       borrower
     );
-    V4Types.PositionSnapshot memory debtAfter = _getPositionSnapshot(spoke, debtInfo, borrower);
+    V4Types.PositionSnapshot memory debtSnapshotAfter = _getPositionSnapshot(
+      spoke,
+      debtInfo,
+      borrower
+    );
 
     // Debt decreased
     assertLt(
-      debtAfter.user.totalDebt,
-      debtBefore.user.totalDebt,
+      debtSnapshotAfter.user.totalDebt,
+      debtSnapshotBefore.user.totalDebt,
       'LIQUIDATE: debt did not decrease'
     );
     assertLt(
-      debtAfter.hubSpoke.totalDebt,
-      debtBefore.hubSpoke.totalDebt,
+      debtSnapshotAfter.hubSpoke.totalDebt,
+      debtSnapshotBefore.hubSpoke.totalDebt,
       'LIQUIDATE: hub debt did not decrease'
     );
     // Collateral decreased
     assertLt(
-      collAfter.user.collateralAssets,
-      collBefore.user.collateralAssets,
+      collateralSnapshotAfter.user.collateralAssets,
+      collateralSnapshotBefore.user.collateralAssets,
       'LIQUIDATE: collateral did not decrease'
     );
   }

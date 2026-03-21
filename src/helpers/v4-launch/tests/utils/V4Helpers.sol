@@ -48,7 +48,7 @@ abstract contract V4Helpers is V4Actions {
   }
 
   /// @notice Return all usable collaterals: not paused, not frozen, collateralFactor > 0.
-  function _getAllGoodCollaterals(
+  function _getAllUsableCollaterals(
     V4Types.V4ReserveInfo[] memory infos
   ) internal pure returns (V4Types.V4ReserveInfo[] memory) {
     uint256 count;
@@ -254,7 +254,7 @@ abstract contract V4Helpers is V4Actions {
     address borrower,
     uint256 borrowAmountInDollars
   ) internal {
-    V4Types.V4ReserveInfo[] memory goodCollaterals = _getAllGoodCollaterals(
+    V4Types.V4ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(
       _getReserveInfos(spoke)
     );
     address oracleAddr = spoke.ORACLE();

@@ -195,6 +195,12 @@ abstract contract V4Scenarios is V4Helpers {
       // Use 50% of max for safety margin
       maxBorrowableAmount = maxBorrowableAmount / 2;
       borrowCeiling = testAssetAmount < maxBorrowableAmount ? testAssetAmount : maxBorrowableAmount;
+      console.log(
+        'BORROW_CEILING: maxDebt=%e, available=%e, ceiling=%e',
+        maxDebtValue,
+        maxBorrowableAmount,
+        borrowCeiling
+      );
     }
     if (borrowCeiling == 0) {
       return;
