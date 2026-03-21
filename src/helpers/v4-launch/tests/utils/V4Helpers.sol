@@ -484,6 +484,27 @@ abstract contract V4Helpers is V4Actions {
     vm.clearMockedCalls();
   }
 
+  /// @notice Set all addCap to max for every reserve on the spoke (leaves drawCap unchanged).
+  function _setAddCapsToMax(ISpoke spoke) internal {
+    address hubConfigurator = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
+
+    V4Types.V4ReserveInfo[] memory infos = _getReserveInfos(spoke);
+    vm.mockCall(
+      AaveV4EthereumAddresses.ACCESS_MANAGER,
+      abi.encodeWithSelector(bytes4(keccak256('canCall(address,address,bytes4)'))),
+      abi.encode(true, uint32(0))
+    );
+    for (uint256 i; i < infos.length; i++) {
+      IHubConfigurator(hubConfigurator).updateSpokeAddCap({
+        hub: infos[i].hub,
+        assetId: infos[i].assetId,
+        spoke: address(spoke),
+        addCap: type(uint40).max
+      });
+    }
+    vm.clearMockedCalls();
+  }
+
   /// @notice Safely get the ERC20 symbol, fallback to "UNKNOWN".
   function _safeSymbol(address token) internal view returns (string memory) {
     try IERC20Metadata(token).symbol() returns (string memory s) {

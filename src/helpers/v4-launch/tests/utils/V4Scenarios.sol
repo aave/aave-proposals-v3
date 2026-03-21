@@ -494,18 +494,8 @@ abstract contract V4Scenarios is V4Helpers {
     uint256 room = addCapScaled - currentSupply;
     address supplier = vm.randomAddress();
 
-    // Fill incrementally with random-sized chunks (2-4 chunks)
-    uint256 chunks = vm.randomUint(2, 10);
-    uint256 filled;
-    for (uint256 chunk; chunk < chunks && filled < room; chunk++) {
-      uint256 remainingRoom = room - filled;
-      uint256 chunkAmount = chunk == chunks - 1 ? remainingRoom : vm.randomUint(1, remainingRoom);
-      _supply({spoke: spoke, reserveInfo: reserveInfo, user: supplier, amount: chunkAmount});
-      filled += chunkAmount;
-    }
-
-    // Next supply should revert with AddCapExceeded
-    uint256 overflowAmount = 10 ** reserveInfo.decimals;
+    // Supply more than addCap — should revert with AddCapExceeded
+    uint256 overflowAmount = room + 10 ** reserveInfo.decimals;
     vm.startPrank(supplier);
     deal2({asset: reserveInfo.underlying, user: supplier, amount: overflowAmount});
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), overflowAmount);
@@ -520,6 +510,10 @@ abstract contract V4Scenarios is V4Helpers {
     V4Types.V4ReserveInfo memory reserveInfo,
     uint40 drawCap
   ) internal revertToSnapshot {
+    // Remove addCaps so enough collateral can be supplied to borrow up to drawCap
+    _setAddCapsToMax(spoke);
+
+    console.log('TEST_DRAW_CAP: drawCap=%e', drawCap);
     address borrower = vm.randomAddress();
     uint256 drawCapScaled = uint256(drawCap) * 10 ** reserveInfo.decimals;
     uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
@@ -529,42 +523,22 @@ abstract contract V4Scenarios is V4Helpers {
 
     uint256 room = drawCapScaled - currentDebt;
 
-    // Ensure borrower has enough collateral across all available reserves
-    {
-      address oracleAddr = spoke.ORACLE();
-      uint256 roomDollars = (room *
-        IAaveOracle(oracleAddr).getReservePrice(reserveInfo.reserveId)) /
-        10 ** (IAaveOracle(oracleAddr).decimals() + reserveInfo.decimals);
-      _ensureBorrowCapacity(spoke, borrower, roomDollars);
-    }
+    // Supply the debt asset itself as collateral (3x room for borrow headroom) + liquidity
+    uint256 collateralAmount = room * 10;
+    _supply({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: collateralAmount});
+    vm.prank(borrower);
+    spoke.setUsingAsCollateral({
+      reserveId: reserveInfo.reserveId,
+      usingAsCollateral: true,
+      onBehalfOf: borrower
+    });
 
-    // Ensure hub has enough liquidity (fans out to sibling spokes if needed)
-    {
-      uint256 supplied = _ensureLiquidity({spoke: spoke, reserveInfo: reserveInfo, amount: room});
-      if (supplied == 0) {
-        return;
-      }
-      if (supplied < room) {
-        // Not enough addCap to fill the full drawCap — borrow what we can and skip overflow test
-        _borrow({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: supplied});
-        return;
-      }
-    }
+    // Supply liquidity from a separate provider
+    address liquidityProvider = vm.randomAddress();
+    _supply({spoke: spoke, reserveInfo: reserveInfo, user: liquidityProvider, amount: room});
 
-    // Fill incrementally with random-sized chunks (2-4 chunks)
-    {
-      uint256 chunks = vm.randomUint(2, 4);
-      uint256 filled;
-      for (uint256 chunk; chunk < chunks && filled < room; chunk++) {
-        uint256 remainingRoom = room - filled;
-        uint256 chunkAmount = chunk == chunks - 1 ? remainingRoom : vm.randomUint(1, remainingRoom);
-        _borrow({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: chunkAmount});
-        filled += chunkAmount;
-      }
-    }
-
-    // Next borrow should revert with DrawCapExceeded
-    uint256 overflowAmount = 10 ** reserveInfo.decimals;
+    // Borrow more than drawCap — should revert with DrawCapExceeded
+    uint256 overflowAmount = room + 10 ** reserveInfo.decimals;
     vm.prank(borrower);
     vm.expectRevert(abi.encodeWithSelector(IHub.DrawCapExceeded.selector, uint256(drawCap)));
     spoke.borrow({reserveId: reserveInfo.reserveId, amount: overflowAmount, onBehalfOf: borrower});

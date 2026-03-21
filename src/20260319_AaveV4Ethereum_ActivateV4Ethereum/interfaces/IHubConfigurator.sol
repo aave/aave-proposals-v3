@@ -11,4 +11,5 @@ interface IHubConfigurator {
     uint256 addCap,
     uint256 drawCap
   ) external;
+  function updateSpokeAddCap(address hub, uint256 assetId, address spoke, uint256 addCap) external;
 }
