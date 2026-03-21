@@ -78,4 +78,19 @@ library AaveV4EthereumAddresses {
     spokes[10] = TREASURY_SPOKE;
     return spokes;
   }
+
+  function getUserSpokes() internal pure returns (address[] memory spokes) {
+    spokes = new address[](11);
+    spokes[0] = MAIN_SPOKE;
+    spokes[1] = BLUECHIP_SPOKE;
+    spokes[2] = ETHENA_CORRELATED_SPOKE;
+    spokes[3] = ETHENA_ECOSYSTEM_SPOKE;
+    spokes[4] = ETHERFI_ESPOKE;
+    spokes[5] = FOREX_SPOKE;
+    spokes[6] = GOLD_SPOKE;
+    spokes[7] = KELP_ESPOKE;
+    spokes[8] = LIDO_ESPOKE;
+    spokes[9] = LOMBARD_BTC_SPOKE;
+    return spokes;
+  }
 }

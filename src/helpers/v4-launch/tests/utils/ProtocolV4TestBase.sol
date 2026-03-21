@@ -28,6 +28,7 @@ contract ProtocolV4TestBase is V4Scenarios {
   function e2eTestAllSpokes(address[] memory spokes) public {
     for (uint256 i; i < spokes.length; i++) {
       console.log('--- E2E: Testing spoke %s ---', spokes[i]);
+      console.log('--------------------------------');
       e2eTestSpoke(ISpoke(spokes[i]));
     }
   }

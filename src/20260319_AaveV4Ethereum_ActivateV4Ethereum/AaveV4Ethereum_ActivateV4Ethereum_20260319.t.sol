@@ -42,7 +42,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   function test_defaultProposalExecution() public {
     defaultTest(
       'AaveV4Ethereum_ActivateV4Ethereum_20260319',
-      AaveV4EthereumAddresses.getSpokes(),
+      AaveV4EthereumAddresses.getUserSpokes(),
       address(proposal)
     );
   }

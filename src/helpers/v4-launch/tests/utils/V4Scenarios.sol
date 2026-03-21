@@ -17,61 +17,55 @@ import {V4Helpers} from './V4Helpers.sol';
 abstract contract V4Scenarios is V4Helpers {
   using SafeERC20 for IERC20;
 
-  /// @dev Makes a user liquidatable by iteratively manipulating oracle prices.
-  ///      Each pass: reduce collateral prices to 10% and boost debt-only prices by 10x.
-  ///      Checks HF once per pass to minimize memory usage.
-  ///      Override in your test if you need a different strategy.
+  /// @dev Makes a user liquidatable by manipulating oracle prices and warping time.
+  ///      1. Reduce collateral-only prices to near zero, boost debt-only prices by 10x.
+  ///      2. For same-asset positions (supply + debt on same reserve), price manipulation
+  ///         cancels out, so warp time to let interest accrue until HF drops below 1.
   function _makeUserLiquidatable(ISpoke spoke, address user) internal virtual {
     address oracle = spoke.ORACLE();
     uint256 reserveCount = spoke.getReserveCount();
 
-    for (uint256 pass; pass < 5; pass++) {
-      // Reduce all collateral reserve prices to 10% of current
-      for (uint256 i; i < reserveCount; i++) {
-        uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
-        if (userSupply == 0) {
-          continue;
-        }
+    // Pass 1: manipulate prices for reserves where user has only supply or only debt
+    for (uint256 i; i < reserveCount; i++) {
+      uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
+      uint256 userDebt = spoke.getUserTotalDebt(i, user);
 
+      if (userSupply > 0 && userDebt == 0) {
+        // Collateral-only: slash price to 1% of current
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
         vm.mockCall(
           oracle,
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-          abi.encode(currentPrice / 10)
+          abi.encode(currentPrice / 100)
         );
-      }
-
-      // Increase all debt-only reserve prices by 10x
-      for (uint256 i; i < reserveCount; i++) {
-        uint256 userDebt = spoke.getUserTotalDebt(i, user);
-        if (userDebt == 0) {
-          continue;
-        }
-
-        uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
-        if (userSupply > 0) {
-          continue;
-        }
-
+      } else if (userDebt > 0 && userSupply == 0) {
+        // Debt-only: boost price by 100x
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
         vm.mockCall(
           oracle,
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-          abi.encode(currentPrice * 10)
+          abi.encode(currentPrice * 100)
         );
       }
     }
 
-    // Check HF once per pass
     ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
     if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
       return;
     }
 
+    // Next approach: for same-asset positions, warp time to accrue interest until HF drops
+    for (uint256 step; step < 20; step++) {
+      skip(10 * 365 days);
+      accountData = spoke.getUserAccountData(user);
+      if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
+        return;
+      }
+    }
+
     // Verify the user is actually liquidatable
-    ISpoke.UserAccountData memory finalAccountData = spoke.getUserAccountData(user);
     assertLt(
-      finalAccountData.healthFactor,
+      accountData.healthFactor,
       HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
       'MAKE_LIQUIDATABLE: health factor not below 1'
     );
@@ -138,6 +132,7 @@ abstract contract V4Scenarios is V4Helpers {
         spoke: spoke,
         goodCollaterals: goodCollaterals,
         primaryIndex: primaryCollateralIndex,
+        testAssetReserveId: testAssetInfo.reserveId,
         oracleAddr: oracle,
         user: collateralSupplier,
         extraCount: extraCount
@@ -308,7 +303,11 @@ abstract contract V4Scenarios is V4Helpers {
     }
     vm.revertToState(snapshotAfterBorrow);
 
-    _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+    // Skip liquidation test when collateral and test asset are the same reserve —
+    // price manipulation can't make user liquidatable because both sides scale equally
+    if (collateralInfo.reserveId != testAssetInfo.reserveId) {
+      _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+    }
   }
 
   /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).

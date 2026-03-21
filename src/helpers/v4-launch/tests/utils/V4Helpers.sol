@@ -302,6 +302,7 @@ abstract contract V4Helpers is V4Actions {
     ISpoke spoke,
     V4Types.V4ReserveInfo[] memory goodCollaterals,
     uint256 primaryIndex,
+    uint256 testAssetReserveId,
     address oracleAddr,
     address user,
     uint256 extraCount
@@ -318,7 +319,8 @@ abstract contract V4Helpers is V4Actions {
 
     uint256 supplied;
     for (uint256 index; index < goodCollaterals.length && supplied < extraCount; index++) {
-      if (index == primaryIndex) {
+      // skip the primary collateral and the test asset
+      if (index == primaryIndex || goodCollaterals[index].reserveId == testAssetReserveId) {
         continue;
       }
 
