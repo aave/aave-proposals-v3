@@ -44,10 +44,14 @@ abstract contract V4Scenarios is V4Helpers {
       // Increase all debt-only reserve prices by 10x
       for (uint256 i; i < reserveCount; i++) {
         uint256 userDebt = spoke.getUserTotalDebt(i, user);
-        if (userDebt == 0) continue;
+        if (userDebt == 0) {
+          continue;
+        }
 
         uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
-        if (userSupply > 0) continue;
+        if (userSupply > 0) {
+          continue;
+        }
 
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
         vm.mockCall(
@@ -160,7 +164,7 @@ abstract contract V4Scenarios is V4Helpers {
       ? vm.randomUint(1, testAssetAmount - 1)
       : testAssetAmount;
     _withdraw(spoke, testAssetInfo, testAssetSupplier, partialWithdraw);
-    _withdraw(spoke, testAssetInfo, testAssetSupplier, type(uint256).max);
+    _withdraw(spoke, testAssetInfo, testAssetSupplier, UINT256_MAX);
   }
 
   /// @dev Test borrow, repay, and liquidation flows.
@@ -171,10 +175,33 @@ abstract contract V4Scenarios is V4Helpers {
     address collateralSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
+    // Cap borrow by user's available borrowing power to avoid HealthFactorBelowThreshold.
+    uint256 borrowCeiling;
+    {
+      ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
+      // maxDebtValue = CF-weighted collateral value (HF=1 threshold)
+      uint256 maxDebtValue = (accountData.totalCollateralValue * accountData.avgCollateralFactor) /
+        1e18;
+      uint256 currentDebtValue = accountData.totalDebtValueRay / 1e27;
+      uint256 availableDebtValue = maxDebtValue > currentDebtValue
+        ? maxDebtValue - currentDebtValue
+        : 0;
+
+      // Convert to test asset tokens
+      address oracleAddr = spoke.ORACLE();
+      uint256 testAssetPrice = IAaveOracle(oracleAddr).getReservePrice(testAssetInfo.reserveId);
+      uint256 maxBorrowableAmount = (availableDebtValue * 10 ** testAssetInfo.decimals) /
+        testAssetPrice;
+      // Use 50% of max for safety margin
+      maxBorrowableAmount = maxBorrowableAmount / 2;
+      borrowCeiling = testAssetAmount < maxBorrowableAmount ? testAssetAmount : maxBorrowableAmount;
+    }
+    if (borrowCeiling == 0) {
+      return;
+    }
+
     // First borrow (random partial amount)
-    uint256 firstBorrow = testAssetAmount > 2
-      ? vm.randomUint(1, testAssetAmount / 2)
-      : testAssetAmount;
+    uint256 firstBorrow = borrowCeiling > 2 ? vm.randomUint(1, borrowCeiling / 2) : borrowCeiling;
     _borrow({
       spoke: spoke,
       reserveInfo: testAssetInfo,
@@ -197,8 +224,8 @@ abstract contract V4Scenarios is V4Helpers {
       );
     }
 
-    // Second borrow on top of the first (sequential borrows on same reserve)
-    uint256 remaining = testAssetAmount - firstBorrow;
+    // Second sequential borrow on same reserve
+    uint256 remaining = borrowCeiling - firstBorrow;
     if (remaining > 0) {
       uint256 secondBorrow = vm.randomUint(1, remaining);
       _borrow({
@@ -261,7 +288,7 @@ abstract contract V4Scenarios is V4Helpers {
 
     // Repay after interest accrual should still work
     {
-      vm.warp(block.timestamp + vm.randomUint(1, 30) * 1 days);
+      skip(vm.randomUint(1, 30) * 1 days);
       uint256 debtAfterAccrual = spoke.getUserTotalDebt(
         testAssetInfo.reserveId,
         collateralSupplier
@@ -289,7 +316,7 @@ abstract contract V4Scenarios is V4Helpers {
 
     // Skip random 1-90 days to let interest accrue before liquidation
     uint256 skipDays = vm.randomUint(1, 90);
-    vm.warp(block.timestamp + skipDays * 1 days);
+    skip(skipDays * 1 days);
 
     // Verify health factor is below 1 after making liquidatable
     ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
@@ -309,7 +336,7 @@ abstract contract V4Scenarios is V4Helpers {
       debtInfo: testAssetInfo,
       liquidator: liquidator,
       borrower: collateralSupplier,
-      debtToCover: type(uint256).max,
+      debtToCover: UINT256_MAX,
       receiveShares: false
     });
     vm.revertToState(snapshotBeforeLiquidation);
@@ -321,7 +348,7 @@ abstract contract V4Scenarios is V4Helpers {
       debtInfo: testAssetInfo,
       liquidator: liquidator,
       borrower: collateralSupplier,
-      debtToCover: type(uint256).max,
+      debtToCover: UINT256_MAX,
       receiveShares: true
     });
     vm.revertToState(snapshotBeforeLiquidation);
@@ -508,7 +535,9 @@ abstract contract V4Scenarios is V4Helpers {
     // Ensure hub has enough liquidity (fans out to sibling spokes if needed)
     {
       uint256 supplied = _ensureLiquidity({spoke: spoke, reserveInfo: reserveInfo, amount: room});
-      if (supplied == 0) return;
+      if (supplied == 0) {
+        return;
+      }
       if (supplied < room) {
         // Not enough addCap to fill the full drawCap — borrow what we can and skip overflow test
         _borrow({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: supplied});

@@ -27,7 +27,7 @@ abstract contract V4Actions is CommonTestBase {
   // -------------------------------------------------------------------------
 
   function _logAction(string memory action, string memory symbol, uint256 amount) internal pure {
-    if (amount == type(uint256).max) {
+    if (amount == UINT256_MAX) {
       console.log('%s: %s, Amount: UINT256_MAX', action, symbol);
     } else {
       console.log('%s: %s, Amount: %e', action, symbol, amount);
@@ -132,7 +132,7 @@ abstract contract V4Actions is CommonTestBase {
 
     V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
 
-    vm.warp(block.timestamp + skipDays * 1 days);
+    skip(skipDays * 1 days);
 
     V4Types.PositionSnapshot memory after_ = _getPositionSnapshot(spoke, reserveInfo, user);
 
@@ -399,7 +399,7 @@ abstract contract V4Actions is CommonTestBase {
     deal2(debtInfo.underlying, liquidator, dealAmount);
     IERC20(debtInfo.underlying).forceApprove(address(spoke), debtToCover);
 
-    if (debtToCover == type(uint256).max) {
+    if (debtToCover == UINT256_MAX) {
       console.log(
         'LIQUIDATE: %s, DebtToCover: UINT256_MAX, TotalDebt: %e',
         debtInfo.symbol,

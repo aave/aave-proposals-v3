@@ -158,7 +158,9 @@ abstract contract V4Helpers is V4Actions {
     uint8 decimals
   ) internal view returns (uint256) {
     IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spokeAddr);
-    if (config.addCap == 0 || !config.active || config.halted) return 0;
+    if (config.addCap == 0 || !config.active || config.halted) {
+      return 0;
+    }
 
     uint256 addCapScaled = uint256(config.addCap) * 10 ** decimals;
     uint256 currentAdded = hub.getSpokeAddedAssets(assetId, spokeAddr);
@@ -257,13 +259,14 @@ abstract contract V4Helpers is V4Actions {
     );
     address oracleAddr = spoke.ORACLE();
     uint8 oracleDecimals = IAaveOracle(oracleAddr).decimals();
-    uint256 targetCollateralValue = borrowAmountInDollars * 3 * 10 ** oracleDecimals;
+    uint256 targetCollateralDollarAmount = borrowAmountInDollars * 3;
+    uint256 targetCollateralValue = targetCollateralDollarAmount * 10 ** oracleDecimals;
 
     for (uint256 i; i < goodCollaterals.length; i++) {
       uint256 supplyAmount = _getTokenAmountByDollarValue({
         oracleAddr: oracleAddr,
         reserveInfo: goodCollaterals[i],
-        dollarValue: borrowAmountInDollars * 3
+        dollarValue: targetCollateralDollarAmount
       });
 
       _ensureCollateral({
@@ -276,7 +279,9 @@ abstract contract V4Helpers is V4Actions {
       // Check after supplying — totalCollateralValue is CF-adjusted, so we may need
       // multiple reserves to reach the target raw collateral value.
       ISpoke.UserAccountData memory account = spoke.getUserAccountData(borrower);
-      if (account.totalCollateralValue > targetCollateralValue) break;
+      if (account.totalCollateralValue > targetCollateralValue) {
+        break;
+      }
     }
   }
 
@@ -292,7 +297,7 @@ abstract contract V4Helpers is V4Actions {
     return (dollarValue * 10 ** (oracleDecimals + reserveInfo.decimals)) / price;
   }
 
-  /// @notice Supply a random number (0-2) of extra collaterals for the user.
+  /// @notice Supply up to `extraCount` of additional collaterals for the user, up to `maxUserReserves`.
   function _supplyRandomExtraCollaterals(
     ISpoke spoke,
     V4Types.V4ReserveInfo[] memory goodCollaterals,
