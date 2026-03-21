@@ -2,9 +2,11 @@
 pragma solidity ^0.8.0;
 
 import {IERC20Metadata} from 'openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol';
-import {ISpoke} from '../interfaces/ISpoke.sol';
-import {IHub} from '../interfaces/IHub.sol';
-import {IAaveOracle} from '../interfaces/IAaveOracle.sol';
+import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
+import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHub.sol';
+import {IHubConfigurator} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubConfigurator.sol';
+import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IAaveOracle.sol';
+import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
 import {V4Types} from './V4Types.sol';
 import {V4Actions} from './V4Actions.sol';
 
@@ -278,48 +280,6 @@ abstract contract V4Helpers is V4Actions {
     }
   }
 
-  /// @notice Get remaining addCap room in dollar terms for a spoke reserve.
-  function _getAddCapRoomDollars(
-    ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
-    address oracleAddr
-  ) internal view returns (uint256) {
-    uint256 room = _getSpokeAddCapRoom(
-      IHub(reserveInfo.hub),
-      reserveInfo.assetId,
-      address(spoke),
-      reserveInfo.decimals
-    );
-    if (room == 0) return 0;
-    IAaveOracle oracle = IAaveOracle(oracleAddr);
-    return
-      (room * oracle.getReservePrice(reserveInfo.reserveId)) /
-      10 ** (oracle.decimals() + reserveInfo.decimals);
-  }
-
-  /// @notice Get remaining drawCap room in dollar terms for a spoke reserve.
-  function _getDrawCapRoomDollars(
-    ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
-    address oracleAddr
-  ) internal view returns (uint256) {
-    IHub.SpokeConfig memory spokeConfig = IHub(reserveInfo.hub).getSpokeConfig(
-      reserveInfo.assetId,
-      address(spoke)
-    );
-    if (spokeConfig.drawCap == 0 || spokeConfig.drawCap == type(uint40).max) {
-      return type(uint256).max;
-    }
-    uint256 drawCapScaled = uint256(spokeConfig.drawCap) * 10 ** reserveInfo.decimals;
-    uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
-    if (drawCapScaled <= currentDebt) return 0;
-    uint256 drawCapRoom = drawCapScaled - currentDebt;
-    IAaveOracle oracle = IAaveOracle(oracleAddr);
-    return
-      (drawCapRoom * oracle.getReservePrice(reserveInfo.reserveId)) /
-      10 ** (oracle.decimals() + reserveInfo.decimals);
-  }
-
   /// @notice Convert a dollar value to token amount using the spoke oracle.
   function _getTokenAmountByDollarValue(
     address oracleAddr,
@@ -495,6 +455,28 @@ abstract contract V4Helpers is V4Actions {
       vm.expectRevert(ISpoke.MaximumUserReservesExceeded.selector);
       _borrow({spoke: spoke, reserveInfo: reserveInfo, user: user, amount: amount});
     }
+  }
+
+  /// @notice Set all addCap/drawCap to max for every reserve on the spoke.
+  function _setCapsToMax(ISpoke spoke) internal {
+    address hubConfigurator = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
+
+    V4Types.V4ReserveInfo[] memory infos = _getReserveInfos(spoke);
+    vm.mockCall(
+      AaveV4EthereumAddresses.ACCESS_MANAGER,
+      abi.encodeWithSelector(bytes4(keccak256('canCall(address,address,bytes4)'))),
+      abi.encode(true, uint32(0))
+    );
+    for (uint256 i; i < infos.length; i++) {
+      IHubConfigurator(hubConfigurator).updateSpokeCaps({
+        hub: infos[i].hub,
+        assetId: infos[i].assetId,
+        spoke: address(spoke),
+        addCap: type(uint40).max,
+        drawCap: type(uint40).max
+      });
+    }
+    vm.clearMockedCalls();
   }
 
   /// @notice Safely get the ERC20 symbol, fallback to "UNKNOWN".

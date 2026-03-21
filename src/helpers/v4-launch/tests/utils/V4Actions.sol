@@ -5,9 +5,8 @@ import 'forge-std/Test.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {CommonTestBase} from 'aave-helpers/src/CommonTestBase.sol';
-import {ISpoke} from '../interfaces/ISpoke.sol';
-import {IHub} from '../interfaces/IHub.sol';
-import {IHubBase} from '../interfaces/IHubBase.sol';
+import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
+import {IHubBase} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubBase.sol';
 import {V4Types} from './V4Types.sol';
 
 /// @title V4Actions
@@ -185,23 +184,6 @@ abstract contract V4Actions is CommonTestBase {
   ) internal {
     require(!reserveInfo.paused, 'SUPPLY: PAUSED_RESERVE');
     require(!reserveInfo.frozen, 'SUPPLY: FROZEN_RESERVE');
-
-    // Cap at addCap room to avoid AddCapExceeded
-    {
-      IHub hub = IHub(reserveInfo.hub);
-      IHub.SpokeConfig memory config = hub.getSpokeConfig(reserveInfo.assetId, address(spoke));
-      if (config.addCap > 0 && config.addCap < type(uint40).max) {
-        uint256 addCapScaled = uint256(config.addCap) * 10 ** reserveInfo.decimals;
-        uint256 currentAdded = hub.getSpokeAddedAssets(reserveInfo.assetId, address(spoke));
-        uint256 room = addCapScaled > currentAdded ? addCapScaled - currentAdded : 0;
-        if (amount > room) {
-          amount = room;
-        }
-        if (amount == 0) {
-          return;
-        }
-      }
-    }
 
     V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import 'forge-std/Test.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
-import {ISpoke} from '../interfaces/ISpoke.sol';
+import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
 import {V4Types} from './V4Types.sol';
 import {V4Scenarios} from './V4Scenarios.sol';
 
@@ -147,6 +147,9 @@ contract ProtocolV4TestBase is V4Scenarios {
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
     _testCaps({spoke: spoke, reserveInfo: testAssetInfo});
+
+    // Set caps to max after cap testing for the rest of the flow
+    _setCapsToMax(spoke);
 
     address collateralSupplier = makeAddr('COLLATERAL_SUPPLIER');
     address testAssetSupplier = makeAddr('TEST_ASSET_SUPPLIER');

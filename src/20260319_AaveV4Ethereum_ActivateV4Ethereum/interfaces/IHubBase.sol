@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: LicenseRef-BUSL
 pragma solidity ^0.8.0;
 
-/// @title IHubBase
-/// @author Aave Labs
-/// @notice Minimal interface for Hub (stripped for e2e testing - no broken imports).
 interface IHubBase {
   struct PremiumDelta {
     int256 sharesDelta;

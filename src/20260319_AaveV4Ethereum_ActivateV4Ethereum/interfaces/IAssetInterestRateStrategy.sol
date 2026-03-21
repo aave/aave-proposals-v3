@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LicenseRef-BUSL
 pragma solidity ^0.8.0;
 
-/// @title IAssetInterestRateStrategy
-/// @notice Minimal interface for the asset interest rate strategy (stripped for e2e testing).
 interface IAssetInterestRateStrategy {
   struct InterestRateData {
     uint16 optimalUsageRatio;

@@ -4,10 +4,11 @@ pragma solidity ^0.8.0;
 import 'forge-std/Test.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
-import {ISpoke} from '../interfaces/ISpoke.sol';
-import {IHub} from '../interfaces/IHub.sol';
-import {IAaveOracle} from '../interfaces/IAaveOracle.sol';
-import {IPriceOracle} from '../interfaces/IPriceOracle.sol';
+import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
+import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHub.sol';
+import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IAaveOracle.sol';
+import {IPriceOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IPriceOracle.sol';
+import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
 import {V4Types} from './V4Types.sol';
 import {V4Helpers} from './V4Helpers.sol';
 
@@ -55,10 +56,12 @@ abstract contract V4Scenarios is V4Helpers {
           abi.encode(currentPrice * 10)
         );
       }
+    }
 
-      // Check HF once per pass
-      ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
-      if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return;
+    // Check HF once per pass
+    ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
+    if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
+      return;
     }
 
     // Verify the user is actually liquidatable
@@ -82,27 +85,8 @@ abstract contract V4Scenarios is V4Helpers {
     V4Types.V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
     address oracle = spoke.ORACLE();
 
-    uint256 collateralDollars;
-    {
-      uint256 addCapRoomDollars = _getAddCapRoomDollars(spoke, collateralInfo, oracle);
-      if (addCapRoomDollars < 1_000) return 0;
-      collateralDollars = vm.randomUint(1_000, addCapRoomDollars);
-    }
-
-    uint256 testAssetDollars;
-    {
-      uint256 maxTestAssetDollars = collateralDollars / 3;
-      // Cap at addCap room (test asset is supplied as liquidity)
-      uint256 testAssetAddCapRoom = _getAddCapRoomDollars(spoke, testAssetInfo, oracle);
-      if (testAssetAddCapRoom < maxTestAssetDollars) maxTestAssetDollars = testAssetAddCapRoom;
-      // Cap at drawCap room (test asset is borrowed)
-      if (testAssetInfo.borrowable) {
-        uint256 drawCapRoom = _getDrawCapRoomDollars(spoke, testAssetInfo, oracle);
-        if (drawCapRoom < maxTestAssetDollars) maxTestAssetDollars = drawCapRoom;
-      }
-      if (maxTestAssetDollars < 1_000) return 0;
-      testAssetDollars = vm.randomUint(1_000, maxTestAssetDollars);
-    }
+    uint256 collateralDollars = vm.randomUint(50_000, 200_000);
+    uint256 testAssetDollars = vm.randomUint(1_000, 20_000);
     uint256 collateralAmount = _getTokenAmountByDollarValue({
       oracleAddr: oracle,
       reserveInfo: collateralInfo,
@@ -340,8 +324,9 @@ abstract contract V4Scenarios is V4Helpers {
       debtToCover: type(uint256).max,
       receiveShares: true
     });
+    vm.revertToState(snapshotBeforeLiquidation);
 
-    // Clear oracle price mocks
+    // Clear oracle price mockss
     vm.clearMockedCalls();
   }
 
