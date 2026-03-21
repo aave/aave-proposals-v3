@@ -40,18 +40,18 @@ abstract contract V4Actions is CommonTestBase {
 
   function _getUserAccounting(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    uint256 reserveId,
     address user
   ) internal view returns (V4Types.Accounting memory) {
-    (uint256 drawnDebt, uint256 premiumDebt) = spoke.getUserDebt(reserveInfo.reserveId, user);
-    ISpoke.UserPosition memory position = spoke.getUserPosition(reserveInfo.reserveId, user);
+    (uint256 drawnDebt, uint256 premiumDebt) = spoke.getUserDebt(reserveId, user);
+    ISpoke.UserPosition memory position = spoke.getUserPosition(reserveId, user);
     return
       V4Types.Accounting({
         collateralShares: position.suppliedShares,
-        collateralAssets: spoke.getUserSuppliedAssets(reserveInfo.reserveId, user),
+        collateralAssets: spoke.getUserSuppliedAssets(reserveId, user),
         drawnDebt: drawnDebt,
         premiumDebt: premiumDebt,
-        totalDebt: spoke.getUserTotalDebt(reserveInfo.reserveId, user),
+        totalDebt: spoke.getUserTotalDebt(reserveId, user),
         drawnShares: position.drawnShares,
         premiumShares: position.premiumShares,
         premiumOffsetRay: position.premiumOffsetRay
@@ -111,9 +111,9 @@ abstract contract V4Actions is CommonTestBase {
   ) internal view returns (V4Types.PositionSnapshot memory) {
     return
       V4Types.PositionSnapshot({
-        user: _getUserAccounting(spoke, reserveInfo, user),
-        reserve: _getReserveAccounting(spoke, reserveInfo),
-        hubSpoke: _getHubSpokeAccounting(spoke, reserveInfo)
+        user: _getUserAccounting({spoke: spoke, reserveId: reserveInfo.reserveId, user: user}),
+        reserve: _getReserveAccounting({spoke: spoke, reserveInfo: reserveInfo}),
+        hubSpoke: _getHubSpokeAccounting({spoke: spoke, reserveInfo: reserveInfo})
       });
   }
 

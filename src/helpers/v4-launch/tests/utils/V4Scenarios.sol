@@ -54,15 +54,6 @@ abstract contract V4Scenarios is V4Helpers {
       return;
     }
 
-    // Next approach: for same-asset positions, warp time to accrue interest until HF drops
-    for (uint256 step; step < 20; step++) {
-      skip(10 * 365 days);
-      accountData = spoke.getUserAccountData(user);
-      if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
-        return;
-      }
-    }
-
     // Verify the user is actually liquidatable
     assertLt(
       accountData.healthFactor,

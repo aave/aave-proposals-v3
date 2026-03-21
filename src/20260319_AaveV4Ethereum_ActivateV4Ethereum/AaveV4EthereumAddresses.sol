@@ -80,7 +80,7 @@ library AaveV4EthereumAddresses {
   }
 
   function getUserSpokes() internal pure returns (address[] memory spokes) {
-    spokes = new address[](11);
+    spokes = new address[](10);
     spokes[0] = MAIN_SPOKE;
     spokes[1] = BLUECHIP_SPOKE;
     spokes[2] = ETHENA_CORRELATED_SPOKE;
