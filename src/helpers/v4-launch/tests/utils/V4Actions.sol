@@ -60,7 +60,7 @@ abstract contract V4Actions is CommonTestBase {
 
   function _getReserveAccounting(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo
+    V4Types.ReserveInfo memory reserveInfo
   ) internal view returns (V4Types.Accounting memory) {
     IHubBase hub = IHubBase(reserveInfo.hub);
     uint16 assetId = reserveInfo.assetId;
@@ -84,7 +84,7 @@ abstract contract V4Actions is CommonTestBase {
 
   function _getHubSpokeAccounting(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo
+    V4Types.ReserveInfo memory reserveInfo
   ) internal view returns (V4Types.Accounting memory) {
     IHubBase hub = IHubBase(reserveInfo.hub);
     uint16 assetId = reserveInfo.assetId;
@@ -106,7 +106,7 @@ abstract contract V4Actions is CommonTestBase {
 
   function _getPositionSnapshot(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     address user
   ) internal view returns (V4Types.PositionSnapshot memory) {
     return
@@ -124,7 +124,7 @@ abstract contract V4Actions is CommonTestBase {
   /// @notice Skip time, assert debt accounting grew as expected, then revert.
   function _skipTimeAndCheckAccounting(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 skipDays
   ) internal {
@@ -186,7 +186,7 @@ abstract contract V4Actions is CommonTestBase {
 
   function _supply(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
@@ -239,7 +239,7 @@ abstract contract V4Actions is CommonTestBase {
 
   function _withdraw(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
@@ -295,7 +295,7 @@ abstract contract V4Actions is CommonTestBase {
 
   function _borrow(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
@@ -340,7 +340,7 @@ abstract contract V4Actions is CommonTestBase {
 
   function _repay(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
@@ -389,8 +389,8 @@ abstract contract V4Actions is CommonTestBase {
 
   function _liquidationCall(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory collateralInfo,
-    V4Types.V4ReserveInfo memory debtInfo,
+    V4Types.ReserveInfo memory collateralInfo,
+    V4Types.ReserveInfo memory debtInfo,
     address liquidator,
     address borrower,
     uint256 debtToCover,

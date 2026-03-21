@@ -25,7 +25,7 @@ library V4Types {
   }
 
   /// @notice Per-reserve info struct used throughout V4 e2e tests.
-  struct V4ReserveInfo {
+  struct ReserveInfo {
     uint256 reserveId;
     address underlying;
     address hub;

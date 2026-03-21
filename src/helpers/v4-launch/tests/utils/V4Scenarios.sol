@@ -65,13 +65,13 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Supply collateral(s) and test asset, return the test asset amount.
   function _setupPositions(
     ISpoke spoke,
-    V4Types.V4ReserveInfo[] memory goodCollaterals,
+    V4Types.ReserveInfo[] memory goodCollaterals,
     uint256 primaryCollateralIndex,
-    V4Types.V4ReserveInfo memory testAssetInfo,
+    V4Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     address testAssetSupplier
   ) internal returns (uint256 testAssetAmount) {
-    V4Types.V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+    V4Types.ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
     address oracle = spoke.ORACLE();
 
     uint256 collateralDollars = vm.randomUint(50_000, 200_000);
@@ -142,7 +142,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test partial + full withdrawal with random partial amount.
   function _testWithdrawals(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory testAssetInfo,
+    V4Types.ReserveInfo memory testAssetInfo,
     address testAssetSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
@@ -156,8 +156,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test borrow, repay, and liquidation flows.
   function _testBorrowRepayLiquidation(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory collateralInfo,
-    V4Types.V4ReserveInfo memory testAssetInfo,
+    V4Types.ReserveInfo memory collateralInfo,
+    V4Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
@@ -304,8 +304,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).
   function _testLiquidation(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory collateralInfo,
-    V4Types.V4ReserveInfo memory testAssetInfo,
+    V4Types.ReserveInfo memory collateralInfo,
+    V4Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier
   ) internal revertToSnapshot {
     _makeUserLiquidatable(spoke, collateralSupplier);
@@ -356,8 +356,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Disable all collaterals, verify borrow reverts, re-enable all, verify borrow works.
   function _testCollateralToggle(
     ISpoke spoke,
-    V4Types.V4ReserveInfo[] memory goodCollaterals,
-    V4Types.V4ReserveInfo memory testAssetInfo,
+    V4Types.ReserveInfo[] memory goodCollaterals,
+    V4Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
@@ -430,8 +430,8 @@ abstract contract V4Scenarios is V4Helpers {
 
   /// @dev Borrow from random extra reserves, respecting MAX_USER_RESERVES_LIMIT.
   function _borrowExtrasWithinLimit(ISpoke spoke, uint256 primaryReserveId, address user) internal {
-    V4Types.V4ReserveInfo[] memory allReserves = _getReserveInfos(spoke);
-    V4Types.V4ReserveInfo[] memory usableDebtReserves = _getAllUsableDebtReserves(allReserves);
+    V4Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
+    V4Types.ReserveInfo[] memory usableDebtReserves = _getAllUsableDebtReserves(allReserves);
     uint16 maxUserReserves = spoke.MAX_USER_RESERVES_LIMIT();
     uint256 currentBorrowCount = spoke.getUserAccountData(user).borrowCount;
     uint256 remainingSlots = currentBorrowCount < maxUserReserves
@@ -452,7 +452,7 @@ abstract contract V4Scenarios is V4Helpers {
   }
 
   /// @dev Test spoke addCap and drawCap by incrementally filling to the cap, then verify overflow reverts.
-  function _testCaps(ISpoke spoke, V4Types.V4ReserveInfo memory reserveInfo) internal {
+  function _testCaps(ISpoke spoke, V4Types.ReserveInfo memory reserveInfo) internal {
     IHub.SpokeConfig memory spokeConfig = IHub(reserveInfo.hub).getSpokeConfig(
       reserveInfo.assetId,
       address(spoke)
@@ -472,7 +472,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Fill supply up to addCap in random chunks, then verify overflow reverts.
   function _testAddCap(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     uint40 addCap
   ) internal revertToSnapshot {
     uint256 addCapScaled = uint256(addCap) * 10 ** reserveInfo.decimals;
@@ -497,7 +497,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Fill borrows up to drawCap in random chunks, then verify overflow reverts.
   function _testDrawCap(
     ISpoke spoke,
-    V4Types.V4ReserveInfo memory reserveInfo,
+    V4Types.ReserveInfo memory reserveInfo,
     uint40 drawCap
   ) internal revertToSnapshot {
     // Remove addCaps so enough collateral can be supplied to borrow up to drawCap
