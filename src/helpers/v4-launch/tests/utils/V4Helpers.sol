@@ -278,6 +278,48 @@ abstract contract V4Helpers is V4Actions {
     }
   }
 
+  /// @notice Get remaining addCap room in dollar terms for a spoke reserve.
+  function _getAddCapRoomDollars(
+    ISpoke spoke,
+    V4Types.V4ReserveInfo memory reserveInfo,
+    address oracleAddr
+  ) internal view returns (uint256) {
+    uint256 room = _getSpokeAddCapRoom(
+      IHub(reserveInfo.hub),
+      reserveInfo.assetId,
+      address(spoke),
+      reserveInfo.decimals
+    );
+    if (room == 0) return 0;
+    IAaveOracle oracle = IAaveOracle(oracleAddr);
+    return
+      (room * oracle.getReservePrice(reserveInfo.reserveId)) /
+      10 ** (oracle.decimals() + reserveInfo.decimals);
+  }
+
+  /// @notice Get remaining drawCap room in dollar terms for a spoke reserve.
+  function _getDrawCapRoomDollars(
+    ISpoke spoke,
+    V4Types.V4ReserveInfo memory reserveInfo,
+    address oracleAddr
+  ) internal view returns (uint256) {
+    IHub.SpokeConfig memory spokeConfig = IHub(reserveInfo.hub).getSpokeConfig(
+      reserveInfo.assetId,
+      address(spoke)
+    );
+    if (spokeConfig.drawCap == 0 || spokeConfig.drawCap == type(uint40).max) {
+      return type(uint256).max;
+    }
+    uint256 drawCapScaled = uint256(spokeConfig.drawCap) * 10 ** reserveInfo.decimals;
+    uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
+    if (drawCapScaled <= currentDebt) return 0;
+    uint256 drawCapRoom = drawCapScaled - currentDebt;
+    IAaveOracle oracle = IAaveOracle(oracleAddr);
+    return
+      (drawCapRoom * oracle.getReservePrice(reserveInfo.reserveId)) /
+      10 ** (oracle.decimals() + reserveInfo.decimals);
+  }
+
   /// @notice Convert a dollar value to token amount using the spoke oracle.
   function _getTokenAmountByDollarValue(
     address oracleAddr,

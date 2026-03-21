@@ -17,37 +17,30 @@ abstract contract V4Scenarios is V4Helpers {
   using SafeERC20 for IERC20;
 
   /// @dev Makes a user liquidatable by iteratively manipulating oracle prices.
-  ///      Phase 1: repeatedly reduce collateral reserve prices by 50% until HF < 1.
-  ///      Phase 2: repeatedly increase debt-only reserve prices by 1000% until HF < 1.
+  ///      Each pass: reduce collateral prices to 10% and boost debt-only prices by 10x.
+  ///      Checks HF once per pass to minimize memory usage.
   ///      Override in your test if you need a different strategy.
-  function _makeUserLiquidatable(
-    ISpoke spoke,
-    V4Types.V4ReserveInfo memory collateral,
-    address user
-  ) internal virtual {
+  function _makeUserLiquidatable(ISpoke spoke, address user) internal virtual {
     address oracle = spoke.ORACLE();
     uint256 reserveCount = spoke.getReserveCount();
 
-    // Phase 1: reduce collateral reserve prices by 50% per pass (works for overlapping
-    // positions too, since CF < 1 means collateral drops proportionally more than debt)
-    for (uint256 pass; pass < 2; pass++) {
+    for (uint256 pass; pass < 5; pass++) {
+      // Reduce all collateral reserve prices to 10% of current
       for (uint256 i; i < reserveCount; i++) {
         uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
-        if (userSupply == 0) continue;
+        if (userSupply == 0) {
+          continue;
+        }
 
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
         vm.mockCall(
           oracle,
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-          abi.encode((currentPrice * 50) / 100)
+          abi.encode(currentPrice / 10)
         );
-
-        ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
-        if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
-          return;
-        }
       }
-      // Phase 2: increase debt-only reserve prices by 30% per pass
+
+      // Increase all debt-only reserve prices by 10x
       for (uint256 i; i < reserveCount; i++) {
         uint256 userDebt = spoke.getUserTotalDebt(i, user);
         if (userDebt == 0) continue;
@@ -59,14 +52,13 @@ abstract contract V4Scenarios is V4Helpers {
         vm.mockCall(
           oracle,
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-          abi.encode((currentPrice * 1000) / 100)
+          abi.encode(currentPrice * 10)
         );
-
-        ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
-        if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
-          return;
-        }
       }
+
+      // Check HF once per pass
+      ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
+      if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) return;
     }
 
     // Verify the user is actually liquidatable
@@ -90,8 +82,27 @@ abstract contract V4Scenarios is V4Helpers {
     V4Types.V4ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
     address oracle = spoke.ORACLE();
 
-    uint256 collateralDollars = vm.randomUint(50_000, 200_000);
-    uint256 testAssetDollars = vm.randomUint(1_000, 20_000);
+    uint256 collateralDollars;
+    {
+      uint256 addCapRoomDollars = _getAddCapRoomDollars(spoke, collateralInfo, oracle);
+      if (addCapRoomDollars < 1_000) return 0;
+      collateralDollars = vm.randomUint(1_000, addCapRoomDollars);
+    }
+
+    uint256 testAssetDollars;
+    {
+      uint256 maxTestAssetDollars = collateralDollars / 3;
+      // Cap at addCap room (test asset is supplied as liquidity)
+      uint256 testAssetAddCapRoom = _getAddCapRoomDollars(spoke, testAssetInfo, oracle);
+      if (testAssetAddCapRoom < maxTestAssetDollars) maxTestAssetDollars = testAssetAddCapRoom;
+      // Cap at drawCap room (test asset is borrowed)
+      if (testAssetInfo.borrowable) {
+        uint256 drawCapRoom = _getDrawCapRoomDollars(spoke, testAssetInfo, oracle);
+        if (drawCapRoom < maxTestAssetDollars) maxTestAssetDollars = drawCapRoom;
+      }
+      if (maxTestAssetDollars < 1_000) return 0;
+      testAssetDollars = vm.randomUint(1_000, maxTestAssetDollars);
+    }
     uint256 collateralAmount = _getTokenAmountByDollarValue({
       oracleAddr: oracle,
       reserveInfo: collateralInfo,
@@ -290,7 +301,7 @@ abstract contract V4Scenarios is V4Helpers {
     V4Types.V4ReserveInfo memory testAssetInfo,
     address collateralSupplier
   ) internal revertToSnapshot {
-    _makeUserLiquidatable(spoke, collateralInfo, collateralSupplier);
+    _makeUserLiquidatable(spoke, collateralSupplier);
 
     // Skip random 1-90 days to let interest accrue before liquidation
     uint256 skipDays = vm.randomUint(1, 90);
@@ -305,28 +316,7 @@ abstract contract V4Scenarios is V4Helpers {
     );
 
     address liquidator = vm.randomAddress();
-
-    // Partial liquidation — cover ~10% of debt. Only execute if no dust is left behind
-    {
-      uint256 totalDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
-      uint256 partialDebt = totalDebt / 10;
-      uint256 remainingDebt = totalDebt - partialDebt;
-      IAaveOracle oracle = IAaveOracle(spoke.ORACLE());
-      uint256 remainingDebtDollars = (remainingDebt *
-        oracle.getReservePrice(testAssetInfo.reserveId)) /
-        10 ** (oracle.decimals() + testAssetInfo.decimals);
-      if (remainingDebtDollars >= 1_000) {
-        _liquidationCall({
-          spoke: spoke,
-          collateralInfo: collateralInfo,
-          debtInfo: testAssetInfo,
-          liquidator: liquidator,
-          borrower: collateralSupplier,
-          debtToCover: partialDebt,
-          receiveShares: false
-        });
-      }
-    }
+    uint256 snapshotBeforeLiquidation = vm.snapshotState();
 
     // Full liquidation - receive underlying
     _liquidationCall({
@@ -338,6 +328,7 @@ abstract contract V4Scenarios is V4Helpers {
       debtToCover: type(uint256).max,
       receiveShares: false
     });
+    vm.revertToState(snapshotBeforeLiquidation);
 
     // Full liquidation - receive shares
     _liquidationCall({
@@ -421,7 +412,7 @@ abstract contract V4Scenarios is V4Helpers {
     ISpoke spoke,
     address user,
     uint256 available
-  ) internal returns (uint256) {
+  ) internal view returns (uint256) {
     uint16 maxUserReserves = spoke.MAX_USER_RESERVES_LIMIT();
     uint256 currentCount = spoke.getUserAccountData(user).activeCollateralCount;
     uint256 remainingSlots = currentCount < maxUserReserves ? maxUserReserves - currentCount : 0;
