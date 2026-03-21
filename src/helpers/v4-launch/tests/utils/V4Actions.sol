@@ -233,11 +233,18 @@ abstract contract V4Actions is CommonTestBase {
       2,
       'SUPPLY: hub assets mismatch'
     );
-    assertGt(
-      after_.hubSpoke.collateralShares,
-      before.hubSpoke.collateralShares,
-      'SUPPLY: hub shares did not increase'
-    );
+    {
+      uint256 expectedAddedShares = IHubBase(reserveInfo.hub).previewAddByAssets(
+        reserveInfo.assetId,
+        amount
+      );
+      assertApproxEqAbs(
+        after_.hubSpoke.collateralShares,
+        before.hubSpoke.collateralShares + expectedAddedShares,
+        2,
+        'SUPPLY: hub shares mismatch'
+      );
+    }
   }
 
   function _withdraw(
@@ -276,11 +283,24 @@ abstract contract V4Actions is CommonTestBase {
       );
     }
     // Hub spoke
-    assertLe(
-      after_.hubSpoke.collateralAssets,
-      before.hubSpoke.collateralAssets,
-      'WITHDRAW: hub assets did not decrease'
+    assertApproxEqAbs(
+      before.hubSpoke.collateralAssets - after_.hubSpoke.collateralAssets,
+      withdrawnAmount,
+      2,
+      'WITHDRAW: hub assets mismatch'
     );
+    {
+      uint256 expectedSharesDelta = IHubBase(reserveInfo.hub).previewRemoveByAssets(
+        reserveInfo.assetId,
+        withdrawnAmount
+      );
+      assertApproxEqAbs(
+        before.hubSpoke.collateralShares - after_.hubSpoke.collateralShares,
+        expectedSharesDelta,
+        2,
+        'WITHDRAW: hub shares mismatch'
+      );
+    }
   }
 
   function _borrow(
@@ -290,6 +310,10 @@ abstract contract V4Actions is CommonTestBase {
     uint256 amount
   ) internal {
     V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
+    uint256 expectedDrawnShares = IHubBase(reserveInfo.hub).previewDrawByAssets(
+      reserveInfo.assetId,
+      amount
+    );
 
     _logAction('BORROW', reserveInfo.symbol, amount);
     vm.prank(user);
@@ -310,15 +334,17 @@ abstract contract V4Actions is CommonTestBase {
       'BORROW: user drawn debt did not increase'
     );
     // Hub spoke
-    assertGt(
+    assertApproxEqAbs(
       after_.hubSpoke.totalDebt,
-      before.hubSpoke.totalDebt,
-      'BORROW: hub debt did not increase'
+      before.hubSpoke.totalDebt + amount,
+      2,
+      'BORROW: hub debt mismatch'
     );
-    assertGt(
+    assertApproxEqAbs(
       after_.hubSpoke.drawnShares,
-      before.hubSpoke.drawnShares,
-      'BORROW: hub drawn shares did not increase'
+      before.hubSpoke.drawnShares + expectedDrawnShares,
+      2,
+      'BORROW: hub drawn shares mismatch'
     );
   }
 
@@ -329,6 +355,11 @@ abstract contract V4Actions is CommonTestBase {
     uint256 amount
   ) internal {
     V4Types.PositionSnapshot memory before = _getPositionSnapshot(spoke, reserveInfo, user);
+    uint256 effectiveRepayAmount = amount >= before.user.totalDebt ? before.user.totalDebt : amount;
+    uint256 expectedRestoredShares = IHubBase(reserveInfo.hub).previewRestoreByAssets(
+      reserveInfo.assetId,
+      effectiveRepayAmount
+    );
 
     vm.startPrank(user);
     deal2(reserveInfo.underlying, user, amount + 2);
@@ -350,10 +381,17 @@ abstract contract V4Actions is CommonTestBase {
       );
     }
     // Hub spoke
-    assertLe(
-      after_.hubSpoke.totalDebt,
-      before.hubSpoke.totalDebt,
-      'REPAY: hub debt did not decrease'
+    assertApproxEqAbs(
+      before.hubSpoke.totalDebt - after_.hubSpoke.totalDebt,
+      effectiveRepayAmount,
+      2,
+      'REPAY: hub debt mismatch'
+    );
+    assertApproxEqAbs(
+      before.hubSpoke.drawnShares - after_.hubSpoke.drawnShares,
+      expectedRestoredShares,
+      2,
+      'REPAY: hub drawn shares mismatch'
     );
   }
 

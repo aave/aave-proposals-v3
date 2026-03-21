@@ -37,4 +37,9 @@ interface IHubBase {
     uint256 assetId
   ) external view returns (uint256 premiumShares, int256 premiumOffset);
   function getAssetDrawnShares(uint256 assetId) external view returns (uint256);
+
+  function previewAddByAssets(uint256 assetId, uint256 assets) external view returns (uint256);
+  function previewRemoveByAssets(uint256 assetId, uint256 assets) external view returns (uint256);
+  function previewDrawByAssets(uint256 assetId, uint256 assets) external view returns (uint256);
+  function previewRestoreByAssets(uint256 assetId, uint256 assets) external view returns (uint256);
 }
