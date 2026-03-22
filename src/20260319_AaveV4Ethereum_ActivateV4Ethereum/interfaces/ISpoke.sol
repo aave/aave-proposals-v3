@@ -119,4 +119,5 @@ interface ISpoke {
     bool usingAsCollateral,
     address onBehalfOf
   ) external;
+  function setUserPositionManager(address positionManager, bool approved) external;
 }

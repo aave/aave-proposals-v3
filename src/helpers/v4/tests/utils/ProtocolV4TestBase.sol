@@ -6,15 +6,19 @@ import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
 import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITokenizationSpoke.sol';
+import {INativeTokenGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/INativeTokenGateway.sol';
+import {ISignatureGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISignatureGateway.sol';
+import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
 import {Types} from './Types.sol';
-import {TokenizationScenarios} from './TokenizationScenarios.sol';
+import {GatewayScenarios} from './GatewayScenarios.sol';
 
 /// @title ProtocolV4TestBase
 /// @notice E2E test base for Aave V4 hub/spoke architecture.
 ///         Tests supply, withdraw, borrow, repay, and liquidation for each reserve on a spoke.
 ///         Tests deposit, mint, withdraw, redeem for each tokenization spoke.
+///         Tests NativeTokenGateway and SignatureGateway for each spoke.
 ///         Loops over ALL good collaterals and uses randomized amounts.
-contract ProtocolV4TestBase is TokenizationScenarios {
+contract ProtocolV4TestBase is GatewayScenarios {
   using SafeERC20 for IERC20;
   /// @notice Run e2e tests on a single spoke, optionally executing a payload first.
   function defaultTest(
@@ -28,18 +32,14 @@ contract ProtocolV4TestBase is TokenizationScenarios {
 
   /// @notice Test all reserves on every spoke in the array.
   function e2eTestAllSpokes(address[] memory spokes) public {
-    // for (uint256 i; i < spokes.length; i++) {
-    //   console.log('--- E2E: Testing spoke %s ---', spokes[i]);
-    //   console.log('--------------------------------');
-    //   e2eTestSpoke(ISpoke(spokes[i]));
-    // }
-    uint256 index = 0;
-    console.log('--- E2E: Testing spoke %s ---', spokes[index]);
-    console.log('--------------------------------');
-    e2eTestSpoke(ISpoke(spokes[index]));
+    for (uint256 i; i < spokes.length; i++) {
+      console.log('--- E2E: Testing spoke %s ---', spokes[i]);
+      console.log('--------------------------------');
+      e2eTestSpoke(ISpoke(spokes[i]));
+    }
   }
 
-  /// @notice Test all reserves on one spoke, looping over ALL good collaterals.
+  /// @notice Test all reserves on one spoke, looping over ALL good collaterals, then gateway tests.
   function e2eTestSpoke(ISpoke spoke) public {
     Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
     Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(allReserves);
@@ -71,6 +71,34 @@ contract ProtocolV4TestBase is TokenizationScenarios {
         });
         vm.revertToState(spokeSnapshot);
       }
+    }
+
+    // Gateway tests
+    _setCapsToMax(spoke);
+    Types.ReserveInfo[] memory goodDebtReserves = _getAllUsableDebtReserves(allReserves);
+
+    // NativeTokenGateway — only if spoke lists WETH
+    {
+      INativeTokenGateway nativeGateway = INativeTokenGateway(
+        AaveV4EthereumAddresses.NATIVE_TOKEN_GATEWAY
+      );
+      (bool hasWeth, Types.ReserveInfo memory wethInfo) = _findNativeTokenReserveInfo(
+        nativeGateway,
+        spoke
+      );
+      if (hasWeth) {
+        _testNativeGateway(nativeGateway, spoke, wethInfo);
+      }
+    }
+
+    // SignatureGateway — on first usable debt reserve + collateral
+    if (goodCollaterals.length > 0 && goodDebtReserves.length > 0) {
+      _testSignatureGateway({
+        gateway: ISignatureGateway(AaveV4EthereumAddresses.SIGNATURE_GATEWAY),
+        spoke: spoke,
+        reserveInfo: goodDebtReserves[0],
+        collateralInfo: goodCollaterals[0]
+      });
     }
   }
 
@@ -153,6 +181,7 @@ contract ProtocolV4TestBase is TokenizationScenarios {
     console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
+    _testZeroAmountReverts({spoke: spoke, reserveInfo: testAssetInfo, user: vm.randomAddress()});
     _testCaps({spoke: spoke, reserveInfo: testAssetInfo});
 
     // Set caps to max after cap testing for the rest of the flow

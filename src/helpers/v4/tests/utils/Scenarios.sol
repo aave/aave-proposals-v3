@@ -343,6 +343,10 @@ abstract contract Scenarios is Helpers {
     address liquidator = vm.randomAddress();
     uint256 snapshotBeforeLiquidation = vm.snapshotState();
 
+    bool receiveSharesEnabled = spoke
+      .getReserveConfig(collateralInfo.reserveId)
+      .receiveSharesEnabled;
+
     // Partial liquidation — only if no dust remains
     _testPartialLiquidation({
       spoke: spoke,
@@ -352,14 +356,16 @@ abstract contract Scenarios is Helpers {
       borrower: collateralSupplier,
       receiveShares: false
     });
-    _testPartialLiquidation({
-      spoke: spoke,
-      collateralInfo: collateralInfo,
-      testAssetInfo: testAssetInfo,
-      liquidator: liquidator,
-      borrower: collateralSupplier,
-      receiveShares: true
-    });
+    if (receiveSharesEnabled) {
+      _testPartialLiquidation({
+        spoke: spoke,
+        collateralInfo: collateralInfo,
+        testAssetInfo: testAssetInfo,
+        liquidator: liquidator,
+        borrower: collateralSupplier,
+        receiveShares: true
+      });
+    }
 
     // Full liquidation - receive underlying
     _liquidationCall({
@@ -373,17 +379,19 @@ abstract contract Scenarios is Helpers {
     });
     vm.revertToState(snapshotBeforeLiquidation);
 
-    // Full liquidation - receive shares
-    _liquidationCall({
-      spoke: spoke,
-      collateralInfo: collateralInfo,
-      debtInfo: testAssetInfo,
-      liquidator: liquidator,
-      borrower: collateralSupplier,
-      debtToCover: UINT256_MAX,
-      receiveShares: true
-    });
-    vm.revertToState(snapshotBeforeLiquidation);
+    // Full liquidation - receive shares (only if enabled on collateral reserve)
+    if (receiveSharesEnabled) {
+      _liquidationCall({
+        spoke: spoke,
+        collateralInfo: collateralInfo,
+        debtInfo: testAssetInfo,
+        liquidator: liquidator,
+        borrower: collateralSupplier,
+        debtToCover: UINT256_MAX,
+        receiveShares: true
+      });
+      vm.revertToState(snapshotBeforeLiquidation);
+    }
 
     // Clear oracle price mockss
     vm.clearMockedCalls();
@@ -621,5 +629,40 @@ abstract contract Scenarios is Helpers {
     vm.prank(borrower);
     vm.expectRevert(abi.encodeWithSelector(IHub.DrawCapExceeded.selector, uint256(drawCap)));
     spoke.borrow({reserveId: reserveInfo.reserveId, amount: overflowAmount, onBehalfOf: borrower});
+  }
+
+  /// @dev Test that 0-amount operations revert.
+  function _testZeroAmountReverts(
+    ISpoke spoke,
+    Types.ReserveInfo memory reserveInfo,
+    address user
+  ) internal revertToSnapshot {
+    uint256 reserveId = reserveInfo.reserveId;
+
+    // Supply 0
+    vm.startPrank(user);
+    IERC20(reserveInfo.underlying).forceApprove(address(spoke), 0);
+    vm.expectRevert();
+    spoke.supply({reserveId: reserveId, amount: 0, onBehalfOf: user});
+    vm.stopPrank();
+
+    // Withdraw 0
+    vm.prank(user);
+    vm.expectRevert();
+    spoke.withdraw({reserveId: reserveId, amount: 0, onBehalfOf: user});
+
+    // Borrow 0
+    if (reserveInfo.borrowable) {
+      vm.prank(user);
+      vm.expectRevert();
+      spoke.borrow({reserveId: reserveId, amount: 0, onBehalfOf: user});
+    }
+
+    // Repay 0
+    vm.startPrank(user);
+    IERC20(reserveInfo.underlying).forceApprove(address(spoke), 0);
+    vm.expectRevert();
+    spoke.repay({reserveId: reserveId, amount: 0, onBehalfOf: user});
+    vm.stopPrank();
   }
 }
