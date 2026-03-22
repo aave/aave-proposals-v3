@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
 import {IHub} from './interfaces/IHub.sol';
 import {IHubConfigurator} from './interfaces/IHubConfigurator.sol';
-import {AaveV4EthereumAddresses} from './AaveV4EthereumAddresses.sol';
+import {AaveV4EthereumAddresses, AaveV4EthereumHubs} from './AaveV4EthereumAddresses.sol';
 
 /**
  * @title Aave V4 Ethereum - Activate Spokes
@@ -14,23 +14,25 @@ import {AaveV4EthereumAddresses} from './AaveV4EthereumAddresses.sol';
  */
 contract AaveV4Ethereum_ActivateV4Ethereum_20260319 is IProposalGenericExecutor {
   function execute() external override {
-    address[3] memory hubs = AaveV4EthereumAddresses.getHubs();
+    _activateAllSpokesOnHub(AaveV4EthereumHubs.CORE_HUB);
+    _activateAllSpokesOnHub(AaveV4EthereumHubs.PLUS_HUB);
+    _activateAllSpokesOnHub(AaveV4EthereumHubs.PRIME_HUB);
+  }
 
-    for (uint256 h = 0; h < hubs.length; ++h) {
-      uint256 assetCount = IHub(hubs[h]).getAssetCount();
-      for (uint256 a = 0; a < assetCount; ++a) {
-        _activateAllSpokes(hubs[h], a);
-      }
+  function _activateAllSpokesOnHub(IHub hub) internal {
+    uint256 assetCount = hub.getAssetCount();
+    for (uint256 assetId; assetId < assetCount; ++assetId) {
+      _activateAllSpokes(hub, assetId);
     }
   }
 
-  function _activateAllSpokes(address hub, uint256 assetId) internal {
-    uint256 spokeCount = IHub(hub).getSpokeCount(assetId);
+  function _activateAllSpokes(IHub hub, uint256 assetId) internal {
+    uint256 spokeCount = hub.getSpokeCount(assetId);
 
-    for (uint256 i = 0; i < spokeCount; ++i) {
-      address spoke = IHub(hub).getSpokeAddress(assetId, i);
+    for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
+      address spoke = hub.getSpokeAddress(assetId, spokeIdx);
       IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
-        hub,
+        address(hub),
         assetId,
         spoke,
         true

@@ -7,7 +7,8 @@ import {ProtocolV3TestBase} from 'aave-helpers/src/ProtocolV3TestBase.sol';
 import {IAccessManager} from './interfaces/IAccessManager.sol';
 import {IHub} from './interfaces/IHub.sol';
 import {IHubConfigurator} from './interfaces/IHubConfigurator.sol';
-import {AaveV4EthereumAddresses} from './AaveV4EthereumAddresses.sol';
+import {ISpoke} from './interfaces/ISpoke.sol';
+import {AaveV4EthereumAddresses, AaveV4EthereumHubs, AaveV4EthereumSpokes} from './AaveV4EthereumAddresses.sol';
 import {AaveV4Ethereum_ActivateV4Ethereum_20260319} from './AaveV4Ethereum_ActivateV4Ethereum_20260319.sol';
 
 /**
@@ -37,29 +38,29 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
 
   function test_allSpokesActiveOnCoreHub() public {
     GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumAddresses.CORE_HUB);
+    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.CORE_HUB);
   }
 
   function test_allSpokesActiveOnPlusHub() public {
     GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumAddresses.PLUS_HUB);
+    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PLUS_HUB);
   }
 
   function test_allSpokesActiveOnPrimeHub() public {
     GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumAddresses.PRIME_HUB);
+    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PRIME_HUB);
   }
 
   function _deactivateAllSpokes() internal {
-    address[3] memory hubs = AaveV4EthereumAddresses.getHubs();
-    address[11] memory spokes = AaveV4EthereumAddresses.getSpokes();
+    IHub[] memory hubs = AaveV4EthereumHubs.getHubs();
+    ISpoke[] memory spokes = AaveV4EthereumSpokes.getSpokes();
 
     vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    for (uint256 h = 0; h < hubs.length; ++h) {
-      for (uint256 s = 0; s < spokes.length; ++s) {
+    for (uint256 hubIdx; hubIdx < hubs.length; ++hubIdx) {
+      for (uint256 spokeIdx; spokeIdx < spokes.length; ++spokeIdx) {
         IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).deactivateSpoke(
-          hubs[h],
-          spokes[s]
+          address(hubs[hubIdx]),
+          address(spokes[spokeIdx])
         );
       }
     }
@@ -67,29 +68,143 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
   }
 
   function test_allSpokesInactiveBeforeExecution() public view {
-    address[3] memory hubs = AaveV4EthereumAddresses.getHubs();
+    IHub[] memory hubs = AaveV4EthereumHubs.getHubs();
 
-    for (uint256 h = 0; h < hubs.length; ++h) {
-      uint256 assetCount = IHub(hubs[h]).getAssetCount();
-      for (uint256 a = 0; a < assetCount; ++a) {
-        uint256 spokeCount = IHub(hubs[h]).getSpokeCount(a);
-        for (uint256 s = 0; s < spokeCount; ++s) {
-          address spoke = IHub(hubs[h]).getSpokeAddress(a, s);
-          IHub.SpokeConfig memory config = IHub(hubs[h]).getSpokeConfig(a, spoke);
+    for (uint256 hubIdx; hubIdx < hubs.length; ++hubIdx) {
+      uint256 assetCount = hubs[hubIdx].getAssetCount();
+      for (uint256 assetId; assetId < assetCount; ++assetId) {
+        uint256 spokeCount = hubs[hubIdx].getSpokeCount(assetId);
+        for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
+          address spoke = hubs[hubIdx].getSpokeAddress(assetId, spokeIdx);
+          IHub.SpokeConfig memory config = hubs[hubIdx].getSpokeConfig(assetId, spoke);
           assertFalse(config.active, 'Spoke should be inactive before execution');
         }
       }
     }
   }
 
-  function _assertAllSpokesActiveOnHub(address hub_) internal view {
-    IHub hub = IHub(hub_);
+  // ---------------------------------------------------------------------------
+  // Access control — Configuration Phase
+  //
+  // Verifies the roles that must be in place before the AIP executes.
+  // Role IDs are defined in Roles.sol. Executor lvl 1 (DAO) is granted all
+  // roles on Hub, HubConfigurator, Spoke, and SpokeConfigurator.
+  //
+  // | Target             | Role                                   | ID  | Holder            |
+  // |--------------------|----------------------------------------|-----|-------------------|
+  // | Access Manager     | DEFAULT_ADMIN_ROLE                     | 0   | DAO               |
+  // | Hub                | HUB_CONFIGURATOR_ROLE                  | 1   | HubConfigurator   |
+  // | Hub                | HUB_CONFIGURATOR_ROLE                  | 1   | DAO               |
+  // | Hub                | HUB_FEE_MINTER_ROLE                    | 2   | DAO               |
+  // | Hub                | HUB_DEFICIT_ELIMINATOR_ROLE             | 3   | DAO               |
+  // | HubConfigurator    | HUB_CONFIGURATOR_DEACTIVATOR_ROLE      | 104 | DAO               |
+  // | Spoke              | SPOKE_USER_POSITION_UPDATER_ROLE       | 200 | DAO               |
+  // | Spoke              | SPOKE_CONFIGURATOR_ROLE                | 201 | SpokeConfigurator |
+  // | Spoke              | SPOKE_CONFIGURATOR_ROLE                | 201 | DAO               |
+  // | Tokenization Spoke | Owner                                  |     | DAO               |
+  //
+  // TODO: These tests currently only pass because setUp() pranks to grant
+  // role 200 to the executor. Once the executor is granted the correct roles
+  // on mainnet (outside this AIP), the setUp() prank should be removed and
+  // these tests must still pass.
+  // ---------------------------------------------------------------------------
 
-    for (uint256 a = 0; a < hub.getAssetCount(); ++a) {
-      uint256 spokeCount = hub.getSpokeCount(a);
-      for (uint256 s = 0; s < spokeCount; ++s) {
-        address spoke = hub.getSpokeAddress(a, s);
-        IHub.SpokeConfig memory config = hub.getSpokeConfig(a, spoke);
+  // Hub roles
+  uint64 internal constant HUB_CONFIGURATOR_ROLE = 1;
+  uint64 internal constant HUB_FEE_MINTER_ROLE = 2;
+  uint64 internal constant HUB_DEFICIT_ELIMINATOR_ROLE = 3;
+
+  // HubConfigurator roles
+  uint64 internal constant HUB_CONFIGURATOR_DEACTIVATOR_ROLE = 104;
+
+  // Spoke roles
+  uint64 internal constant SPOKE_USER_POSITION_UPDATER_ROLE = 200;
+  uint64 internal constant SPOKE_CONFIGURATOR_ROLE = 201;
+
+  // -- Access Manager: DEFAULT_ADMIN_ROLE (0) → DAO --
+
+  // TODO: Uncomment once roles are granted on mainnet.
+  // function test_executorHasAccessManagerDefaultAdmin() public view {
+  //   (bool isMember, ) = IAccessManager(AaveV4EthereumAddresses.ACCESS_MANAGER).hasRole(
+  //     0,
+  //     GovernanceV3Ethereum.EXECUTOR_LVL_1
+  //   );
+  //   assertTrue(isMember, 'Executor should have AccessManager DEFAULT_ADMIN role');
+  // }
+
+  // -- Hub: HUB_CONFIGURATOR_ROLE (1) → HubConfigurator contract --
+
+  // TODO: Uncomment once roles are granted on mainnet.
+  // function test_hubConfiguratorHasHubConfiguratorRole() public view {
+  //   (bool isMember, ) = IAccessManager(AaveV4EthereumAddresses.ACCESS_MANAGER).hasRole(
+  //     HUB_CONFIGURATOR_ROLE,
+  //     AaveV4EthereumAddresses.HUB_CONFIGURATOR
+  //   );
+  //   assertTrue(isMember, 'HubConfigurator should have HUB_CONFIGURATOR_ROLE');
+  // }
+
+  // -- Hub: DAO has all Hub roles --
+
+  // TODO: Uncomment once roles are granted on mainnet.
+  // function test_executorHasAllHubRoles() public view {
+  //   IAccessManager accessManager = IAccessManager(AaveV4EthereumAddresses.ACCESS_MANAGER);
+  //   (bool hasConfigurator, ) = accessManager.hasRole(HUB_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+  //   (bool hasFeeMinter, ) = accessManager.hasRole(HUB_FEE_MINTER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+  //   (bool hasDeficitEliminator, ) = accessManager.hasRole(HUB_DEFICIT_ELIMINATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+  //   assertTrue(hasConfigurator, 'Executor should have HUB_CONFIGURATOR_ROLE');
+  //   assertTrue(hasFeeMinter, 'Executor should have HUB_FEE_MINTER_ROLE');
+  //   assertTrue(hasDeficitEliminator, 'Executor should have HUB_DEFICIT_ELIMINATOR_ROLE');
+  // }
+
+  // -- HubConfigurator: HUB_CONFIGURATOR_DEACTIVATOR_ROLE (104) → DAO --
+  // This is the role required by this AIP to call updateSpokeActive/deactivateSpoke.
+
+  // TODO: Uncomment once roles are granted on mainnet.
+  // function test_executorHasHubConfiguratorDeactivatorRole() public view {
+  //   (bool isMember, ) = IAccessManager(AaveV4EthereumAddresses.ACCESS_MANAGER).hasRole(
+  //     HUB_CONFIGURATOR_DEACTIVATOR_ROLE,
+  //     GovernanceV3Ethereum.EXECUTOR_LVL_1
+  //   );
+  //   assertTrue(isMember, 'Executor should have HUB_CONFIGURATOR_DEACTIVATOR_ROLE');
+  // }
+
+  // -- Spoke: SPOKE_CONFIGURATOR_ROLE (201) → SpokeConfigurator contract --
+
+  // TODO: Uncomment once roles are granted on mainnet.
+  // function test_spokeConfiguratorHasSpokeConfiguratorRole() public view {
+  //   (bool isMember, ) = IAccessManager(AaveV4EthereumAddresses.ACCESS_MANAGER).hasRole(
+  //     SPOKE_CONFIGURATOR_ROLE,
+  //     AaveV4EthereumAddresses.SPOKE_CONFIGURATOR
+  //   );
+  //   assertTrue(isMember, 'SpokeConfigurator should have SPOKE_CONFIGURATOR_ROLE');
+  // }
+
+  // -- Spoke: DAO has all Spoke roles --
+
+  // TODO: Uncomment once roles are granted on mainnet.
+  // function test_executorHasAllSpokeRoles() public view {
+  //   IAccessManager accessManager = IAccessManager(AaveV4EthereumAddresses.ACCESS_MANAGER);
+  //   (bool hasPositionUpdater, ) = accessManager.hasRole(SPOKE_USER_POSITION_UPDATER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+  //   (bool hasConfigurator, ) = accessManager.hasRole(SPOKE_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+  //   assertTrue(hasPositionUpdater, 'Executor should have SPOKE_USER_POSITION_UPDATER_ROLE');
+  //   assertTrue(hasConfigurator, 'Executor should have SPOKE_CONFIGURATOR_ROLE');
+  // }
+
+  // -- Tokenization Spoke: Owner → DAO --
+
+  // TODO: test_executorOwnsTokenizationSpoke
+  // Add once the tokenization spoke address is available.
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  function _assertAllSpokesActiveOnHub(IHub hub) internal view {
+    for (uint256 assetId; assetId < hub.getAssetCount(); ++assetId) {
+      uint256 spokeCount = hub.getSpokeCount(assetId);
+      for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
+        address spoke = hub.getSpokeAddress(assetId, spokeIdx);
+        IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spoke);
         assertTrue(config.active, 'Spoke should be active after execution');
       }
     }
