@@ -24,6 +24,15 @@ library V4Types {
     Accounting hubSpoke;
   }
 
+  /// @notice Tokenization spoke snapshot at user, vault, and hub-spoke levels.
+  struct TokenizationSnapshot {
+    uint256 userShares;
+    uint256 userAssets;
+    uint256 totalShares;
+    uint256 totalAssets;
+    Accounting hubSpoke;
+  }
+
   /// @notice Per-reserve info struct used throughout V4 e2e tests.
   struct ReserveInfo {
     uint256 reserveId;
