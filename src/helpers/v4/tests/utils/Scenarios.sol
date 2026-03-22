@@ -19,8 +19,8 @@ abstract contract Scenarios is Helpers {
   using SafeERC20 for IERC20;
 
   /// @dev Makes a user liquidatable by manipulating oracle prices and warping time.
-  ///      1. Reduce collateral-only prices to near zero, boost debt-only prices by 10x.
-  ///      2. For same-asset positions (supply + debt on same reserve), reduce collateral factor by 99.99%.
+  ///      1. Reduce collateral-only prices to near zero and decrease coll prices; boost debt-only prices.
+  ///      2. For same-asset positions (supply + debt on same reserve), reduce collateral factor to 1 BPS.
   function _makeUserLiquidatable(ISpoke spoke, address user) internal virtual {
     address oracle = spoke.ORACLE();
     uint256 reserveCount = spoke.getReserveCount();
@@ -30,6 +30,8 @@ abstract contract Scenarios is Helpers {
       uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
       uint256 userDebt = spoke.getUserTotalDebt(i, user);
 
+      // set CF to 1 BPS (lowest possible value) to make the user liquidatable
+      _addCollateralFactor({spoke: spoke, reserveId: i, collateralFactor: 1});
       if (userSupply > 0 && userDebt == 0) {
         // Collateral-only: slash price to near zero + reduce CF to minimum
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
@@ -45,11 +47,8 @@ abstract contract Scenarios is Helpers {
         vm.mockCall(
           oracle,
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-          abi.encode(currentPrice * 100)
+          abi.encode(currentPrice * 1000)
         );
-      } else if (userSupply > 0 && userDebt > 0) {
-        // Same-asset debt/coll position: set CF to 1 BPS (lowest possible value) to make the user liquidatable
-        _addCollateralFactor({spoke: spoke, reserveId: i, collateralFactor: 1});
       }
     }
 
