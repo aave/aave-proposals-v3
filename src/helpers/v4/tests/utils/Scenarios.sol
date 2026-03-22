@@ -31,13 +31,14 @@ abstract contract Scenarios is Helpers {
       uint256 userDebt = spoke.getUserTotalDebt(i, user);
 
       if (userSupply > 0 && userDebt == 0) {
-        // Collateral-only: slash price to 1% of current
+        // Collateral-only: slash price to near zero + reduce CF to minimum
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
         vm.mockCall(
           oracle,
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-          abi.encode(currentPrice / 100)
+          abi.encode(currentPrice / 100_000)
         );
+        _addCollateralFactor({spoke: spoke, reserveId: i, collateralFactor: 1});
       } else if (userDebt > 0 && userSupply == 0) {
         // Debt-only: boost price by 100x
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
