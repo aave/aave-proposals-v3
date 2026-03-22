@@ -32,14 +32,11 @@ contract ProtocolV4TestBase is GatewayScenarios {
 
   /// @notice Test all reserves on every spoke in the array.
   function e2eTestAllSpokes(address[] memory spokes) public {
-    // for (uint256 i; i < spokes.length; i++) {
-    //   console.log('--- E2E: Testing spoke %s ---', spokes[i]);
-    //   console.log('--------------------------------');
-    //   e2eTestSpoke(ISpoke(spokes[i]));
-    // }
-    console.log('--- E2E: Testing spoke %s ---', spokes[0]);
-    console.log('--------------------------------');
-    e2eTestSpoke(ISpoke(spokes[0]));
+    for (uint256 i; i < spokes.length; i++) {
+      console.log('--- E2E: Testing spoke %s ---', spokes[i]);
+      console.log('--------------------------------');
+      e2eTestSpoke(ISpoke(spokes[i]));
+    }
   }
 
   /// @notice Test all reserves on one spoke, looping over ALL good collaterals, then gateway tests.
