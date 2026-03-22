@@ -30,19 +30,20 @@ abstract contract Scenarios is Helpers {
       uint256 userSupply = spoke.getUserSuppliedAssets(i, user);
       uint256 userDebt = spoke.getUserTotalDebt(i, user);
 
-      // set CF to 1 BPS (lowest possible value) to make the user liquidatable
-      _addCollateralFactor({spoke: spoke, reserveId: i, collateralFactor: 1});
+      if (userSupply > 0) {
+        // Reduce CF to 1 BPS on the user's actual dynamic config key
+        _updateCollateralFactor({spoke: spoke, reserveId: i, user: user, collateralFactor: 1});
+      }
       if (userSupply > 0 && userDebt == 0) {
-        // Collateral-only: slash price to near zero + reduce CF to minimum
+        // Collateral-only: also slash price by 1000x
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
         vm.mockCall(
           oracle,
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
-          abi.encode(currentPrice / 100_000)
+          abi.encode(currentPrice / 1000)
         );
-        _addCollateralFactor({spoke: spoke, reserveId: i, collateralFactor: 1});
       } else if (userDebt > 0 && userSupply == 0) {
-        // Debt-only: boost price by 100x
+        // Debt-only: boost price by 1000x
         uint256 currentPrice = IAaveOracle(oracle).getReservePrice(i);
         vm.mockCall(
           oracle,
@@ -61,26 +62,31 @@ abstract contract Scenarios is Helpers {
     );
   }
 
-  /// @dev Add a new collateral factor to a reserve.
-  ///      Mocks ACCESS_MANAGER to bypass auth, then calls SpokeConfigurator.addCollateralFactor.
-  function _addCollateralFactor(ISpoke spoke, uint256 reserveId, uint16 collateralFactor) internal {
+  /// @dev Update the collateral factor on the user's existing dynamic config key.
+  ///      Mocks ACCESS_MANAGER to bypass auth, then calls SpokeConfigurator.updateCollateralFactor.
+  function _updateCollateralFactor(
+    ISpoke spoke,
+    uint256 reserveId,
+    address user,
+    uint16 collateralFactor
+  ) internal {
+    uint32 userConfigKey = spoke.getUserPosition(reserveId, user).dynamicConfigKey;
     vm.mockCall(
       AaveV4EthereumAddresses.ACCESS_MANAGER,
       abi.encodeWithSelector(bytes4(keccak256('canCall(address,address,bytes4)'))),
       abi.encode(true, uint32(0))
     );
-    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).addCollateralFactor({
+    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updateCollateralFactor({
       spoke: address(spoke),
       reserveId: reserveId,
+      dynamicConfigKey: userConfigKey,
       collateralFactor: collateralFactor
     });
     vm.clearMockedCalls();
 
     assertEq(
       collateralFactor,
-      spoke
-        .getDynamicReserveConfig(reserveId, spoke.getReserve(reserveId).dynamicConfigKey)
-        .collateralFactor
+      spoke.getDynamicReserveConfig(reserveId, userConfigKey).collateralFactor
     );
   }
 

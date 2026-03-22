@@ -439,9 +439,7 @@ abstract contract Helpers is Actions {
     address user,
     bool isCollateral
   ) internal revertToSnapshot {
-    uint256 dollarValue = isCollateral
-      ? vm.randomUint(10_000, 50_000)
-      : vm.randomUint(1_000, 10_000);
+    uint256 dollarValue = vm.randomUint(1_000, 50_000);
     uint256 amount = _getTokenAmountByDollarValue({
       oracleAddr: oracleAddr,
       reserveInfo: reserveInfo,
