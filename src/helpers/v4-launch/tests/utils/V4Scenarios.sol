@@ -9,6 +9,7 @@ import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IH
 import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IAaveOracle.sol';
 import {IPriceOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IPriceOracle.sol';
 import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
+import {ISpokeConfigurator} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpokeConfigurator.sol';
 import {V4Types} from './V4Types.sol';
 import {V4Helpers} from './V4Helpers.sol';
 
@@ -19,8 +20,7 @@ abstract contract V4Scenarios is V4Helpers {
 
   /// @dev Makes a user liquidatable by manipulating oracle prices and warping time.
   ///      1. Reduce collateral-only prices to near zero, boost debt-only prices by 10x.
-  ///      2. For same-asset positions (supply + debt on same reserve), price manipulation
-  ///         cancels out, so warp time to let interest accrue until HF drops below 1.
+  ///      2. For same-asset positions (supply + debt on same reserve), reduce collateral factor by 99.99%.
   function _makeUserLiquidatable(ISpoke spoke, address user) internal virtual {
     address oracle = spoke.ORACLE();
     uint256 reserveCount = spoke.getReserveCount();
@@ -46,19 +46,41 @@ abstract contract V4Scenarios is V4Helpers {
           abi.encodeWithSelector(IPriceOracle.getReservePrice.selector, i),
           abi.encode(currentPrice * 100)
         );
+      } else if (userSupply > 0 && userDebt > 0) {
+        // Same-asset debt/coll position: set CF to 1 BPS (lowest possible value) to make the user liquidatable
+        _addCollateralFactor({spoke: spoke, reserveId: i, collateralFactor: 1});
       }
     }
 
     ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(user);
-    if (accountData.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD) {
-      return;
-    }
-
     // Verify the user is actually liquidatable
     assertLt(
       accountData.healthFactor,
       HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
       'MAKE_LIQUIDATABLE: health factor not below 1'
+    );
+  }
+
+  /// @dev Add a new collateral factor to a reserve.
+  ///      Mocks ACCESS_MANAGER to bypass auth, then calls SpokeConfigurator.addCollateralFactor.
+  function _addCollateralFactor(ISpoke spoke, uint256 reserveId, uint16 collateralFactor) internal {
+    vm.mockCall(
+      AaveV4EthereumAddresses.ACCESS_MANAGER,
+      abi.encodeWithSelector(bytes4(keccak256('canCall(address,address,bytes4)'))),
+      abi.encode(true, uint32(0))
+    );
+    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).addCollateralFactor({
+      spoke: address(spoke),
+      reserveId: reserveId,
+      collateralFactor: collateralFactor
+    });
+    vm.clearMockedCalls();
+
+    assertEq(
+      collateralFactor,
+      spoke
+        .getDynamicReserveConfig(reserveId, spoke.getReserve(reserveId).dynamicConfigKey)
+        .collateralFactor
     );
   }
 
@@ -294,11 +316,7 @@ abstract contract V4Scenarios is V4Helpers {
     }
     vm.revertToState(snapshotAfterBorrow);
 
-    // Skip liquidation test when collateral and test asset are the same reserve —
-    // price manipulation can't make user liquidatable because both sides scale equally
-    if (collateralInfo.reserveId != testAssetInfo.reserveId) {
-      _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
-    }
+    _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
   }
 
   /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).
@@ -324,6 +342,24 @@ abstract contract V4Scenarios is V4Helpers {
 
     address liquidator = vm.randomAddress();
     uint256 snapshotBeforeLiquidation = vm.snapshotState();
+
+    // Partial liquidation — only if no dust remains
+    _testPartialLiquidation({
+      spoke: spoke,
+      collateralInfo: collateralInfo,
+      testAssetInfo: testAssetInfo,
+      liquidator: liquidator,
+      borrower: collateralSupplier,
+      receiveShares: false
+    });
+    _testPartialLiquidation({
+      spoke: spoke,
+      collateralInfo: collateralInfo,
+      testAssetInfo: testAssetInfo,
+      liquidator: liquidator,
+      borrower: collateralSupplier,
+      receiveShares: true
+    });
 
     // Full liquidation - receive underlying
     _liquidationCall({
@@ -351,6 +387,59 @@ abstract contract V4Scenarios is V4Helpers {
 
     // Clear oracle price mockss
     vm.clearMockedCalls();
+  }
+
+  /// @dev Partial liquidation: only for coll/debt amounts that won't trigger dust threshold reverts
+  function _testPartialLiquidation(
+    ISpoke spoke,
+    V4Types.ReserveInfo memory collateralInfo,
+    V4Types.ReserveInfo memory testAssetInfo,
+    address liquidator,
+    address borrower,
+    bool receiveShares
+  ) internal revertToSnapshot {
+    address oracleAddr = spoke.ORACLE();
+    uint256 totalDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, borrower);
+    uint256 totalCollateral = spoke.getUserSuppliedAssets(collateralInfo.reserveId, borrower);
+    // only execute partial liquidations above $1.5k
+    uint256 liquidationThreshold = 1_500;
+    uint256 minDebtAssets = _getTokenAmountByDollarValue({
+      oracleAddr: oracleAddr,
+      reserveInfo: testAssetInfo,
+      dollarValue: liquidationThreshold
+    });
+    uint256 minCollateralAssets = _getTokenAmountByDollarValue({
+      oracleAddr: oracleAddr,
+      reserveInfo: collateralInfo,
+      dollarValue: liquidationThreshold
+    });
+
+    // Skip if either debt or collateral is too small — partial liq leads to dust
+    if (totalDebt <= minDebtAssets || totalCollateral <= minCollateralAssets) {
+      return;
+    }
+
+    // liquidate only up to $400 so that remaining amounts won't trigger dust threshold reverts
+    uint256 partialDebt = _getTokenAmountByDollarValue({
+      oracleAddr: oracleAddr,
+      reserveInfo: testAssetInfo,
+      dollarValue: vm.randomUint(1, 400)
+    });
+    // Partial liquidation - receive underlying
+    _liquidationCall({
+      spoke: spoke,
+      collateralInfo: collateralInfo,
+      debtInfo: testAssetInfo,
+      liquidator: liquidator,
+      borrower: borrower,
+      debtToCover: partialDebt,
+      receiveShares: receiveShares
+    });
+    assertGt(
+      spoke.getUserTotalDebt(testAssetInfo.reserveId, borrower),
+      0,
+      'PARTIAL_LIQUIDATION: debt should not be fully repaid'
+    );
   }
 
   /// @dev Disable all collaterals, verify borrow reverts, re-enable all, verify borrow works.

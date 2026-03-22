@@ -334,7 +334,8 @@ abstract contract V4Helpers is V4Actions {
         break;
       }
 
-      uint256 extraDollars = vm.randomUint(10_000, 50_000);
+      // adding too much collateral will mean user's HF is too high to make liquidatable easily
+      uint256 extraDollars = vm.randomUint(1_000, 10_000);
       uint256 extraAmount = _getTokenAmountByDollarValue({
         oracleAddr: oracleAddr,
         reserveInfo: goodCollaterals[index],

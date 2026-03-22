@@ -127,9 +127,7 @@ abstract contract V4Actions is CommonTestBase {
     V4Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 skipDays
-  ) internal {
-    uint256 snapshot = vm.snapshotState();
-
+  ) internal revertToSnapshot {
     V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     skip(skipDays * 1 days);
@@ -172,12 +170,10 @@ abstract contract V4Actions is CommonTestBase {
       'TIME_SKIP: hub spoke drawn decreased'
     );
 
-    // Hub drawn index should have grown (checked via hub directly)
+    // Hub drawn index should have grown
     IHubBase hub = IHubBase(reserveInfo.hub);
     uint256 drawnIndexAfter = hub.getAssetDrawnIndex(reserveInfo.assetId);
-    assertGt(drawnIndexAfter, 0, 'TIME_SKIP: drawn index should be positive');
-
-    vm.revertToState(snapshot);
+    assertGt(drawnIndexAfter, 1e27, 'TIME_SKIP: drawn index should be greater than 1e27');
   }
 
   // -------------------------------------------------------------------------
