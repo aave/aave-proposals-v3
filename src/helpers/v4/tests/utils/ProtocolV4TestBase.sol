@@ -6,7 +6,7 @@ import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
 import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITokenizationSpoke.sol';
-import {V4Types} from './V4Types.sol';
+import {Types} from './Types.sol';
 import {TokenizationScenarios} from './TokenizationScenarios.sol';
 
 /// @title ProtocolV4TestBase
@@ -41,8 +41,8 @@ contract ProtocolV4TestBase is TokenizationScenarios {
 
   /// @notice Test all reserves on one spoke, looping over ALL good collaterals.
   function e2eTestSpoke(ISpoke spoke) public {
-    V4Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
-    V4Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(allReserves);
+    Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
+    Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(allReserves);
     require(goodCollaterals.length > 0, 'No usable collateral found');
 
     for (uint256 collateralIndex; collateralIndex < goodCollaterals.length; collateralIndex++) {
@@ -75,7 +75,7 @@ contract ProtocolV4TestBase is TokenizationScenarios {
   }
 
   /// @notice Test that a frozen reserve correctly reverts on supply and borrow.
-  function e2eTestFrozenAsset(ISpoke spoke, V4Types.ReserveInfo memory frozenAsset) public {
+  function e2eTestFrozenAsset(ISpoke spoke, Types.ReserveInfo memory frozenAsset) public {
     console.log('E2E: Testing frozen reserve %s (should revert)', frozenAsset.symbol);
 
     address oracleAddr = spoke.ORACLE();
@@ -104,7 +104,7 @@ contract ProtocolV4TestBase is TokenizationScenarios {
   }
 
   /// @notice Test that a paused reserve correctly reverts on all actions.
-  function e2eTestPausedAsset(ISpoke spoke, V4Types.ReserveInfo memory pausedAsset) public {
+  function e2eTestPausedAsset(ISpoke spoke, Types.ReserveInfo memory pausedAsset) public {
     console.log('E2E: Testing paused reserve %s (should revert)', pausedAsset.symbol);
 
     address oracleAddr = spoke.ORACLE();
@@ -145,11 +145,11 @@ contract ProtocolV4TestBase is TokenizationScenarios {
   /// @notice Per-asset e2e test with randomized amounts and extra collaterals.
   function e2eTestAsset(
     ISpoke spoke,
-    V4Types.ReserveInfo[] memory goodCollaterals,
+    Types.ReserveInfo[] memory goodCollaterals,
     uint256 primaryCollateralIndex,
-    V4Types.ReserveInfo memory testAssetInfo
+    Types.ReserveInfo memory testAssetInfo
   ) public {
-    V4Types.ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+    Types.ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
     console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
@@ -226,7 +226,7 @@ contract ProtocolV4TestBase is TokenizationScenarios {
 
   /// @notice Run all tokenization spoke scenarios for a single spoke.
   function e2eTestTokenizationSpoke(ITokenizationSpoke tokenizationSpoke) public {
-    V4Types.ReserveInfo memory reserveInfo = _getTokenizationReserveInfo(tokenizationSpoke);
+    Types.ReserveInfo memory reserveInfo = _getTokenizationReserveInfo(tokenizationSpoke);
     console.log('E2E: TokenizationSpoke asset: %s', reserveInfo.symbol);
 
     _testTokenizationAddCap(tokenizationSpoke, reserveInfo);

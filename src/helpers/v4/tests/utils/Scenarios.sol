@@ -10,12 +10,12 @@ import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interf
 import {IPriceOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IPriceOracle.sol';
 import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
 import {ISpokeConfigurator} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpokeConfigurator.sol';
-import {V4Types} from './V4Types.sol';
-import {V4Helpers} from './V4Helpers.sol';
+import {Types} from './Types.sol';
+import {Helpers} from './Helpers.sol';
 
-/// @title V4Scenarios
+/// @title Scenarios
 /// @notice Test scenario orchestration for V4 e2e tests.
-abstract contract V4Scenarios is V4Helpers {
+abstract contract Scenarios is Helpers {
   using SafeERC20 for IERC20;
 
   /// @dev Makes a user liquidatable by manipulating oracle prices and warping time.
@@ -87,13 +87,13 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Supply collateral(s) and test asset, return the test asset amount.
   function _setupPositions(
     ISpoke spoke,
-    V4Types.ReserveInfo[] memory goodCollaterals,
+    Types.ReserveInfo[] memory goodCollaterals,
     uint256 primaryCollateralIndex,
-    V4Types.ReserveInfo memory testAssetInfo,
+    Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     address testAssetSupplier
   ) internal returns (uint256 testAssetAmount) {
-    V4Types.ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
+    Types.ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
     address oracle = spoke.ORACLE();
 
     uint256 collateralDollars = vm.randomUint(50_000, 200_000);
@@ -164,7 +164,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test partial + full withdrawal with random partial amount.
   function _testWithdrawals(
     ISpoke spoke,
-    V4Types.ReserveInfo memory testAssetInfo,
+    Types.ReserveInfo memory testAssetInfo,
     address testAssetSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
@@ -178,8 +178,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test borrow, repay, and liquidation flows.
   function _testBorrowRepayLiquidation(
     ISpoke spoke,
-    V4Types.ReserveInfo memory collateralInfo,
-    V4Types.ReserveInfo memory testAssetInfo,
+    Types.ReserveInfo memory collateralInfo,
+    Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
@@ -322,8 +322,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).
   function _testLiquidation(
     ISpoke spoke,
-    V4Types.ReserveInfo memory collateralInfo,
-    V4Types.ReserveInfo memory testAssetInfo,
+    Types.ReserveInfo memory collateralInfo,
+    Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier
   ) internal revertToSnapshot {
     _makeUserLiquidatable(spoke, collateralSupplier);
@@ -392,8 +392,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Partial liquidation: only for coll/debt amounts that won't trigger dust threshold reverts
   function _testPartialLiquidation(
     ISpoke spoke,
-    V4Types.ReserveInfo memory collateralInfo,
-    V4Types.ReserveInfo memory testAssetInfo,
+    Types.ReserveInfo memory collateralInfo,
+    Types.ReserveInfo memory testAssetInfo,
     address liquidator,
     address borrower,
     bool receiveShares
@@ -445,8 +445,8 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Disable all collaterals, verify borrow reverts, re-enable all, verify borrow works.
   function _testCollateralToggle(
     ISpoke spoke,
-    V4Types.ReserveInfo[] memory goodCollaterals,
-    V4Types.ReserveInfo memory testAssetInfo,
+    Types.ReserveInfo[] memory goodCollaterals,
+    Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
   ) internal revertToSnapshot {
@@ -519,8 +519,8 @@ abstract contract V4Scenarios is V4Helpers {
 
   /// @dev Borrow from random extra reserves, respecting MAX_USER_RESERVES_LIMIT.
   function _borrowExtrasWithinLimit(ISpoke spoke, uint256 primaryReserveId, address user) internal {
-    V4Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
-    V4Types.ReserveInfo[] memory usableDebtReserves = _getAllUsableDebtReserves(allReserves);
+    Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
+    Types.ReserveInfo[] memory usableDebtReserves = _getAllUsableDebtReserves(allReserves);
     uint16 maxUserReserves = spoke.MAX_USER_RESERVES_LIMIT();
     uint256 currentBorrowCount = spoke.getUserAccountData(user).borrowCount;
     uint256 remainingSlots = currentBorrowCount < maxUserReserves
@@ -541,7 +541,7 @@ abstract contract V4Scenarios is V4Helpers {
   }
 
   /// @dev Test spoke addCap and drawCap by incrementally filling to the cap, then verify overflow reverts.
-  function _testCaps(ISpoke spoke, V4Types.ReserveInfo memory reserveInfo) internal {
+  function _testCaps(ISpoke spoke, Types.ReserveInfo memory reserveInfo) internal {
     IHub.SpokeConfig memory spokeConfig = IHub(reserveInfo.hub).getSpokeConfig(
       reserveInfo.assetId,
       address(spoke)
@@ -561,7 +561,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Fill supply up to addCap in random chunks, then verify overflow reverts.
   function _testAddCap(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     uint40 addCap
   ) internal revertToSnapshot {
     uint256 addCapScaled = uint256(addCap) * 10 ** reserveInfo.decimals;
@@ -586,7 +586,7 @@ abstract contract V4Scenarios is V4Helpers {
   /// @dev Fill borrows up to drawCap in random chunks, then verify overflow reverts.
   function _testDrawCap(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     uint40 drawCap
   ) internal revertToSnapshot {
     // Remove addCaps so enough collateral can be supplied to borrow up to drawCap

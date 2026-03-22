@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-library V4Types {
+library Types {
   /// @notice Accounting state: collateral + debt (drawn + premium), shares + assets.
   struct Accounting {
     // Supply / collateral side

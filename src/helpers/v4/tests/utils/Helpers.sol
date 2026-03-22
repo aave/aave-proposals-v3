@@ -7,16 +7,16 @@ import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IH
 import {IHubConfigurator} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubConfigurator.sol';
 import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IAaveOracle.sol';
 import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
-import {V4Types} from './V4Types.sol';
-import {V4Actions} from './V4Actions.sol';
+import {Types} from './Types.sol';
+import {Actions} from './Actions.sol';
 
-/// @title V4Helpers
+/// @title Helpers
 /// @notice Query and utility functions for V4 e2e tests.
-abstract contract V4Helpers is V4Actions {
+abstract contract Helpers is Actions {
   /// @notice Build ReserveInfo[] for all reserves on a spoke.
-  function _getReserveInfo(ISpoke spoke) internal view returns (V4Types.ReserveInfo[] memory) {
+  function _getReserveInfo(ISpoke spoke) internal view returns (Types.ReserveInfo[] memory) {
     uint256 count = spoke.getReserveCount();
-    V4Types.ReserveInfo[] memory info = new V4Types.ReserveInfo[](count);
+    Types.ReserveInfo[] memory info = new Types.ReserveInfo[](count);
 
     for (uint256 i; i < count; i++) {
       ISpoke.Reserve memory reserve = spoke.getReserve(i);
@@ -28,7 +28,7 @@ abstract contract V4Helpers is V4Actions {
 
       string memory symbol = _safeSymbol(reserve.underlying);
 
-      info[i] = V4Types.ReserveInfo({
+      info[i] = Types.ReserveInfo({
         reserveId: i,
         underlying: reserve.underlying,
         hub: address(reserve.hub),
@@ -49,15 +49,15 @@ abstract contract V4Helpers is V4Actions {
 
   /// @notice Return all usable collaterals: not paused, not frozen, collateralFactor > 0.
   function _getAllUsableCollaterals(
-    V4Types.ReserveInfo[] memory infos
-  ) internal pure returns (V4Types.ReserveInfo[] memory) {
+    Types.ReserveInfo[] memory infos
+  ) internal pure returns (Types.ReserveInfo[] memory) {
     uint256 count;
     for (uint256 i; i < infos.length; i++) {
       if (!infos[i].paused && !infos[i].frozen && infos[i].collateralEnabled) {
         count++;
       }
     }
-    V4Types.ReserveInfo[] memory result = new V4Types.ReserveInfo[](count);
+    Types.ReserveInfo[] memory result = new Types.ReserveInfo[](count);
     uint256 index;
     for (uint256 i; i < infos.length; i++) {
       if (!infos[i].paused && !infos[i].frozen && infos[i].collateralEnabled) {
@@ -70,15 +70,15 @@ abstract contract V4Helpers is V4Actions {
 
   /// @notice Return all usable debt reserves: not paused, not frozen, borrowable.
   function _getAllUsableDebtReserves(
-    V4Types.ReserveInfo[] memory infos
-  ) internal pure returns (V4Types.ReserveInfo[] memory) {
+    Types.ReserveInfo[] memory infos
+  ) internal pure returns (Types.ReserveInfo[] memory) {
     uint256 count;
     for (uint256 i; i < infos.length; i++) {
       if (!infos[i].paused && !infos[i].frozen && infos[i].borrowable) {
         count++;
       }
     }
-    V4Types.ReserveInfo[] memory result = new V4Types.ReserveInfo[](count);
+    Types.ReserveInfo[] memory result = new Types.ReserveInfo[](count);
     uint256 index;
     for (uint256 i; i < infos.length; i++) {
       if (!infos[i].paused && !infos[i].frozen && infos[i].borrowable) {
@@ -94,7 +94,7 @@ abstract contract V4Helpers is V4Actions {
   ///         Returns the amount actually supplied (may be less than requested if addCap is limited).
   function _ensureLiquidity(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     uint256 amount
   ) internal returns (uint256) {
     IHub hub = IHub(reserveInfo.hub);
@@ -170,11 +170,11 @@ abstract contract V4Helpers is V4Actions {
   /// @notice Supply through a specific spoke address, building the reserveInfo from the source.
   function _supplyViaSpoke(
     address spokeAddr,
-    V4Types.ReserveInfo memory sourceInfo,
+    Types.ReserveInfo memory sourceInfo,
     address user,
     uint256 amount
   ) internal {
-    V4Types.ReserveInfo memory reserveInfo = _buildTargetReserveInfo(
+    Types.ReserveInfo memory reserveInfo = _buildTargetReserveInfo(
       sourceInfo,
       _findReserveIdByAssetId(ISpoke(spokeAddr), sourceInfo.hub, sourceInfo.assetId)
     );
@@ -183,11 +183,11 @@ abstract contract V4Helpers is V4Actions {
 
   /// @notice Build a minimal ReserveInfo for a target spoke, reusing metadata from the source.
   function _buildTargetReserveInfo(
-    V4Types.ReserveInfo memory source,
+    Types.ReserveInfo memory source,
     uint256 targetReserveId
-  ) internal pure returns (V4Types.ReserveInfo memory) {
+  ) internal pure returns (Types.ReserveInfo memory) {
     return
-      V4Types.ReserveInfo({
+      Types.ReserveInfo({
         reserveId: targetReserveId,
         underlying: source.underlying,
         hub: source.hub,
@@ -224,7 +224,7 @@ abstract contract V4Helpers is V4Actions {
   ///         Caps the supply at the spoke's remaining addCap room.
   function _ensureCollateral(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address borrower,
     uint256 amount
   ) internal {
@@ -254,7 +254,7 @@ abstract contract V4Helpers is V4Actions {
     address borrower,
     uint256 borrowAmountInDollars
   ) internal {
-    V4Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(_getReserveInfo(spoke));
+    Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(_getReserveInfo(spoke));
     address oracleAddr = spoke.ORACLE();
     uint8 oracleDecimals = IAaveOracle(oracleAddr).decimals();
     uint256 targetCollateralDollarAmount = borrowAmountInDollars * 3;
@@ -286,7 +286,7 @@ abstract contract V4Helpers is V4Actions {
   /// @notice Convert a dollar value to token amount using the spoke oracle.
   function _getTokenAmountByDollarValue(
     address oracleAddr,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     uint256 dollarValue
   ) internal view returns (uint256) {
     IAaveOracle oracle = IAaveOracle(oracleAddr);
@@ -298,7 +298,7 @@ abstract contract V4Helpers is V4Actions {
   /// @notice Supply up to `extraCount` of additional collaterals for the user, up to `maxUserReserves`.
   function _supplyRandomExtraCollaterals(
     ISpoke spoke,
-    V4Types.ReserveInfo[] memory goodCollaterals,
+    Types.ReserveInfo[] memory goodCollaterals,
     uint256 primaryIndex,
     uint256 testAssetReserveId,
     address oracleAddr,
@@ -372,7 +372,7 @@ abstract contract V4Helpers is V4Actions {
   ///         Supplies liquidity from a separate provider before each borrow.
   function _borrowRandomExtraReserves(
     ISpoke spoke,
-    V4Types.ReserveInfo[] memory usableDebtReserves,
+    Types.ReserveInfo[] memory usableDebtReserves,
     uint256 primaryReserveId,
     address oracleAddr,
     address user,
@@ -389,7 +389,7 @@ abstract contract V4Helpers is V4Actions {
 
     uint256 borrowed;
     for (uint256 index; index < usableDebtReserves.length && borrowed < extraCount; index++) {
-      V4Types.ReserveInfo memory debtReserve = usableDebtReserves[index];
+      Types.ReserveInfo memory debtReserve = usableDebtReserves[index];
 
       if (debtReserve.reserveId == primaryReserveId) {
         continue;
@@ -434,7 +434,7 @@ abstract contract V4Helpers is V4Actions {
   /// @notice Assert that exceeding MAX_USER_RESERVES_LIMIT reverts, then restore state.
   function _assertMaxUserReservesReverts(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address oracleAddr,
     address user,
     bool isCollateral
@@ -467,7 +467,7 @@ abstract contract V4Helpers is V4Actions {
   function _setCapsToMax(ISpoke spoke) internal {
     address hubConfigurator = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
 
-    V4Types.ReserveInfo[] memory infos = _getReserveInfo(spoke);
+    Types.ReserveInfo[] memory infos = _getReserveInfo(spoke);
     vm.mockCall(
       AaveV4EthereumAddresses.ACCESS_MANAGER,
       abi.encodeWithSelector(bytes4(keccak256('canCall(address,address,bytes4)'))),
@@ -489,7 +489,7 @@ abstract contract V4Helpers is V4Actions {
   function _setAddCapsToMax(ISpoke spoke) internal {
     address hubConfigurator = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
 
-    V4Types.ReserveInfo[] memory infos = _getReserveInfo(spoke);
+    Types.ReserveInfo[] memory infos = _getReserveInfo(spoke);
     vm.mockCall(
       AaveV4EthereumAddresses.ACCESS_MANAGER,
       abi.encodeWithSelector(bytes4(keccak256('canCall(address,address,bytes4)'))),

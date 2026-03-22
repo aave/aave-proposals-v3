@@ -8,7 +8,7 @@ import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum
 import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHub.sol';
 import {IHubConfigurator} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubConfigurator.sol';
 import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
-import {V4Types} from './V4Types.sol';
+import {Types} from './Types.sol';
 import {TokenizationActions} from './TokenizationActions.sol';
 
 /// @title TokenizationScenarios
@@ -19,7 +19,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @notice Build ReserveInfo from a tokenization spoke's identity getters.
   function _getTokenizationReserveInfo(
     ITokenizationSpoke tokenizationSpoke
-  ) internal view returns (V4Types.ReserveInfo memory) {
+  ) internal view returns (Types.ReserveInfo memory) {
     address hub = tokenizationSpoke.hub();
     uint16 assetId = uint16(tokenizationSpoke.assetId());
     address underlying = tokenizationSpoke.asset();
@@ -27,7 +27,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
     string memory symbol = _safeSymbol(underlying);
 
     return
-      V4Types.ReserveInfo({
+      Types.ReserveInfo({
         reserveId: 0,
         underlying: underlying,
         hub: hub,
@@ -73,7 +73,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test deposit + partial withdraw + full redeem cycle.
   function _testTokenizationDepositWithdraw(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo
   ) internal revertToSnapshot {
     address user = vm.randomAddress();
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
@@ -101,7 +101,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test mint + partial redeem + full redeem cycle.
   function _testTokenizationMintRedeem(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo
   ) internal revertToSnapshot {
     address user = vm.randomAddress();
     uint256 mintAssets = _halfToken(reserveInfo.decimals);
@@ -130,7 +130,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test ERC4626 preview/convert consistency and limit functions.
   function _testTokenizationPreviewConsistency(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo
   ) internal revertToSnapshot {
     address user = vm.randomAddress();
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
@@ -207,7 +207,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test deposit with EIP-2612 permit signature.
   function _testTokenizationPermitDeposit(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo
   ) internal revertToSnapshot {
     uint256 privateKey = vm.randomUint(1, type(uint248).max);
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
@@ -219,7 +219,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test addCap enforcement on tokenization spoke deposits.
   function _testTokenizationAddCap(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo
   ) internal revertToSnapshot {
     IHub hub = IHub(reserveInfo.hub);
     IHub.SpokeConfig memory spokeConfig = hub.getSpokeConfig(
@@ -255,7 +255,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test that share value does not decrease over time (yield accrual).
   function _testTokenizationTimeSkip(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo
   ) internal revertToSnapshot {
     address user = vm.randomAddress();
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
@@ -263,7 +263,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
     // Deposit first
     _tokenizationDeposit(tokenizationSpoke, reserveInfo, user, depositAmount);
 
-    V4Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -272,7 +272,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
     uint256 skipDays = vm.randomUint(1, 365);
     skip(skipDays * 1 days);
 
-    V4Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user

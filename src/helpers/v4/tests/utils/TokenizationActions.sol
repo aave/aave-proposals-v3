@@ -7,12 +7,12 @@ import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITokenizationSpoke.sol';
 import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
 import {IHubBase} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubBase.sol';
-import {V4Types} from './V4Types.sol';
-import {V4Scenarios} from './V4Scenarios.sol';
+import {Types} from './Types.sol';
+import {Scenarios} from './Scenarios.sol';
 
 /// @title TokenizationActions
 /// @notice Low-level tokenization spoke (ERC4626) actions with hub accounting assertions.
-abstract contract TokenizationActions is V4Scenarios {
+abstract contract TokenizationActions is Scenarios {
   using SafeERC20 for IERC20;
 
   // -------------------------------------------------------------------------
@@ -21,12 +21,12 @@ abstract contract TokenizationActions is V4Scenarios {
 
   function _getTokenizationSnapshot(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user
-  ) internal view returns (V4Types.TokenizationSnapshot memory) {
+  ) internal view returns (Types.TokenizationSnapshot memory) {
     uint256 userShares = tokenizationSpoke.balanceOf(user);
     return
-      V4Types.TokenizationSnapshot({
+      Types.TokenizationSnapshot({
         userShares: userShares,
         userAssets: userShares > 0 ? tokenizationSpoke.convertToAssets(userShares) : 0,
         totalShares: tokenizationSpoke.totalSupply(),
@@ -39,7 +39,7 @@ abstract contract TokenizationActions is V4Scenarios {
   // Hub invariant: tokenization spoke never borrows
   // -------------------------------------------------------------------------
 
-  function _assertTokenizationNoDebt(V4Types.TokenizationSnapshot memory snapshot) internal pure {
+  function _assertTokenizationNoDebt(Types.TokenizationSnapshot memory snapshot) internal pure {
     assertEq(snapshot.hubSpoke.drawnDebt, 0, 'TOKENIZATION: hub drawn debt should be zero');
     assertEq(snapshot.hubSpoke.drawnShares, 0, 'TOKENIZATION: hub drawn shares should be zero');
     assertEq(snapshot.hubSpoke.totalDebt, 0, 'TOKENIZATION: hub total debt should be zero');
@@ -51,11 +51,11 @@ abstract contract TokenizationActions is V4Scenarios {
 
   function _tokenizationDeposit(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 assets
   ) internal {
-    V4Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -70,7 +70,7 @@ abstract contract TokenizationActions is V4Scenarios {
     uint256 sharesReturned = tokenizationSpoke.deposit(assets, user);
     vm.stopPrank();
 
-    V4Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -120,11 +120,11 @@ abstract contract TokenizationActions is V4Scenarios {
 
   function _tokenizationMint(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 shares
   ) internal {
-    V4Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -139,7 +139,7 @@ abstract contract TokenizationActions is V4Scenarios {
     uint256 assetsDeposited = tokenizationSpoke.mint(shares, user);
     vm.stopPrank();
 
-    V4Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -177,11 +177,11 @@ abstract contract TokenizationActions is V4Scenarios {
 
   function _tokenizationWithdraw(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 assets
   ) internal {
-    V4Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -193,7 +193,7 @@ abstract contract TokenizationActions is V4Scenarios {
     _logAction('TOKENIZATION_WITHDRAW', reserveInfo.symbol, assets);
     uint256 sharesBurned = tokenizationSpoke.withdraw(assets, user, user);
 
-    V4Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -231,11 +231,11 @@ abstract contract TokenizationActions is V4Scenarios {
 
   function _tokenizationRedeem(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 shares
   ) internal {
-    V4Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -247,7 +247,7 @@ abstract contract TokenizationActions is V4Scenarios {
     _logAction('TOKENIZATION_REDEEM', reserveInfo.symbol, shares);
     uint256 assetsReceived = tokenizationSpoke.redeem(shares, user, user);
 
-    V4Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -316,13 +316,13 @@ abstract contract TokenizationActions is V4Scenarios {
 
   function _tokenizationDepositWithPermit(
     ITokenizationSpoke tokenizationSpoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     uint256 userPrivateKey,
     uint256 assets
   ) internal {
     address user = vm.addr(userPrivateKey);
 
-    V4Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotBefore = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user
@@ -344,7 +344,7 @@ abstract contract TokenizationActions is V4Scenarios {
     _logAction('TOKENIZATION_DEPOSIT_WITH_PERMIT', reserveInfo.symbol, assets);
     uint256 sharesReturned = tokenizationSpoke.depositWithPermit(assets, user, deadline, v, r, s);
 
-    V4Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
+    Types.TokenizationSnapshot memory snapshotAfter = _getTokenizationSnapshot(
       tokenizationSpoke,
       reserveInfo,
       user

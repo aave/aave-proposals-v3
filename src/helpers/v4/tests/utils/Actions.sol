@@ -7,11 +7,11 @@ import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {CommonTestBase} from 'aave-helpers/src/CommonTestBase.sol';
 import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
 import {IHubBase} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubBase.sol';
-import {V4Types} from './V4Types.sol';
+import {Types} from './Types.sol';
 
-/// @title V4Actions
+/// @title Actions
 /// @notice Low-level spoke actions with hub and spoke accounting assertions.
-abstract contract V4Actions is CommonTestBase {
+abstract contract Actions is CommonTestBase {
   using SafeERC20 for IERC20;
 
   uint256 constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18;
@@ -42,11 +42,11 @@ abstract contract V4Actions is CommonTestBase {
     ISpoke spoke,
     uint256 reserveId,
     address user
-  ) internal view returns (V4Types.Accounting memory) {
+  ) internal view returns (Types.Accounting memory) {
     (uint256 drawnDebt, uint256 premiumDebt) = spoke.getUserDebt(reserveId, user);
     ISpoke.UserPosition memory position = spoke.getUserPosition(reserveId, user);
     return
-      V4Types.Accounting({
+      Types.Accounting({
         collateralShares: position.suppliedShares,
         collateralAssets: spoke.getUserSuppliedAssets(reserveId, user),
         drawnDebt: drawnDebt,
@@ -60,8 +60,8 @@ abstract contract V4Actions is CommonTestBase {
 
   function _getReserveAccounting(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo
-  ) internal view returns (V4Types.Accounting memory) {
+    Types.ReserveInfo memory reserveInfo
+  ) internal view returns (Types.Accounting memory) {
     IHubBase hub = IHubBase(reserveInfo.hub);
     uint16 assetId = reserveInfo.assetId;
     (uint256 drawnDebt, uint256 premiumDebt) = hub.getSpokeOwed(assetId, address(spoke));
@@ -70,7 +70,7 @@ abstract contract V4Actions is CommonTestBase {
       address(spoke)
     );
     return
-      V4Types.Accounting({
+      Types.Accounting({
         collateralShares: spoke.getReserveSuppliedShares(reserveInfo.reserveId),
         collateralAssets: spoke.getReserveSuppliedAssets(reserveInfo.reserveId),
         drawnDebt: drawnDebt,
@@ -84,15 +84,15 @@ abstract contract V4Actions is CommonTestBase {
 
   function _getHubSpokeAccounting(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo
-  ) internal view returns (V4Types.Accounting memory) {
+    Types.ReserveInfo memory reserveInfo
+  ) internal view returns (Types.Accounting memory) {
     IHubBase hub = IHubBase(reserveInfo.hub);
     uint16 assetId = reserveInfo.assetId;
     address spokeAddr = address(spoke);
     (uint256 spokeDrawnOwed, uint256 spokePremiumOwed) = hub.getSpokeOwed(assetId, spokeAddr);
     (uint256 premiumShares, int256 premiumOffsetRay) = hub.getSpokePremiumData(assetId, spokeAddr);
     return
-      V4Types.Accounting({
+      Types.Accounting({
         collateralShares: hub.getSpokeAddedShares(assetId, spokeAddr),
         collateralAssets: hub.getSpokeAddedAssets(assetId, spokeAddr),
         drawnDebt: spokeDrawnOwed,
@@ -106,11 +106,11 @@ abstract contract V4Actions is CommonTestBase {
 
   function _getPositionSnapshot(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user
-  ) internal view returns (V4Types.PositionSnapshot memory) {
+  ) internal view returns (Types.PositionSnapshot memory) {
     return
-      V4Types.PositionSnapshot({
+      Types.PositionSnapshot({
         user: _getUserAccounting({spoke: spoke, reserveId: reserveInfo.reserveId, user: user}),
         reserve: _getReserveAccounting({spoke: spoke, reserveInfo: reserveInfo}),
         hubSpoke: _getHubSpokeAccounting({spoke: spoke, reserveInfo: reserveInfo})
@@ -124,15 +124,15 @@ abstract contract V4Actions is CommonTestBase {
   /// @notice Skip time, assert debt accounting grew as expected, then revert.
   function _skipTimeAndCheckAccounting(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 skipDays
   ) internal revertToSnapshot {
-    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     skip(skipDays * 1 days);
 
-    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     // User debt should not decrease over time
     assertGe(
@@ -182,14 +182,14 @@ abstract contract V4Actions is CommonTestBase {
 
   function _supply(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
     require(!reserveInfo.paused, 'SUPPLY: PAUSED_RESERVE');
     require(!reserveInfo.frozen, 'SUPPLY: FROZEN_RESERVE');
 
-    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     vm.startPrank(user);
     deal2(reserveInfo.underlying, user, amount);
@@ -198,7 +198,7 @@ abstract contract V4Actions is CommonTestBase {
     spoke.supply({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     // User
     assertApproxEqAbs(
@@ -235,11 +235,11 @@ abstract contract V4Actions is CommonTestBase {
 
   function _withdraw(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
-    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     vm.startPrank(user);
     _logAction('WITHDRAW', reserveInfo.symbol, amount);
@@ -250,7 +250,7 @@ abstract contract V4Actions is CommonTestBase {
     });
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     if (amount >= snapshotBefore.user.collateralAssets) {
       assertEq(snapshotAfter.user.collateralAssets, 0, 'WITHDRAW: user assets should be zero');
@@ -291,11 +291,11 @@ abstract contract V4Actions is CommonTestBase {
 
   function _borrow(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
-    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
     uint256 expectedDrawnShares = IHubBase(reserveInfo.hub).previewDrawByAssets(
       reserveInfo.assetId,
       amount
@@ -305,7 +305,7 @@ abstract contract V4Actions is CommonTestBase {
     vm.prank(user);
     spoke.borrow({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
 
-    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     // User debt
     assertApproxEqAbs(
@@ -336,11 +336,11 @@ abstract contract V4Actions is CommonTestBase {
 
   function _repay(
     ISpoke spoke,
-    V4Types.ReserveInfo memory reserveInfo,
+    Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 amount
   ) internal {
-    V4Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
     uint256 effectiveRepayAmount = amount >= snapshotBefore.user.totalDebt
       ? snapshotBefore.user.totalDebt
       : amount;
@@ -356,7 +356,7 @@ abstract contract V4Actions is CommonTestBase {
     spoke.repay({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
     if (amount >= snapshotBefore.user.totalDebt) {
       assertEq(snapshotAfter.user.totalDebt, 0, 'REPAY: user debt should be zero');
@@ -385,19 +385,19 @@ abstract contract V4Actions is CommonTestBase {
 
   function _liquidationCall(
     ISpoke spoke,
-    V4Types.ReserveInfo memory collateralInfo,
-    V4Types.ReserveInfo memory debtInfo,
+    Types.ReserveInfo memory collateralInfo,
+    Types.ReserveInfo memory debtInfo,
     address liquidator,
     address borrower,
     uint256 debtToCover,
     bool receiveShares
   ) internal {
-    V4Types.PositionSnapshot memory collateralSnapshotBefore = _getPositionSnapshot(
+    Types.PositionSnapshot memory collateralSnapshotBefore = _getPositionSnapshot(
       spoke,
       collateralInfo,
       borrower
     );
-    V4Types.PositionSnapshot memory debtSnapshotBefore = _getPositionSnapshot(
+    Types.PositionSnapshot memory debtSnapshotBefore = _getPositionSnapshot(
       spoke,
       debtInfo,
       borrower
@@ -433,12 +433,12 @@ abstract contract V4Actions is CommonTestBase {
     });
     vm.stopPrank();
 
-    V4Types.PositionSnapshot memory collateralSnapshotAfter = _getPositionSnapshot(
+    Types.PositionSnapshot memory collateralSnapshotAfter = _getPositionSnapshot(
       spoke,
       collateralInfo,
       borrower
     );
-    V4Types.PositionSnapshot memory debtSnapshotAfter = _getPositionSnapshot(
+    Types.PositionSnapshot memory debtSnapshotAfter = _getPositionSnapshot(
       spoke,
       debtInfo,
       borrower
