@@ -5,21 +5,21 @@ import {IHub} from './interfaces/IHub.sol';
 import {ISpoke} from './interfaces/ISpoke.sol';
 
 library AaveV4EthereumAddresses {
-  // https://etherscan.io/address/0x4287339f30A60b45886CeB4B5509e000b9C4ae2E
-  address internal constant ACCESS_MANAGER = 0x4287339f30A60b45886CeB4B5509e000b9C4ae2E;
-  // https://etherscan.io/address/0xceF48d919fE6D1f4A6AeFBD1acE2b5f3caCD9246
-  address internal constant HUB_CONFIGURATOR = 0xceF48d919fE6D1f4A6AeFBD1acE2b5f3caCD9246;
-  // https://etherscan.io/address/0x560D5789e90C8bEd6Ac00ac06cF88263013695FA
-  address internal constant SPOKE_CONFIGURATOR = 0x560D5789e90C8bEd6Ac00ac06cF88263013695FA;
+  // https://etherscan.io/address/0x08aE3BE30958cDd1847ec58fFfd4C451a87fDF01
+  address internal constant ACCESS_MANAGER = 0x08aE3BE30958cDd1847ec58fFfd4C451a87fDF01;
+  // https://etherscan.io/address/0x1F0753480bB03EaA00863224602267B7E0525C3d
+  address internal constant HUB_CONFIGURATOR = 0x1F0753480bB03EaA00863224602267B7E0525C3d;
+  // https://etherscan.io/address/0x9BFFf48BFb5A7AE70c348d4d4cb97E8DEFa5389a
+  address internal constant SPOKE_CONFIGURATOR = 0x9BFFf48BFb5A7AE70c348d4d4cb97E8DEFa5389a;
 }
 
 library AaveV4EthereumHubs {
-  // https://etherscan.io/address/0x94B33734C67409816Df02994BF648d62310e5dAE
-  IHub internal constant CORE_HUB = IHub(0x94B33734C67409816Df02994BF648d62310e5dAE);
-  // https://etherscan.io/address/0x2CE890e39020F5FCA1BAEA4aC57222acA36Bb0E9
-  IHub internal constant PLUS_HUB = IHub(0x2CE890e39020F5FCA1BAEA4aC57222acA36Bb0E9);
-  // https://etherscan.io/address/0x92434157Bb548F9648bA69b816E1ea9f820A06C1
-  IHub internal constant PRIME_HUB = IHub(0x92434157Bb548F9648bA69b816E1ea9f820A06C1);
+  // https://etherscan.io/address/0xCca852Bc40e560adC3b1Cc58CA5b55638ce826c9
+  IHub internal constant CORE_HUB = IHub(0xCca852Bc40e560adC3b1Cc58CA5b55638ce826c9);
+  // https://etherscan.io/address/0x06002e9c4412CB7814a791eA3666D905871E536A
+  IHub internal constant PLUS_HUB = IHub(0x06002e9c4412CB7814a791eA3666D905871E536A);
+  // https://etherscan.io/address/0x943827DCA022D0F354a8a8c332dA1e5Eb9f9F931
+  IHub internal constant PRIME_HUB = IHub(0x943827DCA022D0F354a8a8c332dA1e5Eb9f9F931);
 
   function getHubs() internal pure returns (IHub[] memory) {
     IHub[] memory hubs = new IHub[](3);
@@ -31,30 +31,30 @@ library AaveV4EthereumHubs {
 }
 
 library AaveV4EthereumSpokes {
-  // https://etherscan.io/address/0x206D960e7522168CAaf1c9941Bd0d2942C5775Ee
-  ISpoke internal constant MAIN_SPOKE = ISpoke(0x206D960e7522168CAaf1c9941Bd0d2942C5775Ee);
-  // https://etherscan.io/address/0x38905FB8b5474704602976CA9Ab9C3986Acc3031
-  ISpoke internal constant BLUECHIP_SPOKE = ISpoke(0x38905FB8b5474704602976CA9Ab9C3986Acc3031);
-  // https://etherscan.io/address/0x5cB4875cbE09C462c8FDE663e41be6418fBD85Ab
+  // https://etherscan.io/address/0x94e7A5dCbE816e498b89aB752661904E2F56c485
+  ISpoke internal constant MAIN_SPOKE = ISpoke(0x94e7A5dCbE816e498b89aB752661904E2F56c485);
+  // https://etherscan.io/address/0x973a023A77420ba610f06b3858aD991Df6d85A08
+  ISpoke internal constant BLUECHIP_SPOKE = ISpoke(0x973a023A77420ba610f06b3858aD991Df6d85A08);
+  // https://etherscan.io/address/0x58131E79531caB1d52301228d1f7b842F26B9649
   ISpoke internal constant ETHENA_CORRELATED_SPOKE =
-    ISpoke(0x5cB4875cbE09C462c8FDE663e41be6418fBD85Ab);
-  // https://etherscan.io/address/0x3FE862d6Cbb3712AA7d457D34882cE777c409f66
+    ISpoke(0x58131E79531caB1d52301228d1f7b842F26B9649);
+  // https://etherscan.io/address/0xba1B3D55D249692b669A164024A838309B7508AF
   ISpoke internal constant ETHENA_ECOSYSTEM_SPOKE =
-    ISpoke(0x3FE862d6Cbb3712AA7d457D34882cE777c409f66);
-  // https://etherscan.io/address/0xD4F6dE2aC6370B5A29512918A502b8bA7A67d7D8
-  ISpoke internal constant ETHERFI_ESPOKE = ISpoke(0xD4F6dE2aC6370B5A29512918A502b8bA7A67d7D8);
-  // https://etherscan.io/address/0xD78a7285005D821468F7862eE0e9E80219E88Ff4
-  ISpoke internal constant FOREX_SPOKE = ISpoke(0xD78a7285005D821468F7862eE0e9E80219E88Ff4);
-  // https://etherscan.io/address/0xD088870248ec87df2E0C6bd07719e4ae624F4FF2
-  ISpoke internal constant GOLD_SPOKE = ISpoke(0xD088870248ec87df2E0C6bd07719e4ae624F4FF2);
-  // https://etherscan.io/address/0x2A8362a4031F29997fBEe017c15CDd3F98087Ab5
-  ISpoke internal constant KELP_ESPOKE = ISpoke(0x2A8362a4031F29997fBEe017c15CDd3F98087Ab5);
-  // https://etherscan.io/address/0xb107B929a49889cC7765052358bBAA9a52B14294
-  ISpoke internal constant LIDO_ESPOKE = ISpoke(0xb107B929a49889cC7765052358bBAA9a52B14294);
-  // https://etherscan.io/address/0x72A008c6b0137827351897b4c6C4e7Ab1180A38f
-  ISpoke internal constant LOMBARD_BTC_SPOKE = ISpoke(0x72A008c6b0137827351897b4c6C4e7Ab1180A38f);
-  // https://etherscan.io/address/0x378A1C5FdC2242DDCA471E5E1F0c274e26250238
-  ISpoke internal constant TREASURY_SPOKE = ISpoke(0x378A1C5FdC2242DDCA471E5E1F0c274e26250238);
+    ISpoke(0xba1B3D55D249692b669A164024A838309B7508AF);
+  // https://etherscan.io/address/0xbF10BDfE177dE0336aFD7fcCF80A904E15386219
+  ISpoke internal constant ETHERFI_ESPOKE = ISpoke(0xbF10BDfE177dE0336aFD7fcCF80A904E15386219);
+  // https://etherscan.io/address/0xD8B93635b8C6d0fF98CbE90b5988E3F2d1Cd9da1
+  ISpoke internal constant FOREX_SPOKE = ISpoke(0xD8B93635b8C6d0fF98CbE90b5988E3F2d1Cd9da1);
+  // https://etherscan.io/address/0x65407b940966954b23dfA3caA5C0702bB42984DC
+  ISpoke internal constant GOLD_SPOKE = ISpoke(0x65407b940966954b23dfA3caA5C0702bB42984DC);
+  // https://etherscan.io/address/0x3131FE68C4722e726fe6B2819ED68e514395B9a4
+  ISpoke internal constant KELP_ESPOKE = ISpoke(0x3131FE68C4722e726fe6B2819ED68e514395B9a4);
+  // https://etherscan.io/address/0xe1900480ac69f0B296841Cd01cC37546d92F35Cd
+  ISpoke internal constant LIDO_ESPOKE = ISpoke(0xe1900480ac69f0B296841Cd01cC37546d92F35Cd);
+  // https://etherscan.io/address/0x7EC68b5695e803e98a21a9A05d744F28b0a7753D
+  ISpoke internal constant LOMBARD_BTC_SPOKE = ISpoke(0x7EC68b5695e803e98a21a9A05d744F28b0a7753D);
+  // https://etherscan.io/address/0xB9B0b8616f6Bf6841972a52058132BE08d723155
+  ISpoke internal constant TREASURY_SPOKE = ISpoke(0xB9B0b8616f6Bf6841972a52058132BE08d723155);
 
   function getSpokes() internal pure returns (ISpoke[] memory) {
     ISpoke[] memory spokes = new ISpoke[](11);
@@ -89,50 +89,50 @@ library AaveV4EthereumSpokes {
 }
 
 library AaveV4EthereumPositionManagers {
-  // https://etherscan.io/address/0x2114e11B1bCDc4bE145b9B3A56D3DEF033bCED86
-  address internal constant CONFIG_POSITION_MANAGER = 0x2114e11B1bCDc4bE145b9B3A56D3DEF033bCED86;
-  // https://etherscan.io/address/0x26387Ebb8Eb131CC2Db65a74396107e2426Bfa0C
-  address internal constant GIVER_POSITION_MANAGER = 0x26387Ebb8Eb131CC2Db65a74396107e2426Bfa0C;
-  // https://etherscan.io/address/0x58547331fA03De7BcB9441a07E02a1Ec43532c81
-  address internal constant TAKER_POSITION_MANAGER = 0x58547331fA03De7BcB9441a07E02a1Ec43532c81;
-  // https://etherscan.io/address/0x8D449B653c7188A4f997439Bb8FAB6f4A46d8720
-  address internal constant NATIVE_TOKEN_GATEWAY = 0x8D449B653c7188A4f997439Bb8FAB6f4A46d8720;
-  // https://etherscan.io/address/0xf209d903C783f227c51b4A001DB9C1BDE7d50185
-  address internal constant SIGNATURE_GATEWAY = 0xf209d903C783f227c51b4A001DB9C1BDE7d50185;
+  // https://etherscan.io/address/0x51305839CE822a7b4b12AA7D86eA7005052d575c
+  address internal constant CONFIG_POSITION_MANAGER = 0x51305839CE822a7b4b12AA7D86eA7005052d575c;
+  // https://etherscan.io/address/0x17A54b8d6D9C68e7fa1C7112AC998EA1BA51d11e
+  address internal constant GIVER_POSITION_MANAGER = 0x17A54b8d6D9C68e7fa1C7112AC998EA1BA51d11e;
+  // https://etherscan.io/address/0x6c044c0D3801499bCAbfAd458B70880bc518e9F7
+  address internal constant TAKER_POSITION_MANAGER = 0x6c044c0D3801499bCAbfAd458B70880bc518e9F7;
+  // https://etherscan.io/address/0xe68ab4F90Fe026B9873F5F276eD2d7efBbbE42Be
+  address internal constant NATIVE_TOKEN_GATEWAY = 0xe68ab4F90Fe026B9873F5F276eD2d7efBbbE42Be;
+  // https://etherscan.io/address/0xfbC184337Dc6595D8bf62968Bda46e7De7AF9c3d
+  address internal constant SIGNATURE_GATEWAY = 0xfbC184337Dc6595D8bf62968Bda46e7De7AF9c3d;
 }
 
 library AaveV4EthereumIRStrategies {
-  // https://etherscan.io/address/0x112161974F53Cc0C1a1480dbbE05bDfd3817A588
-  address internal constant CORE_HUB_IR_STRATEGY = 0x112161974F53Cc0C1a1480dbbE05bDfd3817A588;
-  // https://etherscan.io/address/0x3994b60b022005750f44D310A13F637edAE0ba59
-  address internal constant PLUS_HUB_IR_STRATEGY = 0x3994b60b022005750f44D310A13F637edAE0ba59;
-  // https://etherscan.io/address/0x7F0CF218f98d915B50208e7D08a4471A0ECbe40a
-  address internal constant PRIME_HUB_IR_STRATEGY = 0x7F0CF218f98d915B50208e7D08a4471A0ECbe40a;
+  // https://etherscan.io/address/0xAD88791B0F81D1FA242f637eB05bee0cbc53fe2f
+  address internal constant CORE_HUB_IR_STRATEGY = 0xAD88791B0F81D1FA242f637eB05bee0cbc53fe2f;
+  // https://etherscan.io/address/0x31280650661b8443723fa9739b3A164E3696af48
+  address internal constant PLUS_HUB_IR_STRATEGY = 0x31280650661b8443723fa9739b3A164E3696af48;
+  // https://etherscan.io/address/0xDCd924047a4bDBFef9CCDDe845E5D45373Ad276D
+  address internal constant PRIME_HUB_IR_STRATEGY = 0xDCd924047a4bDBFef9CCDDe845E5D45373Ad276D;
 }
 
 library AaveV4EthereumOracles {
-  // https://etherscan.io/address/0x3c967c6E6fdB1Ef192C0b3869152A8B64148A0B9
-  address internal constant MAIN_SPOKE_ORACLE = 0x3c967c6E6fdB1Ef192C0b3869152A8B64148A0B9;
-  // https://etherscan.io/address/0xC1cfdaBC3ECC3b0B2C2Df87daD9F005A4A316a8c
-  address internal constant BLUECHIP_SPOKE_ORACLE = 0xC1cfdaBC3ECC3b0B2C2Df87daD9F005A4A316a8c;
-  // https://etherscan.io/address/0xA8a747E8802d23560013cE6E2F76FE635aCe42fd
+  // https://etherscan.io/address/0x99B2B6CEa9C3D2fd8F4d90f86741C44B212a6127
+  address internal constant MAIN_SPOKE_ORACLE = 0x99B2B6CEa9C3D2fd8F4d90f86741C44B212a6127;
+  // https://etherscan.io/address/0xdA1266a7b8620819dAE3F8bd6B546Da36e505bB8
+  address internal constant BLUECHIP_SPOKE_ORACLE = 0xdA1266a7b8620819dAE3F8bd6B546Da36e505bB8;
+  // https://etherscan.io/address/0x9b91a0943CADf554742E8Fb358B1cC4ae4F85F01
   address internal constant ETHENA_CORRELATED_SPOKE_ORACLE =
-    0xA8a747E8802d23560013cE6E2F76FE635aCe42fd;
-  // https://etherscan.io/address/0x8049280b91eF79A9f70c66627f462D6b4C1bCf0F
+    0x9b91a0943CADf554742E8Fb358B1cC4ae4F85F01;
+  // https://etherscan.io/address/0xc390dbe9fc00D6db73C52d375642b47008C33c90
   address internal constant ETHENA_ECOSYSTEM_SPOKE_ORACLE =
-    0x8049280b91eF79A9f70c66627f462D6b4C1bCf0F;
-  // https://etherscan.io/address/0xE592273382f738DAB1F1da923c599A73f2f578d2
-  address internal constant ETHERFI_ESPOKE_ORACLE = 0xE592273382f738DAB1F1da923c599A73f2f578d2;
-  // https://etherscan.io/address/0x3AbAdCe3aCbdF9614A8758d7CC1482D9778A9713
-  address internal constant FOREX_SPOKE_ORACLE = 0x3AbAdCe3aCbdF9614A8758d7CC1482D9778A9713;
-  // https://etherscan.io/address/0xE1eE04E70e4De25ba4409ee3a312b973407aCdcd
-  address internal constant GOLD_SPOKE_ORACLE = 0xE1eE04E70e4De25ba4409ee3a312b973407aCdcd;
-  // https://etherscan.io/address/0xED40B669bbb3EC0597fD6F8Dd6611dA3A22014f8
-  address internal constant KELP_ESPOKE_ORACLE = 0xED40B669bbb3EC0597fD6F8Dd6611dA3A22014f8;
-  // https://etherscan.io/address/0xdad20a80C88CAf955b86f83eDF589CEf09B24ba0
-  address internal constant LIDO_ESPOKE_ORACLE = 0xdad20a80C88CAf955b86f83eDF589CEf09B24ba0;
-  // https://etherscan.io/address/0x9F88aE2b024718D5BD6A00A7E7c443EE04916FB7
-  address internal constant LOMBARD_BTC_SPOKE_ORACLE = 0x9F88aE2b024718D5BD6A00A7E7c443EE04916FB7;
+    0xc390dbe9fc00D6db73C52d375642b47008C33c90;
+  // https://etherscan.io/address/0xd8B153FaAA8f2b1bC774916FEd333A4F3dE48792
+  address internal constant ETHERFI_ESPOKE_ORACLE = 0xd8B153FaAA8f2b1bC774916FEd333A4F3dE48792;
+  // https://etherscan.io/address/0xB3CE6E7b6d389a66eA4a3777bA07219d00FB3a9D
+  address internal constant FOREX_SPOKE_ORACLE = 0xB3CE6E7b6d389a66eA4a3777bA07219d00FB3a9D;
+  // https://etherscan.io/address/0x0083421fd178749af2201ddA5A7C3feB5790B80c
+  address internal constant GOLD_SPOKE_ORACLE = 0x0083421fd178749af2201ddA5A7C3feB5790B80c;
+  // https://etherscan.io/address/0x37C316996C714Bf906743071e04E62220b3271ac
+  address internal constant KELP_ESPOKE_ORACLE = 0x37C316996C714Bf906743071e04E62220b3271ac;
+  // https://etherscan.io/address/0x664D73b6C3591333Fd79510f7ce9ef81228824F5
+  address internal constant LIDO_ESPOKE_ORACLE = 0x664D73b6C3591333Fd79510f7ce9ef81228824F5;
+  // https://etherscan.io/address/0x198Cac7f54FFc7d709Ac0FEc4B6454CE73e21D3D
+  address internal constant LOMBARD_BTC_SPOKE_ORACLE = 0x198Cac7f54FFc7d709Ac0FEc4B6454CE73e21D3D;
 }
 
 library AaveV4EthereumAssets {
@@ -154,76 +154,76 @@ library AaveV4EthereumTokenizationSpokes {
   // -------------------------------------------------------------------------
   // Core Hub Tokenization Spokes
   // -------------------------------------------------------------------------
-  // https://etherscan.io/address/0x00D7cD29A14B3f67bD4C865aDDDDfC94cA1b570C
-  address internal constant CORE_AAVE = 0x00D7cD29A14B3f67bD4C865aDDDDfC94cA1b570C;
-  // https://etherscan.io/address/0xf0808539F533269f3c7e84ef351412fe2143F32e
-  address internal constant CORE_EURC = 0xf0808539F533269f3c7e84ef351412fe2143F32e;
-  // https://etherscan.io/address/0x504bcD783b9F53E3bd49D56643E56fd842e7e7d8
-  address internal constant CORE_GHO = 0x504bcD783b9F53E3bd49D56643E56fd842e7e7d8;
-  // https://etherscan.io/address/0x8e16005bc97B6a0febd9B89dd81b1f63AF936B50
-  address internal constant CORE_LBTC = 0x8e16005bc97B6a0febd9B89dd81b1f63AF936B50;
-  // https://etherscan.io/address/0x4305066589259E191286f829807608bcf2425Ef9
-  address internal constant CORE_LINK = 0x4305066589259E191286f829807608bcf2425Ef9;
-  // https://etherscan.io/address/0x902915db5c2aB8bCaa76e72c2D0eF5D6c74CC70F
-  address internal constant CORE_RLUSD = 0x902915db5c2aB8bCaa76e72c2D0eF5D6c74CC70F;
-  // https://etherscan.io/address/0x73Fb187D6b4253B07eB1089173B01d9e84724bfA
-  address internal constant CORE_USDC = 0x73Fb187D6b4253B07eB1089173B01d9e84724bfA;
-  // https://etherscan.io/address/0xe6a389Da16ec8Db313391f804A992e05d600F050
-  address internal constant CORE_USDG = 0xe6a389Da16ec8Db313391f804A992e05d600F050;
-  // https://etherscan.io/address/0xaB5D8Ad884355F0D227Ef90DC953E6B0A4F5B789
-  address internal constant CORE_USDT = 0xaB5D8Ad884355F0D227Ef90DC953E6B0A4F5B789;
-  // https://etherscan.io/address/0x77061a5D5cFfF2C59b11C34b1fC12b97Df7aDCC0
-  address internal constant CORE_WBTC = 0x77061a5D5cFfF2C59b11C34b1fC12b97Df7aDCC0;
-  // https://etherscan.io/address/0xd1dBB3275374ad63167Df9Dab75510B21F28aCDb
-  address internal constant CORE_WETH = 0xd1dBB3275374ad63167Df9Dab75510B21F28aCDb;
-  // https://etherscan.io/address/0xCDc2A2C11a18cbBc9B4aE10b7A598ce509F5dDDc
-  address internal constant CORE_XAUt = 0xCDc2A2C11a18cbBc9B4aE10b7A598ce509F5dDDc;
-  // https://etherscan.io/address/0xE6DbefECDD2246a87a7218Dd7AcCa7c297530808
-  address internal constant CORE_cbBTC = 0xE6DbefECDD2246a87a7218Dd7AcCa7c297530808;
-  // https://etherscan.io/address/0x3f52d398D1779d7801d19eEDdF56E463528B3434
-  address internal constant CORE_frxUSD = 0x3f52d398D1779d7801d19eEDdF56E463528B3434;
-  // https://etherscan.io/address/0x1a153Ed992cb3f87314bC79BE86159bBD5Ac46bb
-  address internal constant CORE_rsETH = 0x1a153Ed992cb3f87314bC79BE86159bBD5Ac46bb;
-  // https://etherscan.io/address/0x4F8F51Da1A497C362eAd31c11bA826BC2CbA868E
-  address internal constant CORE_weETH = 0x4F8F51Da1A497C362eAd31c11bA826BC2CbA868E;
-  // https://etherscan.io/address/0x96758bFe31c15CB82957F3326a50fAc8fad56084
-  address internal constant CORE_wstETH = 0x96758bFe31c15CB82957F3326a50fAc8fad56084;
+  // https://etherscan.io/address/0x0A65197b16C5969F92672051c9C9C0C75B369135
+  address internal constant CORE_AAVE = 0x0A65197b16C5969F92672051c9C9C0C75B369135;
+  // https://etherscan.io/address/0x6D9e2Cdd61CaF69af99b275704B6e272C41c6718
+  address internal constant CORE_EURC = 0x6D9e2Cdd61CaF69af99b275704B6e272C41c6718;
+  // https://etherscan.io/address/0x58C14a5E061c9bC6926c5b853445290F296C2F7B
+  address internal constant CORE_GHO = 0x58C14a5E061c9bC6926c5b853445290F296C2F7B;
+  // https://etherscan.io/address/0x7961F140B570490849DB878AE222570ea838799d
+  address internal constant CORE_LBTC = 0x7961F140B570490849DB878AE222570ea838799d;
+  // https://etherscan.io/address/0xE69C2045095C8Ab3E2a7d77de2328faE5baF797c
+  address internal constant CORE_LINK = 0xE69C2045095C8Ab3E2a7d77de2328faE5baF797c;
+  // https://etherscan.io/address/0xC8a125AE4275a78AADc53B46Ca10566Bc9B249E0
+  address internal constant CORE_RLUSD = 0xC8a125AE4275a78AADc53B46Ca10566Bc9B249E0;
+  // https://etherscan.io/address/0x531E90a2376902DE8915789Fcc1075e3B0c153E7
+  address internal constant CORE_USDC = 0x531E90a2376902DE8915789Fcc1075e3B0c153E7;
+  // https://etherscan.io/address/0xAC2435E3C25e8246870D33ce0a26988A46d5DB68
+  address internal constant CORE_USDG = 0xAC2435E3C25e8246870D33ce0a26988A46d5DB68;
+  // https://etherscan.io/address/0x5eC44a70F309854fe04d495cFE1B5dA63DD1cc73
+  address internal constant CORE_USDT = 0x5eC44a70F309854fe04d495cFE1B5dA63DD1cc73;
+  // https://etherscan.io/address/0x82A9CC4656784E55Ef2E78F704028B5E1Bfc1732
+  address internal constant CORE_WBTC = 0x82A9CC4656784E55Ef2E78F704028B5E1Bfc1732;
+  // https://etherscan.io/address/0x7320CF22Ac095bA2a2e0a652F77efB836c2E751b
+  address internal constant CORE_WETH = 0x7320CF22Ac095bA2a2e0a652F77efB836c2E751b;
+  // https://etherscan.io/address/0x4E712562fcb5337011398B6C630f55b60641cd5e
+  address internal constant CORE_XAUt = 0x4E712562fcb5337011398B6C630f55b60641cd5e;
+  // https://etherscan.io/address/0x33B41B74366F55327d959FfF6D6b6fBc2853dbB1
+  address internal constant CORE_cbBTC = 0x33B41B74366F55327d959FfF6D6b6fBc2853dbB1;
+  // https://etherscan.io/address/0x2226749630775ee20230Ad65214fB339087eF30D
+  address internal constant CORE_frxUSD = 0x2226749630775ee20230Ad65214fB339087eF30D;
+  // https://etherscan.io/address/0x45a04Ca1A5cbEeA4B44356c75EDd29b33eB2527a
+  address internal constant CORE_rsETH = 0x45a04Ca1A5cbEeA4B44356c75EDd29b33eB2527a;
+  // https://etherscan.io/address/0x559cEc2C840D9DBB18936Afc5E5341D78bfC7Cbe
+  address internal constant CORE_weETH = 0x559cEc2C840D9DBB18936Afc5E5341D78bfC7Cbe;
+  // https://etherscan.io/address/0xcb0E7dA9c635628f6d4827355AeCa75aB8d3560f
+  address internal constant CORE_wstETH = 0xcb0E7dA9c635628f6d4827355AeCa75aB8d3560f;
 
   // -------------------------------------------------------------------------
   // Plus Hub Tokenization Spokes
   // -------------------------------------------------------------------------
-  // https://etherscan.io/address/0x57F897A56b807763683EAae3d82E19f8C755Df2D
-  address internal constant PLUS_GHO = 0x57F897A56b807763683EAae3d82E19f8C755Df2D;
-  // https://etherscan.io/address/0xA770dfE60eE0813F3F76ac323AFe948E1193e3Ae
-  address internal constant PLUS_PT_USDe_7MAY2026 = 0xA770dfE60eE0813F3F76ac323AFe948E1193e3Ae;
-  // https://etherscan.io/address/0x9488964968Bba4bd28bf255E58aBD0588BfE2086
-  address internal constant PLUS_PT_sUSDE_7MAY2026 = 0x9488964968Bba4bd28bf255E58aBD0588BfE2086;
-  // https://etherscan.io/address/0xef9ed8c801b1DBd68cb334ED32926C152AA660F7
-  address internal constant PLUS_USDC = 0xef9ed8c801b1DBd68cb334ED32926C152AA660F7;
-  // https://etherscan.io/address/0x109308A4602E3f45177F649CBa4a7e0d2984CA38
-  address internal constant PLUS_USDT = 0x109308A4602E3f45177F649CBa4a7e0d2984CA38;
-  // https://etherscan.io/address/0x985e1aA0E0bDe8bf538e5695E2eeDf1D11c7CeD1
-  address internal constant PLUS_USDe = 0x985e1aA0E0bDe8bf538e5695E2eeDf1D11c7CeD1;
-  // https://etherscan.io/address/0xB444B0a97Ecc67592Baf63c3Ebe46FB778e01eBd
-  address internal constant PLUS_sUSDe = 0xB444B0a97Ecc67592Baf63c3Ebe46FB778e01eBd;
+  // https://etherscan.io/address/0xA54382db40EC602c0a173A08f9E86Ed40F9D4D10
+  address internal constant PLUS_GHO = 0xA54382db40EC602c0a173A08f9E86Ed40F9D4D10;
+  // https://etherscan.io/address/0xdd2Eb78BF9e6aC5068B95aD2d451e8c9Af10ac81
+  address internal constant PLUS_PT_USDe_7MAY2026 = 0xdd2Eb78BF9e6aC5068B95aD2d451e8c9Af10ac81;
+  // https://etherscan.io/address/0x90774889c22D2F2Adf44da1f04C7c95542590df4
+  address internal constant PLUS_PT_sUSDE_7MAY2026 = 0x90774889c22D2F2Adf44da1f04C7c95542590df4;
+  // https://etherscan.io/address/0xc94bdd83D2c7655C280655D60954e79E88D4F949
+  address internal constant PLUS_USDC = 0xc94bdd83D2c7655C280655D60954e79E88D4F949;
+  // https://etherscan.io/address/0x80835EB50694EE0e519743f67e5401e6FD300006
+  address internal constant PLUS_USDT = 0x80835EB50694EE0e519743f67e5401e6FD300006;
+  // https://etherscan.io/address/0x502Cd81da6a8F1785eb2eEE72713B7388E16A854
+  address internal constant PLUS_USDe = 0x502Cd81da6a8F1785eb2eEE72713B7388E16A854;
+  // https://etherscan.io/address/0x24f8c062e1E0451736C1D6e023510DA262a41df4
+  address internal constant PLUS_sUSDe = 0x24f8c062e1E0451736C1D6E023510DA262a41df4;
 
   // -------------------------------------------------------------------------
   // Prime Hub Tokenization Spokes
   // -------------------------------------------------------------------------
-  // https://etherscan.io/address/0x8ce41975BcA8bcE7F8F9aa7258b0aA2Bb89FE298
-  address internal constant PRIME_GHO = 0x8ce41975BcA8bcE7F8F9aa7258b0aA2Bb89FE298;
-  // https://etherscan.io/address/0x984578F7470fF5F71526D26BD3607BbAB95C4fE4
-  address internal constant PRIME_USDC = 0x984578F7470fF5F71526D26BD3607BbAB95C4fE4;
-  // https://etherscan.io/address/0xf85528eD310a2B1F2b98DA743740f6A3f1038605
-  address internal constant PRIME_USDT = 0xf85528eD310a2B1F2b98DA743740f6A3f1038605;
-  // https://etherscan.io/address/0x0ED2E8d02cb592A3e81132E12B91b23C3f6109De
-  address internal constant PRIME_WBTC = 0x0ED2E8d02cb592A3e81132E12B91b23C3f6109De;
-  // https://etherscan.io/address/0xB8DeA4dd8fE2FA5547148BC76E9A9C575D1E6c5D
-  address internal constant PRIME_WETH = 0xB8DeA4dd8fE2FA5547148BC76E9A9C575D1E6c5D;
-  // https://etherscan.io/address/0x859149eD6463E444d9E492c0AcbEc957943DA83c
-  address internal constant PRIME_cbBTC = 0x859149eD6463E444d9E492c0AcbEc957943DA83c;
-  // https://etherscan.io/address/0xf2e654f1968843446CC2b4Fc05D70BF71F857e2F
-  address internal constant PRIME_wstETH = 0xf2e654f1968843446CC2b4Fc05D70BF71F857e2F;
+  // https://etherscan.io/address/0x900fD46d565d1ac8995928c0179052ec02a6D0E1
+  address internal constant PRIME_GHO = 0x900fD46d565d1ac8995928c0179052ec02a6D0E1;
+  // https://etherscan.io/address/0x486415fb1F8b062c89ED548f871cf64304AACb31
+  address internal constant PRIME_USDC = 0x486415fb1F8b062c89ED548f871cf64304AACb31;
+  // https://etherscan.io/address/0x46c588DD8453aC259c1f6a54b4C9A93C2aC3762D
+  address internal constant PRIME_USDT = 0x46c588DD8453aC259c1f6a54b4C9A93C2aC3762D;
+  // https://etherscan.io/address/0x5AE3d87De89CA6Ce501e8317887F71EABED69E18
+  address internal constant PRIME_WBTC = 0x5AE3d87De89CA6Ce501e8317887F71EABED69E18;
+  // https://etherscan.io/address/0x2087513383330B961A3753B47627Bbf149F31c70
+  address internal constant PRIME_WETH = 0x2087513383330B961A3753B47627Bbf149F31c70;
+  // https://etherscan.io/address/0xD38098faf52D8E915EdED84fBF30F81C17906938
+  address internal constant PRIME_cbBTC = 0xD38098faf52D8E915EdED84fBF30F81C17906938;
+  // https://etherscan.io/address/0xFCD3D3C69cd032DE0cc78fE529B7447D2fe7F666
+  address internal constant PRIME_wstETH = 0xFCD3D3C69cd032DE0cc78fE529B7447D2fe7F666;
 
   function getTokenizationSpokes() internal pure returns (address[] memory) {
     address[] memory spokes = new address[](31);
