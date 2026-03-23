@@ -22,7 +22,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319 is IProposalGenericExecutor 
   function _activateHub(IHub hub) internal {
     uint256 assetCount = hub.getAssetCount();
     for (uint256 assetId; assetId < assetCount; ++assetId) {
-      _activateAsset(hub, assetId);
+      _activateAsset({hub: hub, assetId: assetId});
     }
   }
 
@@ -31,12 +31,12 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319 is IProposalGenericExecutor 
 
     for (uint256 spokeId; spokeId < spokeCount; ++spokeId) {
       address spoke = hub.getSpokeAddress(assetId, spokeId);
-      IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
-        address(hub),
-        assetId,
-        spoke,
-        true
-      );
+      IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
+        hub: address(hub),
+        assetId: assetId,
+        spoke: spoke,
+        active: true
+      });
     }
   }
 }
