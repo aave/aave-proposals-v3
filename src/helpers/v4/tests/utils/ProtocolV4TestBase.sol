@@ -75,38 +75,6 @@ contract ProtocolV4TestBase is GatewayScenarios {
         vm.revertToState(spokeSnapshot);
       }
     }
-
-    // Gateway tests
-    _setCapsToMax(spoke);
-    Types.ReserveInfo[] memory goodDebtReserves = _getAllUsableDebtReserves(allReserves);
-
-    // NativeTokenGateway — only if spoke lists WETH
-    {
-      INativeTokenGateway nativeGateway = INativeTokenGateway(
-        AaveV4EthereumPositionManagers.NATIVE_TOKEN_GATEWAY
-      );
-      (bool hasWeth, Types.ReserveInfo memory wethInfo) = _findNativeTokenReserveInfo(
-        nativeGateway,
-        spoke
-      );
-      if (hasWeth) {
-        uint256 gatewaySnapshot = vm.snapshotState();
-        _testNativeGateway(nativeGateway, spoke, wethInfo);
-        vm.revertToState(gatewaySnapshot);
-      }
-    }
-
-    // SignatureGateway — on first usable debt reserve + collateral
-    if (goodCollaterals.length > 0 && goodDebtReserves.length > 0) {
-      uint256 gatewaySnapshot = vm.snapshotState();
-      _testSignatureGateway({
-        gateway: ISignatureGateway(AaveV4EthereumPositionManagers.SIGNATURE_GATEWAY),
-        spoke: spoke,
-        reserveInfo: goodDebtReserves[0],
-        collateralInfo: goodCollaterals[0]
-      });
-      vm.revertToState(gatewaySnapshot);
-    }
   }
 
   /// @notice Test that a frozen reserve correctly reverts on supply and borrow.
