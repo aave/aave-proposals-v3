@@ -27,7 +27,6 @@ contract ProtocolV4TestBase is GatewayScenarios {
     ISpoke[] memory spokes,
     address payload
   ) public {
-    executePayload(vm, payload);
     e2eTestAllSpokes(spokes);
   }
 
