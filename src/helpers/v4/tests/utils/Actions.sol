@@ -334,8 +334,9 @@ abstract contract Actions is CommonTestBase {
     );
 
     vm.startPrank(user);
-    deal2(reserveInfo.underlying, user, amount + 2);
-    IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount + 2);
+    // deal additional to ensure full repay possible
+    deal2(reserveInfo.underlying, user, amount * 2);
+    IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount * 2);
     _logAction('REPAY', reserveInfo.symbol, amount);
     (uint256 returnedShares, uint256 returnedAssets) = spoke.repay({
       reserveId: reserveInfo.reserveId,
@@ -353,19 +354,19 @@ abstract contract Actions is CommonTestBase {
       assertEq(snapshotAfter.user.totalDebt, 0, 'REPAY: user debt should be zero');
     } else {
       assertEq(
-        snapshotAfter.user.totalDebt,
-        snapshotBefore.user.totalDebt - amount,
+        stdMath.delta(snapshotAfter.user.totalDebt, snapshotBefore.user.totalDebt),
+        amount,
         'REPAY: user debt mismatch'
       );
     }
     // Hub spoke
     assertEq(
-      snapshotBefore.hubSpoke.totalDebt - snapshotAfter.hubSpoke.totalDebt,
+      stdMath.delta(snapshotBefore.hubSpoke.totalDebt, snapshotAfter.hubSpoke.totalDebt),
       effectiveRepayAmount,
       'REPAY: hub debt mismatch'
     );
     assertEq(
-      snapshotBefore.hubSpoke.drawnShares - snapshotAfter.hubSpoke.drawnShares,
+      stdMath.delta(snapshotBefore.hubSpoke.drawnShares, snapshotAfter.hubSpoke.drawnShares),
       expectedRestoredShares,
       'REPAY: hub drawn shares mismatch'
     );
