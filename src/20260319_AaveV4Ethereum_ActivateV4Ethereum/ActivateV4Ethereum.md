@@ -15,29 +15,29 @@ As part of the Aave V4 deployment on Ethereum, all spokes need to be activated o
 
 ## Specification
 
-For each hub (Core, Plus, Prime) and each asset, the proposal:
-
-1. Activates each of the 11 spokes (and additionally the tokenization spokes) where they are listed via `updateSpokeActive` on the Hub Configurator.
-
-| Hub       | Address                                    |
+The contracts have been pre-deployed and configured, and this AIP performs the activation of the system. The implementation adheres to the risk parameter recommendations provided by Risk Providers (@Chaos Labs and @Llama Risk), with Aave Labs collaborating closely to ensure precise implementation.
+The system is currently in a paused state, meaning no supply or borrow operations are permitted until this proposal is executed and the system is activated.
+Governance of the contracts is managed by the DAO via Executor Level 1, with additional oversight from the Protocol Security Council during the initial hardening phase, to mitigate risks in potential emergency scenarios. The permissions of the Protocol Security Council are expected to be eliminated following this phase, after which all updates will proceed through standard governance processes and approved stewards. The Protocol Security Council [0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9](https://etherscan.io/address/0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9) is a 5-of-8 Safe multisig currently composed of Aave Labs members, with a follow-up proposal planned to incorporate additional participants.
+The table below provides the full list of contract addresses:
+| Hub | Address |
 | --------- | ------------------------------------------ |
-| Core Hub  | 0xDA21DF2D9297f3E1CB564A54190a2984DF42B934 |
-| Plus Hub  | 0x85F9b1d60f9F6fbD51006EA2E20Cde1A670A8eB4 |
-| Prime Hub | 0x502B96A1A31572264e27474C2f1439E7FB69b6E8 |
+| Core Hub | 0xCca852Bc40e560adC3b1Cc58CA5b55638ce826c9 |
+| Plus Hub | 0x06002e9c4412CB7814a791eA3666D905871E536A |
+| Prime Hub | 0x943827DCA022D0F354a8a8c332dA1e5Eb9f9F931 |
 
 | Spoke                   | Address                                    |
 | ----------------------- | ------------------------------------------ |
-| Main Spoke              | 0x47b880030329821412d614EAe2da68856E87C3fb |
-| Bluechip Spoke          | 0x20f09138d51a85B075659ec325c66Da4Ca663Dea |
-| Ethena Correlated Spoke | 0xA76fdE0bFF53ffcd5f3FbE84133C22F37C9E6Cf3 |
-| Ethena Ecosystem Spoke  | 0x7c7C23bEe25ba4B12Bf1e11d12257A42030C6E04 |
-| EtherFi eSpoke          | 0xDfdf5272E13F01Fa3D7590aB059589f0Ec1D4B02 |
-| Forex Spoke             | 0x71e9339F9E8F0d1EFaf73C2823B7Bf7c0202D2aF |
-| Gold Spoke              | 0x84aFeef66c1456244659e7F98705cA904aE5ebef |
-| Kelp eSpoke             | 0xF3D54610227480Fc94D5C4677C2cf906901dac81 |
-| Lido eSpoke             | 0x39299bc53cff6EA0bf9183EfCC4074e4b57504b1 |
-| Lombard BTC Spoke       | 0x9A93D44e38c8505f24cCDFaEb2FbdfC1eba25c1C |
-| Treasury Spoke          | 0x4f3647C9675723822BC618ad9b15802f6c893f06 |
+| Main Spoke              | 0x99B2B6CEa9C3D2fd8F4d90f86741C44B212a6127 |
+| Bluechip Spoke          | 0xdA1266a7b8620819dAE3F8bd6B546Da36e505bB8 |
+| Ethena Correlated Spoke | 0x9b91a0943CADf554742E8Fb358B1cC4ae4F85F01 |
+| Ethena Ecosystem Spoke  | 0xc390dbe9fc00D6db73C52d375642b47008C33c90 |
+| EtherFi eSpoke          | 0xd8B153FaAA8f2b1bC774916FEd333A4F3dE48792 |
+| Forex Spoke             | 0xB3CE6E7b6d389a66eA4a3777bA07219d00FB3a9D |
+| Gold Spoke              | 0x0083421fd178749af2201ddA5A7C3feB5790B80c |
+| Kelp eSpoke             | 0x37C316996C714Bf906743071e04E62220b3271ac |
+| Lido eSpoke             | 0x664D73b6C3591333Fd79510f7ce9ef81228824F5 |
+| Lombard BTC Spoke       | 0x198Cac7f54FFc7d709Ac0FEc4B6454CE73e21D3D |
+| Treasury Spoke          | 0xB9B0b8616f6Bf6841972a52058132BE08d723155 |
 
 ## References
 
