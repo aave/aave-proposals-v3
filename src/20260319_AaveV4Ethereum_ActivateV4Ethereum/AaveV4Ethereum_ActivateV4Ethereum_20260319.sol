@@ -14,19 +14,19 @@ import {AaveV4EthereumAddresses, AaveV4EthereumHubs} from './AaveV4EthereumAddre
  */
 contract AaveV4Ethereum_ActivateV4Ethereum_20260319 is IProposalGenericExecutor {
   function execute() external override {
-    _activateAllSpokesOnHub(AaveV4EthereumHubs.CORE_HUB);
-    _activateAllSpokesOnHub(AaveV4EthereumHubs.PLUS_HUB);
-    _activateAllSpokesOnHub(AaveV4EthereumHubs.PRIME_HUB);
+    _activateHub(AaveV4EthereumHubs.CORE_HUB);
+    _activateHub(AaveV4EthereumHubs.PLUS_HUB);
+    _activateHub(AaveV4EthereumHubs.PRIME_HUB);
   }
 
-  function _activateAllSpokesOnHub(IHub hub) internal {
+  function _activateHub(IHub hub) internal {
     uint256 assetCount = hub.getAssetCount();
     for (uint256 assetId; assetId < assetCount; ++assetId) {
-      _activateAllSpokes(hub, assetId);
+      _activateAsset(hub, assetId);
     }
   }
 
-  function _activateAllSpokes(IHub hub, uint256 assetId) internal {
+  function _activateAsset(IHub hub, uint256 assetId) internal {
     uint256 spokeCount = hub.getSpokeCount(assetId);
 
     for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {

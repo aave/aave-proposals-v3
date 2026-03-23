@@ -415,7 +415,7 @@ contract AaveV4Ethereum_HubSpokeConfiguration_20260319_Test is Test {
 
     for (uint256 reserveId; reserveId < total; ++reserveId) {
       ISpoke.Reserve memory r = spoke.getReserve(reserveId);
-      if (r.hub != address(hub)) continue;
+      if (address(r.hub) != address(hub)) continue;
       ++onHub;
 
       ISpoke.DynamicReserveConfig memory dynCfg = spoke.getDynamicReserveConfig(

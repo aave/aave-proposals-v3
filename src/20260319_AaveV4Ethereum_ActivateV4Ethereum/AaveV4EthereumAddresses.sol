@@ -55,9 +55,7 @@ library AaveV4EthereumSpokes {
   ISpoke internal constant LOMBARD_BTC_SPOKE = ISpoke(0x9A93D44e38c8505f24cCDFaEb2FbdfC1eba25c1C);
   // https://etherscan.io/address/0x4f3647C9675723822BC618ad9b15802f6c893f06
   ISpoke internal constant TREASURY_SPOKE = ISpoke(0x4f3647C9675723822BC618ad9b15802f6c893f06);
-  // TODO: Add tokenization spoke address once available
 
-  // TODO: Add tokenization spoke to this list once available
   function getSpokes() internal pure returns (ISpoke[] memory) {
     ISpoke[] memory spokes = new ISpoke[](11);
     spokes[0] = MAIN_SPOKE;
