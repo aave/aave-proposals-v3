@@ -224,4 +224,43 @@ library AaveV4EthereumTokenizationSpokes {
   address internal constant PRIME_cbBTC = 0x859149eD6463E444d9E492c0AcbEc957943DA83c;
   // https://etherscan.io/address/0xf2e654f1968843446CC2b4Fc05D70BF71F857e2F
   address internal constant PRIME_wstETH = 0xf2e654f1968843446CC2b4Fc05D70BF71F857e2F;
+
+  function getTokenizationSpokes() internal pure returns (address[] memory) {
+    address[] memory spokes = new address[](31);
+    // Core Hub
+    spokes[0] = CORE_WETH;
+    spokes[1] = CORE_wstETH;
+    spokes[2] = CORE_weETH;
+    spokes[3] = CORE_rsETH;
+    spokes[4] = CORE_WBTC;
+    spokes[5] = CORE_cbBTC;
+    spokes[6] = CORE_LBTC;
+    spokes[7] = CORE_USDT;
+    spokes[8] = CORE_USDC;
+    spokes[9] = CORE_LINK;
+    spokes[10] = CORE_AAVE;
+    spokes[11] = CORE_GHO;
+    spokes[12] = CORE_EURC;
+    spokes[13] = CORE_RLUSD;
+    spokes[14] = CORE_USDG;
+    spokes[15] = CORE_frxUSD;
+    spokes[16] = CORE_XAUt;
+    // Plus Hub
+    spokes[17] = PLUS_USDT;
+    spokes[18] = PLUS_USDC;
+    spokes[19] = PLUS_GHO;
+    spokes[20] = PLUS_USDe;
+    spokes[21] = PLUS_sUSDe;
+    spokes[22] = PLUS_PT_sUSDE_7MAY2026;
+    spokes[23] = PLUS_PT_USDe_7MAY2026;
+    // Prime Hub
+    spokes[24] = PRIME_WETH;
+    spokes[25] = PRIME_wstETH;
+    spokes[26] = PRIME_WBTC;
+    spokes[27] = PRIME_cbBTC;
+    spokes[28] = PRIME_USDT;
+    spokes[29] = PRIME_USDC;
+    spokes[30] = PRIME_GHO;
+    return spokes;
+  }
 }

@@ -105,31 +105,33 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   address internal constant DEPLOYER = 0x19eed38fdB33B11b24184C6a2aef5ba95E490c2E;
 
   function test_AccessManagerAdminRole() public {
+    _assertRoleHolders(Roles.ACCESS_MANAGER_ADMIN_ROLE);
+  }
+
+  function test_executorCanGrantRoles() public {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
     );
 
-    // Only DAO and Security Council should have default admin
-    address[] memory expected = new address[](2);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.ACCESS_MANAGER_ADMIN_ROLE, expected);
-
-    // Verify executor can grant the default admin role itself
+    // Grant admin role to another account
     address randomAccount = address(0xBEEF);
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     accessManager.grantRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, randomAccount, 0);
     (bool granted, ) = accessManager.hasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, randomAccount);
-    assertTrue(granted, 'Default admin should be able to grant default admin role');
+    assertTrue(granted, 'Executor should be able to grant admin role to another account');
+
+    // Grant itself an existing role it does not yet hold
+    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    accessManager.grantRole(Roles.HUB_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1, 0);
+    (bool selfGranted, ) = accessManager.hasRole(
+      Roles.HUB_DOMAIN_ADMIN_ROLE,
+      GovernanceV3Ethereum.EXECUTOR_LVL_1
+    );
+    assertTrue(selfGranted, 'Executor should be able to grant itself another role');
   }
 
-  function test_hubConfiguratorHasHubConfiguratorRole() public {
-    // DAO, Security Council, and HubConfigurator have hub configurator role
-    address[] memory expected = new address[](3);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
-    expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_ROLE, expected);
+  function test_HubConfiguratorRole() public {
+    _assertRoleHolders(Roles.HUB_CONFIGURATOR_ROLE);
 
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
     IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
@@ -170,21 +172,15 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
-  function test_executorHasHubFeeMinterRole() public {
-    address[] memory expected = new address[](2);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.HUB_FEE_MINTER_ROLE, expected);
+  function test_FeeMinterRole() public {
+    _assertRoleHolders(Roles.HUB_FEE_MINTER_ROLE);
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     AaveV4EthereumHubs.CORE_HUB.mintFeeShares(0);
   }
 
   function test_HubDeficitEliminatorRole() public {
-    address[] memory expected = new address[](2);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, expected);
+    _assertRoleHolders(Roles.HUB_DEFICIT_ELIMINATOR_ROLE);
 
     IHub coreHub = IHub(address(AaveV4EthereumHubs.CORE_HUB));
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
@@ -206,12 +202,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     vm.stopPrank();
   }
 
-  function test_executorHasHubConfiguratorDomainAdminRole() public {
-    // DAO and Security Council have hub configurator domain admin role
-    address[] memory expected = new address[](2);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
+  function test_HubConfiguratorDomainAdminRole() public {
+    _assertRoleHolders(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE);
 
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
     IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
@@ -229,56 +221,60 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
-  function test_spokeConfiguratorHasSpokeConfiguratorRole() public {
-    // DAO, Security Council, and SpokeConfigurator have spoke configurator role
-    address[] memory expected = new address[](3);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = AaveV4EthereumAddresses.SPOKE_CONFIGURATOR;
-    expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.SPOKE_CONFIGURATOR_ROLE, expected);
+  function test_SpokeConfiguratorRole() public {
+    _assertRoleHolders(Roles.SPOKE_CONFIGURATOR_ROLE);
 
-    // Test spoke configurator role by calling updatePaused via executor
+    ISpoke.ReserveConfig memory configBefore = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
+    assertFalse(configBefore.paused, 'Reserve should not be paused before');
+
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
       address(AaveV4EthereumSpokes.MAIN_SPOKE),
       0,
-      false
+      true
     );
+
+    ISpoke.ReserveConfig memory configAfter = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
+    assertTrue(configAfter.paused, 'Reserve should be paused after');
   }
 
-  function test_executorHasSpokeUserPositionUpdaterRole() public {
-    address[] memory expected = new address[](2);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, expected);
+  function test_executorHasSpokeConfiguratorRole() public {
+    ISpoke.ReserveConfig memory configBefore = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
+    assertFalse(configBefore.paused, 'Reserve should not be paused before');
+
+    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
+      address(AaveV4EthereumSpokes.MAIN_SPOKE),
+      0,
+      true
+    );
+
+    ISpoke.ReserveConfig memory configAfter = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
+    assertTrue(configAfter.paused, 'Reserve should be paused after');
+  }
+
+  function test_SpokeUserPositionUpdaterRole() public {
+    _assertRoleHolders(Roles.SPOKE_USER_POSITION_UPDATER_ROLE);
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     AaveV4EthereumSpokes.MAIN_SPOKE.updateUserRiskPremium(address(this));
   }
 
-  function test_executorHasSpokeConfiguratorRole() public {
+  function test_SpokeConfiguratorDomainAdminRole() public {
+    _assertRoleHolders(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE);
+
+    ISpoke.ReserveConfig memory configBefore = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
+    assertFalse(configBefore.paused, 'Reserve should not be paused before');
+
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
       address(AaveV4EthereumSpokes.MAIN_SPOKE),
       0,
-      false
+      true
     );
-  }
 
-  function test_executorHasSpokeConfiguratorDomainAdminRole() public {
-    // DAO and Security Council have spoke configurator domain admin role
-    address[] memory expected = new address[](2);
-    expected[0] = SECURITY_COUNCIL;
-    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
-
-    // Test spoke configurator domain admin role by calling updatePaused via executor
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
-      address(AaveV4EthereumSpokes.MAIN_SPOKE),
-      0,
-      false
-    );
+    ISpoke.ReserveConfig memory configAfter = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
+    assertTrue(configAfter.paused, 'Reserve should be paused after');
   }
 
   function test_allRolesAreLabeled() public view {
@@ -327,48 +323,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   // TODO: Currently owned by Security Council. Update once ownership is
   // transferred to the DAO as part of the configuration phase.
   function test_tokenizationSpokeProxyAdminsOwnedByDAO() public view {
-    // Core Hub
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WETH, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_wstETH, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_weETH, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_rsETH, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WBTC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_cbBTC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LBTC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDT, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LINK, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_AAVE, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_GHO, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_EURC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_RLUSD, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDG, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_frxUSD, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_XAUt, SECURITY_COUNCIL);
-
-    // Plus Hub
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDT, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_GHO, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDe, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_sUSDe, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(
-      AaveV4EthereumTokenizationSpokes.PLUS_PT_sUSDE_7MAY2026,
-      SECURITY_COUNCIL
-    );
-    _assertProxyAdminOwner(
-      AaveV4EthereumTokenizationSpokes.PLUS_PT_USDe_7MAY2026,
-      SECURITY_COUNCIL
-    );
-
-    // Prime Hub
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WETH, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_wstETH, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WBTC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_cbBTC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDT, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDC, SECURITY_COUNCIL);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_GHO, SECURITY_COUNCIL);
+    address[] memory tokenizationSpokes = AaveV4EthereumTokenizationSpokes.getTokenizationSpokes();
+    for (uint256 spokeIdx; spokeIdx < tokenizationSpokes.length; ++spokeIdx) {
+      _assertProxyAdminOwner(tokenizationSpokes[spokeIdx], SECURITY_COUNCIL);
+    }
   }
 
   function _deactivateAllSpokes() internal {
@@ -476,6 +434,26 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     );
 
     vm.stopPrank();
+  }
+
+  /// @dev Asserts DAO + Security Council hold the given role.
+  /// @dev HUB_CONFIGURATOR_ROLE and SPOKE_CONFIGURATOR_ROLE have the configurator contract as extra holder.
+  function _assertRoleHolders(uint64 roleId) internal view {
+    bool isHubConfiguratorRole = roleId == Roles.HUB_CONFIGURATOR_ROLE;
+    bool isSpokeConfiguratorRole = roleId == Roles.SPOKE_CONFIGURATOR_ROLE;
+
+    uint256 size = (isHubConfiguratorRole || isSpokeConfiguratorRole) ? 3 : 2;
+    address[] memory expected = new address[](size);
+    expected[0] = SECURITY_COUNCIL;
+    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+
+    if (isHubConfiguratorRole) {
+      expected[2] = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
+    } else if (isSpokeConfiguratorRole) {
+      expected[2] = AaveV4EthereumAddresses.SPOKE_CONFIGURATOR;
+    }
+
+    _assertExactRoleHolders(roleId, expected);
   }
 
   function _assertExactRoleHolders(uint64 roleId, address[] memory expectedHolders) internal view {
