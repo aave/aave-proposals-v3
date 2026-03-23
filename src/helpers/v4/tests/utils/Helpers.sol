@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import {IERC20Metadata} from 'openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
-import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHub.sol';
 import {IHubConfigurator} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubConfigurator.sol';
 import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IAaveOracle.sol';
 import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
@@ -89,155 +88,25 @@ abstract contract Helpers is Actions {
     return result;
   }
 
-  /// @notice Ensure the hub has enough liquidity for a borrow.
-  ///         Tries the spoke at hand first, then attempts to spread across sibling spokes if needed.
-  ///         Returns the amount actually supplied (may be less than requested if addCap is limited).
+  /// @notice Ensure the hub has enough liquidity for a borrow by supplying on the given spoke.
+  ///         Assumes addCaps have been set to max via _setCapsToMax before calling.
   function _ensureLiquidity(
     ISpoke spoke,
     Types.ReserveInfo memory reserveInfo,
     uint256 amount
-  ) internal returns (uint256) {
-    IHub hub = IHub(reserveInfo.hub);
-    uint256 remaining = amount;
-
-    // Try the spoke at hand first
-    {
-      uint256 room = _getSpokeAddCapRoom(
-        hub,
-        reserveInfo.assetId,
-        address(spoke),
-        reserveInfo.decimals
-      );
-      if (room > 0) {
-        uint256 supplyAmount = remaining < room ? remaining : room;
-        _supply({
-          spoke: spoke,
-          reserveInfo: reserveInfo,
-          user: vm.randomAddress(),
-          amount: supplyAmount
-        });
-        remaining -= supplyAmount;
-      }
-    }
-
-    // Supply liquidity to other spokes if the original spoke didn't cover the full amount
-    if (remaining > 0) {
-      address treasurySpoke = hub.getAsset(reserveInfo.assetId).feeReceiver;
-      uint256 spokeCount = hub.getSpokeCount(reserveInfo.assetId);
-      for (uint256 i; i < spokeCount && remaining > 0; i++) {
-        address spokeAddr = hub.getSpokeAddress(reserveInfo.assetId, i);
-        // Skip the original spoke and the treasury spoke
-        if (spokeAddr == address(spoke) || spokeAddr == treasurySpoke) {
-          continue;
-        }
-
-        uint256 room = _getSpokeAddCapRoom(
-          hub,
-          reserveInfo.assetId,
-          spokeAddr,
-          reserveInfo.decimals
-        );
-        if (room == 0) {
-          continue;
-        }
-
-        uint256 supplyAmount = remaining < room ? remaining : room;
-        _supplyViaSpoke(spokeAddr, reserveInfo, vm.randomAddress(), supplyAmount);
-        remaining -= supplyAmount;
-      }
-    }
-
-    return amount - remaining;
-  }
-
-  /// @notice Get remaining addCap room for a spoke (0 if inactive, halted, or no addCap).
-  function _getSpokeAddCapRoom(
-    IHub hub,
-    uint256 assetId,
-    address spokeAddr,
-    uint8 decimals
-  ) internal view returns (uint256) {
-    IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spokeAddr);
-    if (config.addCap == 0 || !config.active || config.halted) {
-      return 0;
-    }
-
-    uint256 addCapScaled = uint256(config.addCap) * 10 ** decimals;
-    uint256 currentAdded = hub.getSpokeAddedAssets(assetId, spokeAddr);
-    return addCapScaled > currentAdded ? addCapScaled - currentAdded : 0;
-  }
-
-  /// @notice Supply through a specific spoke address, building the reserveInfo from the source.
-  function _supplyViaSpoke(
-    address spokeAddr,
-    Types.ReserveInfo memory sourceInfo,
-    address user,
-    uint256 amount
   ) internal {
-    Types.ReserveInfo memory reserveInfo = _buildTargetReserveInfo(
-      sourceInfo,
-      _findReserveIdByAssetId(ISpoke(spokeAddr), sourceInfo.hub, sourceInfo.assetId)
-    );
-    _supply({spoke: ISpoke(spokeAddr), reserveInfo: reserveInfo, user: user, amount: amount});
-  }
-
-  /// @notice Build a minimal ReserveInfo for a target spoke, reusing metadata from the source.
-  function _buildTargetReserveInfo(
-    Types.ReserveInfo memory source,
-    uint256 targetReserveId
-  ) internal pure returns (Types.ReserveInfo memory) {
-    return
-      Types.ReserveInfo({
-        reserveId: targetReserveId,
-        underlying: source.underlying,
-        hub: source.hub,
-        assetId: source.assetId,
-        symbol: source.symbol,
-        decimals: source.decimals,
-        paused: false,
-        frozen: false,
-        borrowable: false,
-        collateralEnabled: false,
-        collateralFactor: 0,
-        maxLiquidationBonus: 0,
-        liquidationFee: 0
-      });
-  }
-
-  /// @notice Find the spoke reserveId that corresponds to a hub assetId.
-  function _findReserveIdByAssetId(
-    ISpoke targetSpoke,
-    address hub,
-    uint256 assetId
-  ) internal view returns (uint256) {
-    uint256 count = targetSpoke.getReserveCount();
-    for (uint256 i; i < count; i++) {
-      ISpoke.Reserve memory reserve = targetSpoke.getReserve(i);
-      if (address(reserve.hub) == hub && reserve.assetId == assetId) {
-        return i;
-      }
-    }
-    revert('FIND_RESERVE: no matching reserve on target spoke');
+    _supply({spoke: spoke, reserveInfo: reserveInfo, user: vm.randomAddress(), amount: amount});
   }
 
   /// @notice Supply collateral to borrower on the same spoke, then enable as collateral.
-  ///         Caps the supply at the spoke's remaining addCap room.
+  ///         Assumes addCaps have been set to max via _setCapsToMax before calling.
   function _ensureCollateral(
     ISpoke spoke,
     Types.ReserveInfo memory reserveInfo,
     address borrower,
     uint256 amount
   ) internal {
-    uint256 room = _getSpokeAddCapRoom(
-      IHub(reserveInfo.hub),
-      reserveInfo.assetId,
-      address(spoke),
-      reserveInfo.decimals
-    );
-    uint256 supplyAmount = amount < room ? amount : room;
-    if (supplyAmount > 0) {
-      _supply({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: supplyAmount});
-    }
+    _supply({spoke: spoke, reserveInfo: reserveInfo, user: borrower, amount: amount});
     vm.prank(borrower);
     spoke.setUsingAsCollateral({
       reserveId: reserveInfo.reserveId,
@@ -517,5 +386,10 @@ abstract contract Helpers is Actions {
     } catch {
       return 'UNKNOWN';
     }
+  }
+
+  /// @notice Half a token in the asset's native decimals.
+  function _halfToken(uint8 decimals) internal pure returns (uint256) {
+    return 10 ** decimals / 2;
   }
 }

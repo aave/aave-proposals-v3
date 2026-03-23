@@ -5,6 +5,7 @@ import 'forge-std/Test.sol';
 import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol';
 import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
+import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHub.sol';
 import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITokenizationSpoke.sol';
 import {INativeTokenGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/INativeTokenGateway.sol';
 import {ISignatureGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISignatureGateway.sol';
@@ -17,7 +18,7 @@ import {GatewayScenarios} from './GatewayScenarios.sol';
 ///         Tests supply, withdraw, borrow, repay, and liquidation for each reserve on a spoke.
 ///         Tests deposit, mint, withdraw, redeem for each tokenization spoke.
 ///         Tests NativeTokenGateway and SignatureGateway for each spoke.
-///         Loops over ALL good collaterals and uses randomized amounts.
+///         Loops over all good collaterals and uses randomized amounts.
 contract ProtocolV4TestBase is GatewayScenarios {
   using SafeERC20 for IERC20;
 
@@ -87,22 +88,22 @@ contract ProtocolV4TestBase is GatewayScenarios {
         spoke
       );
       if (hasWeth) {
-        uint256 gwSnap = vm.snapshotState();
+        uint256 gatewaySnapshot = vm.snapshotState();
         _testNativeGateway(nativeGateway, spoke, wethInfo);
-        vm.revertToState(gwSnap);
+        vm.revertToState(gatewaySnapshot);
       }
     }
 
     // SignatureGateway — on first usable debt reserve + collateral
     if (goodCollaterals.length > 0 && goodDebtReserves.length > 0) {
-      uint256 gwSnap = vm.snapshotState();
+      uint256 gatewaySnapshot = vm.snapshotState();
       _testSignatureGateway({
         gateway: ISignatureGateway(AaveV4EthereumPositionManagers.SIGNATURE_GATEWAY),
         spoke: spoke,
         reserveInfo: goodDebtReserves[0],
         collateralInfo: goodCollaterals[0]
       });
-      vm.revertToState(gwSnap);
+      vm.revertToState(gatewaySnapshot);
     }
   }
 
