@@ -74,7 +74,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   function _testTokenizationDepositWithdraw(
     ITokenizationSpoke tokenizationSpoke,
     Types.ReserveInfo memory reserveInfo
-  ) internal revertToSnapshot {
+  ) internal {
     address user = vm.randomAddress();
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
     require(depositAmount > 0, 'TOKENIZATION: deposit amount is zero');
@@ -102,7 +102,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   function _testTokenizationMintRedeem(
     ITokenizationSpoke tokenizationSpoke,
     Types.ReserveInfo memory reserveInfo
-  ) internal revertToSnapshot {
+  ) internal {
     address user = vm.randomAddress();
     uint256 mintAssets = _halfToken(reserveInfo.decimals);
     uint256 mintShares = tokenizationSpoke.convertToShares(mintAssets);
@@ -131,7 +131,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   function _testTokenizationPreviewConsistency(
     ITokenizationSpoke tokenizationSpoke,
     Types.ReserveInfo memory reserveInfo
-  ) internal revertToSnapshot {
+  ) internal {
     address user = vm.randomAddress();
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
 
@@ -208,7 +208,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   function _testTokenizationPermitDeposit(
     ITokenizationSpoke tokenizationSpoke,
     Types.ReserveInfo memory reserveInfo
-  ) internal revertToSnapshot {
+  ) internal {
     uint256 privateKey = vm.randomUint(1, type(uint248).max);
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
     require(depositAmount > 0, 'TOKENIZATION: deposit amount is zero');
@@ -220,7 +220,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   function _testTokenizationAddCap(
     ITokenizationSpoke tokenizationSpoke,
     Types.ReserveInfo memory reserveInfo
-  ) internal revertToSnapshot {
+  ) internal {
     IHub hub = IHub(reserveInfo.hub);
     IHub.SpokeConfig memory spokeConfig = hub.getSpokeConfig(
       reserveInfo.assetId,
@@ -256,7 +256,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
   function _testTokenizationTimeSkip(
     ITokenizationSpoke tokenizationSpoke,
     Types.ReserveInfo memory reserveInfo
-  ) internal revertToSnapshot {
+  ) internal {
     address user = vm.randomAddress();
     uint256 depositAmount = _halfToken(reserveInfo.decimals);
 

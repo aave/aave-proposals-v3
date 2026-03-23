@@ -20,6 +20,7 @@ import {GatewayScenarios} from './GatewayScenarios.sol';
 ///         Loops over ALL good collaterals and uses randomized amounts.
 contract ProtocolV4TestBase is GatewayScenarios {
   using SafeERC20 for IERC20;
+
   /// @notice Run e2e tests on a single spoke, optionally executing a payload first.
   function defaultTest(
     string memory /* reportName */,
@@ -87,18 +88,22 @@ contract ProtocolV4TestBase is GatewayScenarios {
         spoke
       );
       if (hasWeth) {
+        uint256 gwSnap = vm.snapshotState();
         _testNativeGateway(nativeGateway, spoke, wethInfo);
+        vm.revertToState(gwSnap);
       }
     }
 
     // SignatureGateway — on first usable debt reserve + collateral
     if (goodCollaterals.length > 0 && goodDebtReserves.length > 0) {
+      uint256 gwSnap = vm.snapshotState();
       _testSignatureGateway({
         gateway: ISignatureGateway(AaveV4EthereumAddresses.SIGNATURE_GATEWAY),
         spoke: spoke,
         reserveInfo: goodDebtReserves[0],
         collateralInfo: goodCollaterals[0]
       });
+      vm.revertToState(gwSnap);
     }
   }
 
@@ -181,8 +186,15 @@ contract ProtocolV4TestBase is GatewayScenarios {
     console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
+    uint256 scenarioSnapshot;
+
+    scenarioSnapshot = vm.snapshotState();
     _testZeroAmountReverts({spoke: spoke, reserveInfo: testAssetInfo, user: vm.randomAddress()});
+    vm.revertToState(scenarioSnapshot);
+
+    scenarioSnapshot = vm.snapshotState();
     _testCaps({spoke: spoke, reserveInfo: testAssetInfo});
+    vm.revertToState(scenarioSnapshot);
 
     // Set caps to max after cap testing for the rest of the flow
     _setCapsToMax(spoke);
@@ -199,21 +211,51 @@ contract ProtocolV4TestBase is GatewayScenarios {
       testAssetSupplier: testAssetSupplier
     });
 
-    _testWithdrawals({
+    scenarioSnapshot = vm.snapshotState();
+    _testPartialWithdrawal({
       spoke: spoke,
       testAssetInfo: testAssetInfo,
       testAssetSupplier: testAssetSupplier,
       testAssetAmount: testAssetAmount
     });
+    vm.revertToState(scenarioSnapshot);
+
+    scenarioSnapshot = vm.snapshotState();
+    _testFullWithdrawal({
+      spoke: spoke,
+      testAssetInfo: testAssetInfo,
+      testAssetSupplier: testAssetSupplier
+    });
+    vm.revertToState(scenarioSnapshot);
 
     if (testAssetInfo.borrowable) {
-      _testBorrowRepayLiquidation({
-        spoke: spoke,
-        collateralInfo: collateralInfo,
-        testAssetInfo: testAssetInfo,
-        collateralSupplier: collateralSupplier,
-        testAssetAmount: testAssetAmount
-      });
+      scenarioSnapshot = vm.snapshotState();
+      uint256 borrowCeiling = _setupBorrows(
+        spoke,
+        testAssetInfo,
+        collateralSupplier,
+        testAssetAmount
+      );
+      if (borrowCeiling > 0) {
+        uint256 postBorrowSnapshot = vm.snapshotState();
+
+        // Partial repay
+        _testPartialRepay(spoke, testAssetInfo, collateralSupplier);
+        vm.revertToState(postBorrowSnapshot);
+
+        // Full repay
+        _testFullRepay(spoke, testAssetInfo, collateralSupplier);
+        vm.revertToState(postBorrowSnapshot);
+
+        // Repay after interest accrual
+        _testRepayAfterInterest(spoke, testAssetInfo, collateralSupplier);
+        vm.revertToState(postBorrowSnapshot);
+
+        // Liquidation
+        _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+        vm.revertToState(postBorrowSnapshot);
+      }
+      vm.revertToState(scenarioSnapshot);
     } else {
       // Non-borrowable: verify borrow reverts with ReserveNotBorrowable
       vm.prank(collateralSupplier);
@@ -227,6 +269,7 @@ contract ProtocolV4TestBase is GatewayScenarios {
 
     // Collateral toggle: disable all, verify borrow fails, re-enable all, verify borrow works
     if (collateralInfo.collateralEnabled && testAssetInfo.borrowable) {
+      scenarioSnapshot = vm.snapshotState();
       _testCollateralToggle({
         spoke: spoke,
         goodCollaterals: goodCollaterals,
@@ -234,12 +277,9 @@ contract ProtocolV4TestBase is GatewayScenarios {
         collateralSupplier: collateralSupplier,
         testAssetAmount: testAssetAmount
       });
+      vm.revertToState(scenarioSnapshot);
     }
   }
-
-  // -------------------------------------------------------------------------
-  // Tokenization spoke tests
-  // -------------------------------------------------------------------------
 
   /// @notice Test all tokenization spokes in the array.
   function e2eTestAllTokenizationSpokes(address[] memory tokenizationSpokes) public {
@@ -258,15 +298,33 @@ contract ProtocolV4TestBase is GatewayScenarios {
     Types.ReserveInfo memory reserveInfo = _getTokenizationReserveInfo(tokenizationSpoke);
     console.log('E2E: TokenizationSpoke asset: %s', reserveInfo.symbol);
 
+    uint256 snap;
+
+    snap = vm.snapshotState();
     _testTokenizationAddCap(tokenizationSpoke, reserveInfo);
+    vm.revertToState(snap);
 
     // Remove addCap for the rest of the tests
     _setTokenizationCapsToMax(tokenizationSpoke);
 
+    snap = vm.snapshotState();
     _testTokenizationDepositWithdraw(tokenizationSpoke, reserveInfo);
+    vm.revertToState(snap);
+
+    snap = vm.snapshotState();
     _testTokenizationMintRedeem(tokenizationSpoke, reserveInfo);
+    vm.revertToState(snap);
+
+    snap = vm.snapshotState();
     _testTokenizationPreviewConsistency(tokenizationSpoke, reserveInfo);
+    vm.revertToState(snap);
+
+    snap = vm.snapshotState();
     _testTokenizationPermitDeposit(tokenizationSpoke, reserveInfo);
+    vm.revertToState(snap);
+
+    snap = vm.snapshotState();
     _testTokenizationTimeSkip(tokenizationSpoke, reserveInfo);
+    vm.revertToState(snap);
   }
 }

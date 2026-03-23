@@ -167,30 +167,35 @@ abstract contract Scenarios is Helpers {
     });
   }
 
-  /// @dev Test partial + full withdrawal with random partial amount.
-  function _testWithdrawals(
+  function _testPartialWithdrawal(
     ISpoke spoke,
     Types.ReserveInfo memory testAssetInfo,
     address testAssetSupplier,
     uint256 testAssetAmount
-  ) internal revertToSnapshot {
+  ) internal {
     uint256 partialWithdraw = testAssetAmount > 1
       ? vm.randomUint(1, testAssetAmount - 1)
       : testAssetAmount;
     _withdraw(spoke, testAssetInfo, testAssetSupplier, partialWithdraw);
+  }
+
+  function _testFullWithdrawal(
+    ISpoke spoke,
+    Types.ReserveInfo memory testAssetInfo,
+    address testAssetSupplier
+  ) internal {
     _withdraw(spoke, testAssetInfo, testAssetSupplier, UINT256_MAX);
   }
 
-  /// @dev Test borrow, repay, and liquidation flows.
-  function _testBorrowRepayLiquidation(
+  /// @dev Setup borrows: calculate ceiling, first+second borrow, extras.
+  ///      Returns the borrow ceiling (0 means no borrow was possible).
+  function _setupBorrows(
     ISpoke spoke,
-    Types.ReserveInfo memory collateralInfo,
     Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
-  ) internal revertToSnapshot {
+  ) internal returns (uint256 borrowCeiling) {
     // Cap borrow by user's available borrowing power to avoid HealthFactorBelowThreshold.
-    uint256 borrowCeiling;
     {
       ISpoke.UserAccountData memory accountData = spoke.getUserAccountData(collateralSupplier);
       // maxDebtValue = CF-weighted collateral value (HF=1 threshold)
@@ -217,7 +222,7 @@ abstract contract Scenarios is Helpers {
       );
     }
     if (borrowCeiling == 0) {
-      return;
+      return 0;
     }
 
     // First borrow (random partial amount)
@@ -272,10 +277,13 @@ abstract contract Scenarios is Helpers {
       primaryReserveId: testAssetInfo.reserveId,
       user: collateralSupplier
     });
+  }
 
-    uint256 snapshotAfterBorrow = vm.snapshotState();
-
-    // Partial repay
+  function _testPartialRepay(
+    ISpoke spoke,
+    Types.ReserveInfo memory testAssetInfo,
+    address collateralSupplier
+  ) internal {
     uint256 actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
     if (actualDebt > 1) {
       uint256 partialRepay = vm.randomUint(1, actualDebt - 1);
@@ -286,19 +294,27 @@ abstract contract Scenarios is Helpers {
         amount: partialRepay
       });
     }
-    vm.revertToState(snapshotAfterBorrow);
+  }
 
-    // Full repay
-    actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
+  function _testFullRepay(
+    ISpoke spoke,
+    Types.ReserveInfo memory testAssetInfo,
+    address collateralSupplier
+  ) internal {
+    uint256 actualDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
     _repay({
       spoke: spoke,
       reserveInfo: testAssetInfo,
       user: collateralSupplier,
       amount: actualDebt
     });
-    vm.revertToState(snapshotAfterBorrow);
+  }
 
-    // Interest accrual: check all accounting after random time skip (snapshots internally)
+  function _testRepayAfterInterest(
+    ISpoke spoke,
+    Types.ReserveInfo memory testAssetInfo,
+    address collateralSupplier
+  ) internal {
     _skipTimeAndCheckAccounting({
       spoke: spoke,
       reserveInfo: testAssetInfo,
@@ -306,23 +322,14 @@ abstract contract Scenarios is Helpers {
       skipDays: vm.randomUint(1, 450)
     });
 
-    // Repay after interest accrual should still work
-    {
-      skip(vm.randomUint(1, 30) * 1 days);
-      uint256 debtAfterAccrual = spoke.getUserTotalDebt(
-        testAssetInfo.reserveId,
-        collateralSupplier
-      );
-      _repay({
-        spoke: spoke,
-        reserveInfo: testAssetInfo,
-        user: collateralSupplier,
-        amount: debtAfterAccrual
-      });
-    }
-    vm.revertToState(snapshotAfterBorrow);
-
-    _testLiquidation(spoke, collateralInfo, testAssetInfo, collateralSupplier);
+    skip(vm.randomUint(1, 30) * 1 days);
+    uint256 debtAfterAccrual = spoke.getUserTotalDebt(testAssetInfo.reserveId, collateralSupplier);
+    _repay({
+      spoke: spoke,
+      reserveInfo: testAssetInfo,
+      user: collateralSupplier,
+      amount: debtAfterAccrual
+    });
   }
 
   /// @dev Test liquidation: partial, full (receive underlying), and full (receive shares).
@@ -331,7 +338,7 @@ abstract contract Scenarios is Helpers {
     Types.ReserveInfo memory collateralInfo,
     Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier
-  ) internal revertToSnapshot {
+  ) internal {
     _makeUserLiquidatable(spoke, collateralSupplier);
 
     // Skip random 1-90 days to let interest accrue before liquidation
@@ -399,7 +406,7 @@ abstract contract Scenarios is Helpers {
       vm.revertToState(snapshotBeforeLiquidation);
     }
 
-    // Clear oracle price mockss
+    // Clear oracle price mocks
     vm.clearMockedCalls();
   }
 
@@ -411,7 +418,9 @@ abstract contract Scenarios is Helpers {
     address liquidator,
     address borrower,
     bool receiveShares
-  ) internal revertToSnapshot {
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+
     address oracleAddr = spoke.ORACLE();
     uint256 totalDebt = spoke.getUserTotalDebt(testAssetInfo.reserveId, borrower);
     uint256 totalCollateral = spoke.getUserSuppliedAssets(collateralInfo.reserveId, borrower);
@@ -430,6 +439,7 @@ abstract contract Scenarios is Helpers {
 
     // Skip if either debt or collateral is too small — partial liq leads to dust
     if (totalDebt <= minDebtAssets || totalCollateral <= minCollateralAssets) {
+      vm.revertToState(snapshot);
       return;
     }
 
@@ -439,7 +449,6 @@ abstract contract Scenarios is Helpers {
       reserveInfo: testAssetInfo,
       dollarValue: vm.randomUint(1, 400)
     });
-    // Partial liquidation - receive underlying
     _liquidationCall({
       spoke: spoke,
       collateralInfo: collateralInfo,
@@ -454,6 +463,8 @@ abstract contract Scenarios is Helpers {
       0,
       'PARTIAL_LIQUIDATION: debt should not be fully repaid'
     );
+
+    vm.revertToState(snapshot);
   }
 
   /// @dev Disable all collaterals, verify borrow reverts, re-enable all, verify borrow works.
@@ -463,7 +474,7 @@ abstract contract Scenarios is Helpers {
     Types.ReserveInfo memory testAssetInfo,
     address collateralSupplier,
     uint256 testAssetAmount
-  ) internal revertToSnapshot {
+  ) internal {
     // Disable all active collaterals
     for (uint256 i; i < goodCollaterals.length; i++) {
       uint256 supplied = spoke.getUserSuppliedAssets(
@@ -562,22 +573,22 @@ abstract contract Scenarios is Helpers {
     );
 
     if (spokeConfig.addCap > 0 && spokeConfig.addCap < type(uint40).max) {
+      uint256 snap = vm.snapshotState();
       _testAddCap({spoke: spoke, reserveInfo: reserveInfo, addCap: spokeConfig.addCap});
+      vm.revertToState(snap);
     }
 
     if (
       spokeConfig.drawCap > 0 && spokeConfig.drawCap < type(uint40).max && reserveInfo.borrowable
     ) {
+      uint256 snap = vm.snapshotState();
       _testDrawCap({spoke: spoke, reserveInfo: reserveInfo, drawCap: spokeConfig.drawCap});
+      vm.revertToState(snap);
     }
   }
 
   /// @dev Fill supply up to addCap in random chunks, then verify overflow reverts.
-  function _testAddCap(
-    ISpoke spoke,
-    Types.ReserveInfo memory reserveInfo,
-    uint40 addCap
-  ) internal revertToSnapshot {
+  function _testAddCap(ISpoke spoke, Types.ReserveInfo memory reserveInfo, uint40 addCap) internal {
     uint256 addCapScaled = uint256(addCap) * 10 ** reserveInfo.decimals;
     uint256 currentSupply = spoke.getReserveSuppliedAssets(reserveInfo.reserveId);
     if (addCapScaled <= currentSupply) {
@@ -602,7 +613,7 @@ abstract contract Scenarios is Helpers {
     ISpoke spoke,
     Types.ReserveInfo memory reserveInfo,
     uint40 drawCap
-  ) internal revertToSnapshot {
+  ) internal {
     // Remove addCaps so enough collateral can be supplied to borrow up to drawCap
     _setAddCapsToMax(spoke);
 
@@ -642,7 +653,7 @@ abstract contract Scenarios is Helpers {
     ISpoke spoke,
     Types.ReserveInfo memory reserveInfo,
     address user
-  ) internal revertToSnapshot {
+  ) internal {
     uint256 reserveId = reserveInfo.reserveId;
 
     // Supply 0

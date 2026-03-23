@@ -55,22 +55,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     }
   }
 
-  function _deactivateAllSpokes() internal {
-    address[] memory hubs = AaveV4EthereumAddresses.getHubs();
-    address[] memory spokes = AaveV4EthereumAddresses.getSpokes();
-
-    vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    for (uint256 h = 0; h < hubs.length; ++h) {
-      for (uint256 s = 0; s < spokes.length; ++s) {
-        IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).deactivateSpoke(
-          hubs[h],
-          spokes[s]
-        );
-      }
-    }
-    vm.stopPrank();
-  }
-
   function test_allSpokesInactiveBeforeExecution() public view {
     address[] memory hubs = AaveV4EthereumAddresses.getHubs();
 
@@ -85,6 +69,22 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
         }
       }
     }
+  }
+
+  function _deactivateAllSpokes() internal {
+    address[] memory hubs = AaveV4EthereumAddresses.getHubs();
+    address[] memory spokes = AaveV4EthereumAddresses.getSpokes();
+
+    vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    for (uint256 h = 0; h < hubs.length; ++h) {
+      for (uint256 s = 0; s < spokes.length; ++s) {
+        IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).deactivateSpoke(
+          hubs[h],
+          spokes[s]
+        );
+      }
+    }
+    vm.stopPrank();
   }
 
   function _assertAllSpokesActiveOnHub(address hub_) internal view {

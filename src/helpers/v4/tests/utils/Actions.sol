@@ -16,16 +16,6 @@ abstract contract Actions is CommonTestBase {
 
   uint256 constant HEALTH_FACTOR_LIQUIDATION_THRESHOLD = 1e18;
 
-  modifier revertToSnapshot() {
-    uint256 currentSnapshot = vm.snapshotState();
-    _;
-    vm.revertToState(currentSnapshot);
-  }
-
-  // -------------------------------------------------------------------------
-  // Logging
-  // -------------------------------------------------------------------------
-
   function _logAction(string memory action, string memory symbol, uint256 amount) internal pure {
     if (amount == UINT256_MAX) {
       console.log('%s: %s, Amount: UINT256_MAX', action, symbol);
@@ -33,10 +23,6 @@ abstract contract Actions is CommonTestBase {
       console.log('%s: %s, Amount: %e', action, symbol, amount);
     }
   }
-
-  // -------------------------------------------------------------------------
-  // Accounting getters
-  // -------------------------------------------------------------------------
 
   function _getUserAccounting(
     ISpoke spoke,
@@ -117,17 +103,15 @@ abstract contract Actions is CommonTestBase {
       });
   }
 
-  // -------------------------------------------------------------------------
-  // Time-skip accounting check
-  // -------------------------------------------------------------------------
-
   /// @notice Skip time, assert debt accounting grew as expected, then revert.
   function _skipTimeAndCheckAccounting(
     ISpoke spoke,
     Types.ReserveInfo memory reserveInfo,
     address user,
     uint256 skipDays
-  ) internal revertToSnapshot {
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+
     Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, reserveInfo, user);
 
     skip(skipDays * 1 days);
@@ -174,11 +158,9 @@ abstract contract Actions is CommonTestBase {
     IHubBase hub = IHubBase(reserveInfo.hub);
     uint256 drawnIndexAfter = hub.getAssetDrawnIndex(reserveInfo.assetId);
     assertGt(drawnIndexAfter, 1e27, 'TIME_SKIP: drawn index should be greater than 1e27');
-  }
 
-  // -------------------------------------------------------------------------
-  // Actions
-  // -------------------------------------------------------------------------
+    vm.revertToState(snapshot);
+  }
 
   function _supply(
     ISpoke spoke,
@@ -195,42 +177,44 @@ abstract contract Actions is CommonTestBase {
     deal2(reserveInfo.underlying, user, amount);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount);
     _logAction('SUPPLY', reserveInfo.symbol, amount);
-    spoke.supply({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
+    (uint256 returnedShares, uint256 returnedAssets) = spoke.supply({
+      reserveId: reserveInfo.reserveId,
+      amount: amount,
+      onBehalfOf: user
+    });
     vm.stopPrank();
 
     Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
+    assertEq(returnedAssets, amount, 'SUPPLY: returnedAssets mismatch');
+
     // User
-    assertApproxEqAbs(
+    assertEq(
       snapshotAfter.user.collateralAssets,
       snapshotBefore.user.collateralAssets + amount,
-      2,
       'SUPPLY: user assets mismatch'
     );
-    assertGt(
+    assertEq(
       snapshotAfter.user.collateralShares,
-      snapshotBefore.user.collateralShares,
-      'SUPPLY: user shares did not increase'
+      snapshotBefore.user.collateralShares + returnedShares,
+      'SUPPLY: user shares mismatch'
     );
     // Hub spoke
-    assertApproxEqAbs(
+    assertEq(
       snapshotAfter.hubSpoke.collateralAssets,
       snapshotBefore.hubSpoke.collateralAssets + amount,
-      2,
       'SUPPLY: hub assets mismatch'
     );
-    {
-      uint256 expectedAddedShares = IHubBase(reserveInfo.hub).previewAddByAssets(
-        reserveInfo.assetId,
-        amount
-      );
-      assertApproxEqAbs(
-        snapshotAfter.hubSpoke.collateralShares,
-        snapshotBefore.hubSpoke.collateralShares + expectedAddedShares,
-        2,
-        'SUPPLY: hub shares mismatch'
-      );
-    }
+    uint256 expectedAddedShares = IHubBase(reserveInfo.hub).previewAddByAssets(
+      reserveInfo.assetId,
+      amount
+    );
+    assertEq(returnedShares, expectedAddedShares, 'SUPPLY: returnedShares mismatch');
+    assertEq(
+      snapshotAfter.hubSpoke.collateralShares,
+      snapshotBefore.hubSpoke.collateralShares + expectedAddedShares,
+      'SUPPLY: hub shares mismatch'
+    );
   }
 
   function _withdraw(
@@ -243,7 +227,7 @@ abstract contract Actions is CommonTestBase {
 
     vm.startPrank(user);
     _logAction('WITHDRAW', reserveInfo.symbol, amount);
-    (, uint256 withdrawnAmount) = spoke.withdraw({
+    (uint256 returnedShares, uint256 withdrawnAmount) = spoke.withdraw({
       reserveId: reserveInfo.reserveId,
       amount: amount,
       onBehalfOf: user
@@ -256,37 +240,33 @@ abstract contract Actions is CommonTestBase {
       assertEq(snapshotAfter.user.collateralAssets, 0, 'WITHDRAW: user assets should be zero');
       assertEq(snapshotAfter.user.collateralShares, 0, 'WITHDRAW: user shares should be zero');
     } else {
-      assertApproxEqAbs(
+      assertEq(
         snapshotAfter.user.collateralAssets,
         snapshotBefore.user.collateralAssets - withdrawnAmount,
-        2,
         'WITHDRAW: user assets mismatch'
       );
-      assertLt(
-        snapshotAfter.user.collateralShares,
-        snapshotBefore.user.collateralShares,
-        'WITHDRAW: user shares did not decrease'
+      assertEq(
+        snapshotBefore.user.collateralShares - snapshotAfter.user.collateralShares,
+        returnedShares,
+        'WITHDRAW: user shares delta mismatch'
       );
     }
     // Hub spoke
-    assertApproxEqAbs(
+    assertEq(
       snapshotBefore.hubSpoke.collateralAssets - snapshotAfter.hubSpoke.collateralAssets,
       withdrawnAmount,
-      2,
       'WITHDRAW: hub assets mismatch'
     );
-    {
-      uint256 expectedSharesDelta = IHubBase(reserveInfo.hub).previewRemoveByAssets(
-        reserveInfo.assetId,
-        withdrawnAmount
-      );
-      assertApproxEqAbs(
-        snapshotBefore.hubSpoke.collateralShares - snapshotAfter.hubSpoke.collateralShares,
-        expectedSharesDelta,
-        2,
-        'WITHDRAW: hub shares mismatch'
-      );
-    }
+    uint256 expectedSharesDelta = IHubBase(reserveInfo.hub).previewRemoveByAssets(
+      reserveInfo.assetId,
+      withdrawnAmount
+    );
+    assertEq(returnedShares, expectedSharesDelta, 'WITHDRAW: returnedShares mismatch');
+    assertEq(
+      snapshotBefore.hubSpoke.collateralShares - snapshotAfter.hubSpoke.collateralShares,
+      expectedSharesDelta,
+      'WITHDRAW: hub shares mismatch'
+    );
   }
 
   function _borrow(
@@ -303,33 +283,37 @@ abstract contract Actions is CommonTestBase {
 
     _logAction('BORROW', reserveInfo.symbol, amount);
     vm.prank(user);
-    spoke.borrow({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
+    (uint256 returnedShares, uint256 returnedAssets) = spoke.borrow({
+      reserveId: reserveInfo.reserveId,
+      amount: amount,
+      onBehalfOf: user
+    });
 
     Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
+    assertEq(returnedAssets, amount, 'BORROW: returnedAssets mismatch');
+    assertEq(returnedShares, expectedDrawnShares, 'BORROW: returnedShares mismatch');
+
     // User debt
-    assertApproxEqAbs(
+    assertEq(
       snapshotAfter.user.totalDebt,
       snapshotBefore.user.totalDebt + amount,
-      2,
       'BORROW: user debt mismatch'
     );
-    assertGe(
+    assertEq(
       snapshotAfter.user.drawnDebt,
-      snapshotBefore.user.drawnDebt,
-      'BORROW: user drawn debt did not increase'
+      snapshotBefore.user.drawnDebt + returnedAssets,
+      'BORROW: user drawn debt mismatch'
     );
     // Hub spoke
-    assertApproxEqAbs(
+    assertEq(
       snapshotAfter.hubSpoke.totalDebt,
       snapshotBefore.hubSpoke.totalDebt + amount,
-      2,
       'BORROW: hub debt mismatch'
     );
-    assertApproxEqAbs(
+    assertEq(
       snapshotAfter.hubSpoke.drawnShares,
       snapshotBefore.hubSpoke.drawnShares + expectedDrawnShares,
-      2,
       'BORROW: hub drawn shares mismatch'
     );
   }
@@ -353,32 +337,36 @@ abstract contract Actions is CommonTestBase {
     deal2(reserveInfo.underlying, user, amount + 2);
     IERC20(reserveInfo.underlying).forceApprove(address(spoke), amount + 2);
     _logAction('REPAY', reserveInfo.symbol, amount);
-    spoke.repay({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
+    (uint256 returnedShares, uint256 returnedAssets) = spoke.repay({
+      reserveId: reserveInfo.reserveId,
+      amount: amount,
+      onBehalfOf: user
+    });
     vm.stopPrank();
 
     Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, reserveInfo, user);
 
+    assertEq(returnedAssets, effectiveRepayAmount, 'REPAY: returnedAssets mismatch');
+    assertEq(returnedShares, expectedRestoredShares, 'REPAY: returnedShares mismatch');
+
     if (amount >= snapshotBefore.user.totalDebt) {
       assertEq(snapshotAfter.user.totalDebt, 0, 'REPAY: user debt should be zero');
     } else {
-      assertApproxEqAbs(
+      assertEq(
         snapshotAfter.user.totalDebt,
         snapshotBefore.user.totalDebt - amount,
-        2,
         'REPAY: user debt mismatch'
       );
     }
     // Hub spoke
-    assertApproxEqAbs(
+    assertEq(
       snapshotBefore.hubSpoke.totalDebt - snapshotAfter.hubSpoke.totalDebt,
       effectiveRepayAmount,
-      2,
       'REPAY: hub debt mismatch'
     );
-    assertApproxEqAbs(
+    assertEq(
       snapshotBefore.hubSpoke.drawnShares - snapshotAfter.hubSpoke.drawnShares,
       expectedRestoredShares,
-      2,
       'REPAY: hub drawn shares mismatch'
     );
   }

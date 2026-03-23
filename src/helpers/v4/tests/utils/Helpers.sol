@@ -438,7 +438,9 @@ abstract contract Helpers is Actions {
     address oracleAddr,
     address user,
     bool isCollateral
-  ) internal revertToSnapshot {
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+
     uint256 dollarValue = vm.randomUint(1_000, 50_000);
     uint256 amount = _getTokenAmountByDollarValue({
       oracleAddr: oracleAddr,
@@ -456,9 +458,13 @@ abstract contract Helpers is Actions {
         onBehalfOf: user
       });
     } else {
+      _ensureLiquidity({spoke: spoke, reserveInfo: reserveInfo, amount: amount});
+      vm.prank(user);
       vm.expectRevert(ISpoke.MaximumUserReservesExceeded.selector);
-      _borrow({spoke: spoke, reserveInfo: reserveInfo, user: user, amount: amount});
+      spoke.borrow({reserveId: reserveInfo.reserveId, amount: amount, onBehalfOf: user});
     }
+
+    vm.revertToState(snapshot);
   }
 
   /// @notice Set all addCap/drawCap to max for every reserve on the spoke.
