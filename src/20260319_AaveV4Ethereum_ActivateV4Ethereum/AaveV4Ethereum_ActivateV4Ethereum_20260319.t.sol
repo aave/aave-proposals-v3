@@ -142,29 +142,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
-  function test_executorHasHubConfiguratorRole() public {
-    IHub coreHub = IHub(address(AaveV4EthereumHubs.CORE_HUB));
-    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
-    IHub.SpokeConfig memory configBefore = coreHub.getSpokeConfig(0, spoke);
-    assertFalse(configBefore.active, 'Spoke should be inactive before');
-
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    coreHub.updateSpokeConfig(
-      0,
-      spoke,
-      IHub.SpokeConfig({
-        addCap: type(uint40).max,
-        drawCap: 0,
-        riskPremiumThreshold: 0,
-        active: true,
-        halted: false
-      })
-    );
-
-    IHub.SpokeConfig memory configAfter = coreHub.getSpokeConfig(0, spoke);
-    assertTrue(configAfter.active, 'Spoke should be active after');
-  }
-
   function test_FeeMinterRole() public {
     _assertRoleHolders(Roles.HUB_FEE_MINTER_ROLE);
 
@@ -217,21 +194,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   function test_SpokeConfiguratorRole() public {
     _assertRoleHolders(Roles.SPOKE_CONFIGURATOR_ROLE);
 
-    ISpoke.ReserveConfig memory configBefore = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
-    assertFalse(configBefore.paused, 'Reserve should not be paused before');
-
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
-      address(AaveV4EthereumSpokes.MAIN_SPOKE),
-      0,
-      true
-    );
-
-    ISpoke.ReserveConfig memory configAfter = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
-    assertTrue(configAfter.paused, 'Reserve should be paused after');
-  }
-
-  function test_executorHasSpokeConfiguratorRole() public {
     ISpoke.ReserveConfig memory configBefore = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
     assertFalse(configBefore.paused, 'Reserve should not be paused before');
 
@@ -316,42 +278,20 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
     );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.HUB_DOMAIN_ADMIN_ROLE),
-      'HUB_DOMAIN_ADMIN_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.HUB_CONFIGURATOR_ROLE),
-      'HUB_CONFIGURATOR_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.HUB_FEE_MINTER_ROLE),
-      'HUB_FEE_MINTER_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.HUB_DEFICIT_ELIMINATOR_ROLE),
-      'HUB_DEFICIT_ELIMINATOR_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE),
-      'HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.SPOKE_DOMAIN_ADMIN_ROLE),
-      'SPOKE_DOMAIN_ADMIN_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.SPOKE_CONFIGURATOR_ROLE),
-      'SPOKE_CONFIGURATOR_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.SPOKE_USER_POSITION_UPDATER_ROLE),
-      'SPOKE_USER_POSITION_UPDATER_ROLE not labeled'
-    );
-    assertTrue(
-      accessManager.isRoleLabeled(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE),
-      'SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE not labeled'
-    );
+    uint64[] memory roles = new uint64[](9);
+    roles[0] = Roles.HUB_DOMAIN_ADMIN_ROLE;
+    roles[1] = Roles.HUB_CONFIGURATOR_ROLE;
+    roles[2] = Roles.HUB_FEE_MINTER_ROLE;
+    roles[3] = Roles.HUB_DEFICIT_ELIMINATOR_ROLE;
+    roles[4] = Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE;
+    roles[5] = Roles.SPOKE_DOMAIN_ADMIN_ROLE;
+    roles[6] = Roles.SPOKE_CONFIGURATOR_ROLE;
+    roles[7] = Roles.SPOKE_USER_POSITION_UPDATER_ROLE;
+    roles[8] = Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE;
+
+    for (uint256 i; i < roles.length; ++i) {
+      assertTrue(accessManager.isRoleLabeled(roles[i]), 'Role should be labeled');
+    }
   }
 
   // TODO: Change expected owner to SECURITY_COUNCIL after ownership transfer is complete
@@ -360,29 +300,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     for (uint256 spokeIdx; spokeIdx < tokenizationSpokes.length; ++spokeIdx) {
       _assertProxyAdminOwner(tokenizationSpokes[spokeIdx], DEPLOYER);
     }
-  }
-
-  function _deactivateAllSpokes() internal {
-    IHub[] memory hubs = AaveV4EthereumHubs.getHubs();
-
-    vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    for (uint256 hubIdx; hubIdx < hubs.length; ++hubIdx) {
-      IHub hub = hubs[hubIdx];
-      uint256 assetCount = hub.getAssetCount();
-      for (uint256 assetId; assetId < assetCount; ++assetId) {
-        uint256 spokeCount = hub.getSpokeCount(assetId);
-        for (uint256 spokeId; spokeId < spokeCount; ++spokeId) {
-          address spoke = hub.getSpokeAddress(assetId, spokeId);
-          IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
-            address(hub),
-            assetId,
-            spoke,
-            false
-          );
-        }
-      }
-    }
-    vm.stopPrank();
   }
 
   function _executePayload() internal {
@@ -439,18 +356,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     accessManager.grantRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, SECURITY_COUNCIL, 0);
     accessManager.grantRole(Roles.SPOKE_CONFIGURATOR_ROLE, SECURITY_COUNCIL, 0);
     accessManager.grantRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, SECURITY_COUNCIL, 0);
-
-    // Grant configurator contracts their roles
-    accessManager.grantRole(
-      Roles.HUB_CONFIGURATOR_ROLE,
-      AaveV4EthereumAddresses.HUB_CONFIGURATOR,
-      0
-    );
-    accessManager.grantRole(
-      Roles.SPOKE_CONFIGURATOR_ROLE,
-      AaveV4EthereumAddresses.SPOKE_CONFIGURATOR,
-      0
-    );
 
     vm.stopPrank();
   }
