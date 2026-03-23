@@ -21,8 +21,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   AaveV4Ethereum_ActivateV4Ethereum_20260319 internal proposal;
 
   function setUp() public {
-    // TODO: Try tests on mainnet deployed addresses when they are ready
-    vm.createSelectFork(vm.rpcUrl('mainnet'));
+    // TODO: Switch back to vm.rpcUrl('mainnet') once deployed to mainnet
+    vm.createSelectFork(
+      'https://virtual.mainnet-aave.us-east.rpc.tenderly.co/38393fd3-0a79-4e60-b8cc-c6bb5903454a'
+    );
     proposal = new AaveV4Ethereum_ActivateV4Ethereum_20260319();
 
     // TODO: Remove once new deployed contracts have the correct configuration phase
