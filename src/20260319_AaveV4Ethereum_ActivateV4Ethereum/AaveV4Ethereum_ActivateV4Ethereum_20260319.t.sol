@@ -11,6 +11,7 @@ import {ISpoke} from './interfaces/ISpoke.sol';
 import {ISpokeConfigurator} from './interfaces/ISpokeConfigurator.sol';
 import {Roles} from './Roles.sol';
 import {AaveV4EthereumAddresses, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumTokenizationSpokes} from './AaveV4EthereumAddresses.sol';
+import {V4DiffReport} from './V4DiffReport.sol';
 import {AaveV4Ethereum_ActivateV4Ethereum_20260319} from './AaveV4Ethereum_ActivateV4Ethereum_20260319.sol';
 
 /**
@@ -51,6 +52,17 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
         }
       }
     }
+  }
+
+  function test_diffReport() public {
+    V4DiffReport.SpokeSnapshot[] memory snapBefore = V4DiffReport.snapshot();
+    _executePayload();
+    V4DiffReport.SpokeSnapshot[] memory snapAfter = V4DiffReport.snapshot();
+    V4DiffReport.writeDiff(
+      'AaveV4Ethereum_ActivateV4Ethereum_20260319_before_AaveV4Ethereum_ActivateV4Ethereum_20260319_after',
+      snapBefore,
+      snapAfter
+    );
   }
 
   function test_allSpokesActiveOnCoreHub() public {
