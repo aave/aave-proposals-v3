@@ -44,11 +44,6 @@ abstract contract TokenizationScenarios is TokenizationActions {
       });
   }
 
-  /// @notice Half a token in the asset's native decimals.
-  function _halfToken(uint8 decimals) internal pure returns (uint256) {
-    return 10 ** decimals / 2;
-  }
-
   /// @notice Set addCap to max for a tokenization spoke's asset.
   function _setTokenizationCapsToMax(ITokenizationSpoke tokenizationSpoke) internal {
     vm.mockCall(

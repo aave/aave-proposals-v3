@@ -518,4 +518,9 @@ abstract contract Helpers is Actions {
       return 'UNKNOWN';
     }
   }
+
+  /// @notice Half a token in the asset's native decimals.
+  function _halfToken(uint8 decimals) internal pure returns (uint256) {
+    return 10 ** decimals / 2;
+  }
 }

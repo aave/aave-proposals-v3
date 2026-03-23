@@ -25,7 +25,7 @@ contract ProtocolV4TestBase is GatewayScenarios {
   function defaultTest(
     string memory /* reportName */,
     ISpoke[] memory spokes,
-    address payload
+    address /* payload */
   ) public {
     e2eTestAllSpokes(spokes);
   }
@@ -91,22 +91,22 @@ contract ProtocolV4TestBase is GatewayScenarios {
         spoke
       );
       if (hasWeth) {
-        uint256 gwSnap = vm.snapshotState();
+        uint256 gatewaySnapshot = vm.snapshotState();
         _testNativeGateway(nativeGateway, spoke, wethInfo);
-        vm.revertToState(gwSnap);
+        vm.revertToState(gatewaySnapshot);
       }
     }
 
     // SignatureGateway — on first usable debt reserve + collateral
     if (goodCollaterals.length > 0 && goodDebtReserves.length > 0) {
-      uint256 gwSnap = vm.snapshotState();
+      uint256 gatewaySnapshot = vm.snapshotState();
       _testSignatureGateway({
         gateway: ISignatureGateway(AaveV4EthereumPositionManagers.SIGNATURE_GATEWAY),
         spoke: spoke,
         reserveInfo: goodDebtReserves[0],
         collateralInfo: goodCollaterals[0]
       });
-      vm.revertToState(gwSnap);
+      vm.revertToState(gatewaySnapshot);
     }
   }
 

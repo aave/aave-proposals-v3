@@ -60,8 +60,8 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     ISpoke spoke,
     Types.ReserveInfo memory wethInfo
   ) internal {
-    uint256 gatewaySnapshot = vm.snapshotState();
     console.log('NATIVE_GATEWAY: Testing on spoke with WETH reserveId=%s', wethInfo.reserveId);
+    uint256 gatewaySnapshot = vm.snapshotState();
 
     address user = vm.randomAddress();
     uint256 amount = _halfToken(wethInfo.decimals);
@@ -87,7 +87,15 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     });
 
     // --- Setup collateral for borrow ---
-    if (wethInfo.borrowable) {}
+    if (wethInfo.borrowable) {
+      _testBorrowRepayNative({
+        gateway: gateway,
+        spoke: spoke,
+        wethInfo: wethInfo,
+        user: user,
+        amount: amount
+      });
+    }
     vm.revertToState(gatewaySnapshot);
   }
 
@@ -128,7 +136,8 @@ abstract contract GatewayScenarios is TokenizationScenarios {
       wethInfo.reserveId,
       amount
     );
-    assertEq(amountSupplied, amount, 'NATIVE_SUPPLY: shares mismatch');
+    assertEq(amountSupplied, amount, 'NATIVE_SUPPLY: amount mismatch');
+    assertEq(user.balance, 0, 'NATIVE_SUPPLY: user ETH not fully consumed');
 
     Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
     assertEq(
@@ -153,8 +162,8 @@ abstract contract GatewayScenarios is TokenizationScenarios {
   }
 
   function _supplyAsCollateralNative(
-    ISpoke spoke,
     INativeTokenGateway gateway,
+    ISpoke spoke,
     Types.ReserveInfo memory wethInfo,
     address user,
     uint256 amount
@@ -163,11 +172,12 @@ abstract contract GatewayScenarios is TokenizationScenarios {
 
     vm.deal(user, amount);
     vm.prank(user);
-    _logAction('NATIVE_SUPPLY', wethInfo.symbol, amount);
+    _logAction('NATIVE_SUPPLY_AS_COLLATERAL', wethInfo.symbol, amount);
     (uint256 sharesSupplied, uint256 amountSupplied) = gateway.supplyAsCollateralNative{
       value: amount
     }(address(spoke), wethInfo.reserveId, amount);
-    assertEq(amountSupplied, amount, 'NATIVE_SUPPLY_AS_COLLATERAL: shares mismatch');
+    assertEq(amountSupplied, amount, 'NATIVE_SUPPLY_AS_COLLATERAL: amount mismatch');
+    assertEq(user.balance, 0, 'NATIVE_SUPPLY_AS_COLLATERAL: user ETH not fully consumed');
 
     Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
     assertEq(
@@ -199,7 +209,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
   ) internal {
     uint256 snapshot = vm.snapshotState();
     // --- Partial withdraw native ---
-    uint256 withdrawAmount = amount / 4;
+    uint256 withdrawAmount = vm.randomUint(1, amount);
     _withdrawNative({
       gateway: gateway,
       spoke: spoke,
@@ -236,12 +246,14 @@ abstract contract GatewayScenarios is TokenizationScenarios {
       wethInfo.reserveId,
       withdrawAmount
     );
+    uint256 expectedWithdrawnAmount = withdrawAmount;
     if (withdrawAmount == UINT256_MAX) {
       assertEq(
         amountWithdrawn,
         snapshotBefore.user.collateralAssets,
         'NATIVE_WITHDRAW: amount mismatch'
       );
+      expectedWithdrawnAmount = amountWithdrawn;
     } else {
       assertEq(amountWithdrawn, withdrawAmount, 'NATIVE_WITHDRAW: amount mismatch');
     }
@@ -250,7 +262,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
 
     assertEq(
       stdMath.delta(snapshotBefore.user.collateralAssets, snapshotAfter.user.collateralAssets),
-      withdrawAmount,
+      expectedWithdrawnAmount,
       'NATIVE_WITHDRAW: user assets mismatch'
     );
     assertEq(
@@ -259,8 +271,24 @@ abstract contract GatewayScenarios is TokenizationScenarios {
       'NATIVE_WITHDRAW: user shares mismatch'
     );
     assertEq(
+      stdMath.delta(
+        snapshotBefore.hubSpoke.collateralAssets,
+        snapshotAfter.hubSpoke.collateralAssets
+      ),
+      expectedWithdrawnAmount,
+      'NATIVE_WITHDRAW: hub assets mismatch'
+    );
+    assertEq(
+      stdMath.delta(
+        snapshotBefore.hubSpoke.collateralShares,
+        snapshotAfter.hubSpoke.collateralShares
+      ),
+      sharesWithdrawn,
+      'NATIVE_WITHDRAW: hub shares mismatch'
+    );
+    assertEq(
       stdMath.delta(user.balance, ethBefore),
-      amountWithdrawn,
+      expectedWithdrawnAmount,
       'NATIVE_WITHDRAW: user ETH mismatch'
     );
   }
@@ -288,93 +316,123 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     _ensureLiquidity({spoke: spoke, reserveInfo: wethInfo, amount: amount});
 
     // --- Borrow native ---
-    uint256 borrowAmount = amount / 4;
-    {
-      Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
-      uint256 ethBefore = user.balance;
+    // borrow random amount within collateral factor
+    uint256 borrowAmount = vm.randomUint(1, amount / 2);
+    _borrowNative({
+      gateway: gateway,
+      spoke: spoke,
+      wethInfo: wethInfo,
+      user: user,
+      borrowAmount: borrowAmount
+    });
 
-      vm.prank(user);
-      _logAction('NATIVE_BORROW', wethInfo.symbol, borrowAmount);
-      (uint256 sharesBorrowed, uint256 amountBorrowed) = gateway.borrowNative(
-        address(spoke),
-        wethInfo.reserveId,
-        borrowAmount
-      );
-      assertEq(amountBorrowed, borrowAmount, 'NATIVE_BORROW: amount mismatch');
+    // --- Repay native ---
+    uint256 repayAmount = vm.randomUint(1, borrowAmount);
+    _repayNative({
+      gateway: gateway,
+      spoke: spoke,
+      wethInfo: wethInfo,
+      user: user,
+      repayAmount: repayAmount
+    });
+  }
 
-      Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
+  function _borrowNative(
+    INativeTokenGateway gateway,
+    ISpoke spoke,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 borrowAmount
+  ) internal {
+    uint256 ethBefore = user.balance;
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
 
-      assertEq(
-        stdMath.delta(snapshotAfter.user.drawnShares, snapshotBefore.user.drawnShares),
-        borrowAmount,
-        'NATIVE_BORROW: user drawn shares mismatch'
-      );
-      assertEq(
-        stdMath.delta(snapshotAfter.user.totalDebt, snapshotBefore.user.totalDebt),
-        borrowAmount,
-        'NATIVE_BORROW: user debt asset mismatch'
-      );
-      assertEq(
-        stdMath.delta(snapshotAfter.hubSpoke.totalDebt, snapshotBefore.hubSpoke.totalDebt),
-        borrowAmount,
-        'NATIVE_BORROW: hub debt mismatch'
-      );
-      assertEq(
-        stdMath.delta(snapshotAfter.hubSpoke.drawnShares, snapshotBefore.hubSpoke.drawnShares),
-        borrowAmount,
-        'NATIVE_BORROW: hub drawn shares mismatch'
-      );
-      assertEq(
-        stdMath.delta(user.balance, ethBefore),
-        borrowAmount,
-        'NATIVE_BORROW: user ETH mismatch'
-      );
-    }
+    vm.prank(user);
+    _logAction('NATIVE_BORROW', wethInfo.symbol, borrowAmount);
+    (uint256 sharesBorrowed, uint256 amountBorrowed) = gateway.borrowNative(
+      address(spoke),
+      wethInfo.reserveId,
+      borrowAmount
+    );
+    assertEq(amountBorrowed, borrowAmount, 'NATIVE_BORROW: amount mismatch');
 
-    // --- Partial repay native ---
-    // {
-    //   uint256 repayAmount = borrowAmount / 2;
-    //   Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
 
-    //   vm.deal(user, repayAmount);
-    //   vm.prank(user);
-    //   _logAction('NATIVE_REPAY', wethInfo.symbol, repayAmount);
-    //   (uint256 sharesRepaid, uint256 amountRepaid) = gateway.repayNative{value: repayAmount}(
-    //     address(spoke),
-    //     wethInfo.reserveId,
-    //     repayAmount
-    //   );
+    assertEq(
+      stdMath.delta(snapshotAfter.user.drawnShares, snapshotBefore.user.drawnShares),
+      sharesBorrowed,
+      'NATIVE_BORROW: user drawn shares mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotAfter.user.totalDebt, snapshotBefore.user.totalDebt),
+      borrowAmount,
+      'NATIVE_BORROW: user debt asset mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotAfter.hubSpoke.totalDebt, snapshotBefore.hubSpoke.totalDebt),
+      borrowAmount,
+      'NATIVE_BORROW: hub debt mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotAfter.hubSpoke.drawnShares, snapshotBefore.hubSpoke.drawnShares),
+      sharesBorrowed,
+      'NATIVE_BORROW: hub drawn shares mismatch'
+    );
+    assertEq(
+      stdMath.delta(user.balance, ethBefore),
+      borrowAmount,
+      'NATIVE_BORROW: user ETH mismatch'
+    );
+  }
 
-    //   assertEq(amountRepaid, repayAmount, 'NATIVE_REPAY: amount mismatch');
+  function _repayNative(
+    INativeTokenGateway gateway,
+    ISpoke spoke,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 repayAmount
+  ) internal {
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
 
-    //   Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
+    vm.deal(user, repayAmount);
+    uint256 ethBefore = user.balance;
+    vm.prank(user);
+    _logAction('NATIVE_REPAY', wethInfo.symbol, repayAmount);
+    (uint256 sharesRepaid, uint256 amountRepaid) = gateway.repayNative{value: repayAmount}(
+      address(spoke),
+      wethInfo.reserveId,
+      repayAmount
+    );
 
-    //   assertEq(
-    //     stdMath.delta(snapshotBefore.user.drawnShares, snapshotAfter.user.drawnShares),
-    //     sharesRepaid,
-    //     'NATIVE_REPAY: user drawn shares mismatch'
-    //   );
-    //   assertEq(
-    //     stdMath.delta(snapshotBefore.user.totalDebt, snapshotAfter.user.totalDebt),
-    //     repayAmount,
-    //     'NATIVE_REPAY: user debt mismatch'
-    //   );
-    //   assertEq(
-    //     stdMath.delta(snapshotBefore.user.drawnShares, snapshotAfter.user.drawnShares),
-    //     sharesRepaid,
-    //     'NATIVE_REPAY: user drawn shares mismatch'
-    //   );
-    //   assertEq(
-    //     stdMath.delta(snapshotAfter.hubSpoke.totalDebt, snapshotBefore.hubSpoke.totalDebt),
-    //     repayAmount,
-    //     'NATIVE_REPAY: hub debt mismatch'
-    //   );
-    //   assertEq(
-    //     stdMath.delta(user.balance, ethBefore),
-    //     borrowAmount,
-    //     'NATIVE_REPAY: user ETH mismatch'
-    //   );
-    // }
+    assertEq(amountRepaid, repayAmount, 'NATIVE_REPAY: amount mismatch');
+
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
+
+    assertEq(
+      stdMath.delta(snapshotBefore.user.drawnShares, snapshotAfter.user.drawnShares),
+      sharesRepaid,
+      'NATIVE_REPAY: user drawn shares mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotBefore.user.totalDebt, snapshotAfter.user.totalDebt),
+      repayAmount,
+      'NATIVE_REPAY: user debt mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotBefore.hubSpoke.totalDebt, snapshotAfter.hubSpoke.totalDebt),
+      repayAmount,
+      'NATIVE_REPAY: hub debt mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotBefore.hubSpoke.drawnShares, snapshotAfter.hubSpoke.drawnShares),
+      sharesRepaid,
+      'NATIVE_REPAY: hub drawn shares mismatch'
+    );
+    assertEq(
+      stdMath.delta(user.balance, ethBefore),
+      repayAmount,
+      'NATIVE_REPAY: user ETH mismatch'
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -404,7 +462,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
 
     // --- Borrow + repay with sig (if borrowable) ---
     if (reserveInfo.borrowable) {
-      _sigSetupCollateralAndBorrow(
+      _sigSetupCollateralAndBorrowRepay(
         gateway,
         spoke,
         reserveInfo,
@@ -514,7 +572,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     );
   }
 
-  function _sigSetupCollateralAndBorrow(
+  function _sigSetupCollateralAndBorrowRepay(
     ISignatureGateway gateway,
     ISpoke spoke,
     Types.ReserveInfo memory reserveInfo,
@@ -530,7 +588,10 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     _ensureLiquidity({spoke: spoke, reserveInfo: reserveInfo, amount: amount});
     uint256 borrowAmount = amount / 4;
     _sigBorrow(gateway, spoke, reserveInfo, privateKey, user, borrowAmount);
+    // repay partial
     _sigRepay(gateway, spoke, reserveInfo, privateKey, user, borrowAmount / 2);
+    // repay
+    _sigRepay(gateway, spoke, reserveInfo, privateKey, user, UINT256_MAX);
   }
 
   function _sigSupplyCollateral(
