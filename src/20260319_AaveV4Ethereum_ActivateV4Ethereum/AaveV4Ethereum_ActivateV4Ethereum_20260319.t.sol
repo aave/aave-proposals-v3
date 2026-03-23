@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
-import {GovV3Helpers} from 'aave-helpers/src/GovV3Helpers.sol';
+import {GovV3Helpers, ChainIds} from 'aave-helpers/src/GovV3Helpers.sol';
 import {ProtocolV3TestBase} from 'aave-helpers/src/ProtocolV3TestBase.sol';
 import {IAccessManagerEnumerable} from './interfaces/IAccessManagerEnumerable.sol';
 import {IHub} from './interfaces/IHub.sol';
@@ -44,8 +44,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
       uint256 assetCount = hubs[hubIdx].getAssetCount();
       for (uint256 assetId; assetId < assetCount; ++assetId) {
         uint256 spokeCount = hubs[hubIdx].getSpokeCount(assetId);
-        for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
-          address spoke = hubs[hubIdx].getSpokeAddress(assetId, spokeIdx);
+        for (uint256 spokeId; spokeId < spokeCount; ++spokeId) {
+          address spoke = hubs[hubIdx].getSpokeAddress(assetId, spokeId);
           IHub.SpokeConfig memory config = hubs[hubIdx].getSpokeConfig(assetId, spoke);
           assertFalse(config.active, 'Spoke should be inactive before execution');
         }
@@ -70,7 +70,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
 
   // | Target             | Role                                   | ID  | Holder            |
   // |--------------------|----------------------------------------|-----|-------------------|
-  // | Access Manager     | ACCESS_MANAGER_DEFAULT_ADMIN             | 0   | DAO               |
+  // | Access Manager     | ACCESS_MANAGER_DEFAULT_ADMIN           | 0   | DAO               |
   // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | HubConfigurator   |
   // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | DAO               |
   // | Hub                | HUB_FEE_MINTER_ROLE                    | 102 | DAO               |
@@ -118,8 +118,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_ROLE, expected);
 
-    // Verify hub configurator role via executor
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
+    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    assertFalse(configBefore.active, 'Spoke should be inactive before');
+
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
       address(AaveV4EthereumHubs.CORE_HUB),
@@ -127,25 +129,17 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
       spoke,
       true
     );
+
+    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
-  function test_executorHasAllHubRoles() public {
-    // DAO and Aave Labs multisig have hub fee minter role
-    address[] memory feeMinterExpected = new address[](2);
-    feeMinterExpected[0] = AAVE_LABS_MULTISIG;
-    feeMinterExpected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.HUB_FEE_MINTER_ROLE, feeMinterExpected);
-
-    // DAO and Aave Labs multisig have hub deficit eliminator role
-    address[] memory deficitExpected = new address[](2);
-    deficitExpected[0] = AAVE_LABS_MULTISIG;
-    deficitExpected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, deficitExpected);
-
+  function test_executorHasHubConfiguratorRole() public {
     IHub coreHub = IHub(address(AaveV4EthereumHubs.CORE_HUB));
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
+    IHub.SpokeConfig memory configBefore = coreHub.getSpokeConfig(0, spoke);
+    assertFalse(configBefore.active, 'Spoke should be inactive before');
 
-    // Test hub configurator role by activating a spoke directly on the Hub
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     coreHub.updateSpokeConfig(
       0,
@@ -159,11 +153,29 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
       })
     );
 
-    // Test hub mint fee shares role by calling mintFeeShares
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    coreHub.mintFeeShares(0);
+    IHub.SpokeConfig memory configAfter = coreHub.getSpokeConfig(0, spoke);
+    assertTrue(configAfter.active, 'Spoke should be active after');
+  }
 
-    // Test hub deficit eliminator role: register executor as a spoke, activate it, then call eliminateDeficit
+  function test_executorHasHubFeeMinterRole() public {
+    address[] memory expected = new address[](2);
+    expected[0] = AAVE_LABS_MULTISIG;
+    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+    _assertExactRoleHolders(Roles.HUB_FEE_MINTER_ROLE, expected);
+
+    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    AaveV4EthereumHubs.CORE_HUB.mintFeeShares(0);
+  }
+
+  function test_executorHasHubDeficitEliminatorRole() public {
+    address[] memory expected = new address[](2);
+    expected[0] = AAVE_LABS_MULTISIG;
+    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+    _assertExactRoleHolders(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, expected);
+
+    IHub coreHub = IHub(address(AaveV4EthereumHubs.CORE_HUB));
+    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
+
     vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     coreHub.addSpoke(
       0,
@@ -176,7 +188,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
         halted: false
       })
     );
-    // Reverts with InvalidAmount rather than an access error, proving it has access.
     vm.expectRevert(IHub.InvalidAmount.selector);
     coreHub.eliminateDeficit(0, 1, spoke);
     vm.stopPrank();
@@ -190,8 +201,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
 
-    // Test hub configurator domain admin role by calling updateSpokeActive
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
+    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    assertFalse(configBefore.active, 'Spoke should be inactive before');
+
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
       address(AaveV4EthereumHubs.CORE_HUB),
@@ -199,6 +212,9 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
       spoke,
       true
     );
+
+    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
   function test_spokeConfiguratorHasSpokeConfiguratorRole() public {
@@ -218,18 +234,17 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     );
   }
 
-  function test_executorHasAllSpokeRoles() public {
-    // DAO and Aave Labs multisig have spoke user position updater role
-    address[] memory posUpdaterExpected = new address[](2);
-    posUpdaterExpected[0] = AAVE_LABS_MULTISIG;
-    posUpdaterExpected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, posUpdaterExpected);
+  function test_executorHasSpokeUserPositionUpdaterRole() public {
+    address[] memory expected = new address[](2);
+    expected[0] = AAVE_LABS_MULTISIG;
+    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+    _assertExactRoleHolders(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, expected);
 
-    // Test spoke user position updater role by updating user risk premium
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     AaveV4EthereumSpokes.MAIN_SPOKE.updateUserRiskPremium(address(this));
+  }
 
-    // Test spoke configurator role by calling updatePaused via executor
+  function test_executorHasSpokeConfiguratorRole() public {
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
       address(AaveV4EthereumSpokes.MAIN_SPOKE),
@@ -255,22 +270,47 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     );
   }
 
-  // -- Role labels --
-  // TODO: Uncomment once AccessManagerEnumerable is deployed (isRoleLabeled is not
-  // available on the base OZ AccessManager used in the current deployment).
-  //
-  // function test_allRolesAreLabeled() public view {
-  //   IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(AaveV4EthereumAddresses.ACCESS_MANAGER);
-  //   assertTrue(accessManager.isRoleLabeled(Roles.HUB_DOMAIN_ADMIN_ROLE), 'HUB_DOMAIN_ADMIN_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.HUB_CONFIGURATOR_ROLE), 'HUB_CONFIGURATOR_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.HUB_FEE_MINTER_ROLE), 'HUB_FEE_MINTER_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.HUB_DEFICIT_ELIMINATOR_ROLE), 'HUB_DEFICIT_ELIMINATOR_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE), 'HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.SPOKE_DOMAIN_ADMIN_ROLE), 'SPOKE_DOMAIN_ADMIN_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.SPOKE_CONFIGURATOR_ROLE), 'SPOKE_CONFIGURATOR_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.SPOKE_USER_POSITION_UPDATER_ROLE), 'SPOKE_USER_POSITION_UPDATER_ROLE not labeled');
-  //   assertTrue(accessManager.isRoleLabeled(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE), 'SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE not labeled');
-  // }
+  function test_allRolesAreLabeled() public view {
+    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
+      AaveV4EthereumAddresses.ACCESS_MANAGER
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.HUB_DOMAIN_ADMIN_ROLE),
+      'HUB_DOMAIN_ADMIN_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.HUB_CONFIGURATOR_ROLE),
+      'HUB_CONFIGURATOR_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.HUB_FEE_MINTER_ROLE),
+      'HUB_FEE_MINTER_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.HUB_DEFICIT_ELIMINATOR_ROLE),
+      'HUB_DEFICIT_ELIMINATOR_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE),
+      'HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.SPOKE_DOMAIN_ADMIN_ROLE),
+      'SPOKE_DOMAIN_ADMIN_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.SPOKE_CONFIGURATOR_ROLE),
+      'SPOKE_CONFIGURATOR_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.SPOKE_USER_POSITION_UPDATER_ROLE),
+      'SPOKE_USER_POSITION_UPDATER_ROLE not labeled'
+    );
+    assertTrue(
+      accessManager.isRoleLabeled(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE),
+      'SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE not labeled'
+    );
+  }
 
   // -- Tokenization Spoke proxy admin ownership → DAO --
   // TODO: Currently owned by Aave Labs multisig. Update once ownership is
@@ -329,8 +369,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
       uint256 assetCount = hub.getAssetCount();
       for (uint256 assetId; assetId < assetCount; ++assetId) {
         uint256 spokeCount = hub.getSpokeCount(assetId);
-        for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
-          address spoke = hub.getSpokeAddress(assetId, spokeIdx);
+        for (uint256 spokeId; spokeId < spokeCount; ++spokeId) {
+          address spoke = hub.getSpokeAddress(assetId, spokeId);
           IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
             address(hub),
             assetId,
@@ -343,14 +383,12 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     vm.stopPrank();
   }
 
-  // TODO: Switch to GovV3Helpers.executePayload once on mainnet with governance.
-  // Executes the payload as the executor via etch + delegatecall to match real
-  // AIP execution behavior (msg.sender = executor for downstream calls).
   function _executePayload() internal {
-    // Deploy payload code at the executor address and delegatecall execute()
-    vm.etch(GovernanceV3Ethereum.EXECUTOR_LVL_1, address(proposal).code);
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    AaveV4Ethereum_ActivateV4Ethereum_20260319(GovernanceV3Ethereum.EXECUTOR_LVL_1).execute();
+    GovV3Helpers.executePayload(
+      vm,
+      address(proposal),
+      address(GovV3Helpers.getPayloadsController(ChainIds.MAINNET))
+    );
   }
 
   // TODO: Remove once new deployed contracts have the correct configuration phase roles already set.
@@ -394,22 +432,36 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     // Spoke configurator domain admin role
     accessManager.grantRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, executor, 0);
 
-    // TODO: Label all roles once AccessManagerEnumerable is deployed.
     // ADMIN_ROLE = 0 cannot be labeled per OZ AccessManager.
-    // accessManager.labelRole(Roles.HUB_DOMAIN_ADMIN_ROLE, 'HUB_DOMAIN_ADMIN_ROLE');
-    // accessManager.labelRole(Roles.HUB_CONFIGURATOR_ROLE, 'HUB_CONFIGURATOR_ROLE');
-    // accessManager.labelRole(Roles.HUB_FEE_MINTER_ROLE, 'HUB_FEE_MINTER_ROLE');
-    // accessManager.labelRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, 'HUB_DEFICIT_ELIMINATOR_ROLE');
-    // accessManager.labelRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, 'HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE');
-    // accessManager.labelRole(Roles.SPOKE_DOMAIN_ADMIN_ROLE, 'SPOKE_DOMAIN_ADMIN_ROLE');
-    // accessManager.labelRole(Roles.SPOKE_CONFIGURATOR_ROLE, 'SPOKE_CONFIGURATOR_ROLE');
-    // accessManager.labelRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, 'SPOKE_USER_POSITION_UPDATER_ROLE');
-    // accessManager.labelRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, 'SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE');
+    accessManager.labelRole(Roles.HUB_DOMAIN_ADMIN_ROLE, 'HUB_DOMAIN_ADMIN_ROLE');
+    accessManager.labelRole(Roles.HUB_CONFIGURATOR_ROLE, 'HUB_CONFIGURATOR_ROLE');
+    accessManager.labelRole(Roles.HUB_FEE_MINTER_ROLE, 'HUB_FEE_MINTER_ROLE');
+    accessManager.labelRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, 'HUB_DEFICIT_ELIMINATOR_ROLE');
+    accessManager.labelRole(
+      Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
+      'HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE'
+    );
+    accessManager.labelRole(Roles.SPOKE_DOMAIN_ADMIN_ROLE, 'SPOKE_DOMAIN_ADMIN_ROLE');
+    accessManager.labelRole(Roles.SPOKE_CONFIGURATOR_ROLE, 'SPOKE_CONFIGURATOR_ROLE');
+    accessManager.labelRole(
+      Roles.SPOKE_USER_POSITION_UPDATER_ROLE,
+      'SPOKE_USER_POSITION_UPDATER_ROLE'
+    );
+    accessManager.labelRole(
+      Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
+      'SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE'
+    );
 
     vm.stopPrank();
   }
 
   function _assertExactRoleHolders(uint64 roleId, address[] memory expectedHolders) internal view {
+    for (uint256 i; i < expectedHolders.length; ++i) {
+      for (uint256 j = i + 1; j < expectedHolders.length; ++j) {
+        assertTrue(expectedHolders[i] != expectedHolders[j], 'Duplicate in expectedHolders');
+      }
+    }
+
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
     );
@@ -443,8 +495,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
   function _assertAllSpokesActiveOnHub(IHub hub) internal view {
     for (uint256 assetId; assetId < hub.getAssetCount(); ++assetId) {
       uint256 spokeCount = hub.getSpokeCount(assetId);
-      for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
-        address spoke = hub.getSpokeAddress(assetId, spokeIdx);
+      for (uint256 spokeId; spokeId < spokeCount; ++spokeId) {
+        address spoke = hub.getSpokeAddress(assetId, spokeId);
         IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spoke);
         assertTrue(config.active, 'Spoke should be active after execution');
       }
