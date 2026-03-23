@@ -7,7 +7,7 @@ import {IHubConfigurator} from './interfaces/IHubConfigurator.sol';
 import {AaveV4EthereumAddresses, AaveV4EthereumHubs} from './AaveV4EthereumAddresses.sol';
 
 /**
- * @title Aave V4 Ethereum - Activate Spokes
+ * @title Aave V4 Activation on Ethereum Mainnet
  * @author Aave Labs
  * - Discussion: https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293
  * - Snapshot: https://snapshot.org/#/s:aavedao.eth/proposal/0x55e85a32828da36122b9c8d50548696d7c748fd41c775f5bf06bdf0f2e32a265
@@ -22,7 +22,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319 is IProposalGenericExecutor 
   function _activateHub(IHub hub) internal {
     uint256 assetCount = hub.getAssetCount();
     for (uint256 assetId; assetId < assetCount; ++assetId) {
-      _activateAsset(hub, assetId);
+      _activateAsset({hub: hub, assetId: assetId});
     }
   }
 
@@ -31,12 +31,12 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319 is IProposalGenericExecutor 
 
     for (uint256 spokeId; spokeId < spokeCount; ++spokeId) {
       address spoke = hub.getSpokeAddress(assetId, spokeId);
-      IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
-        address(hub),
-        assetId,
-        spoke,
-        true
-      );
+      IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
+        hub: address(hub),
+        assetId: assetId,
+        spoke: spoke,
+        active: true
+      });
     }
   }
 }

@@ -14,7 +14,7 @@ pragma solidity ^0.8.0;
 ///   - SpokeConfigurator: 400-499
 library Roles {
   // AccessManager roles
-  uint64 public constant ACCESS_MANAGER_DEFAULT_ADMIN = 0;
+  uint64 public constant ACCESS_MANAGER_ADMIN_ROLE = 0;
 
   // Hub roles
   uint64 public constant HUB_DOMAIN_ADMIN_ROLE = 100;

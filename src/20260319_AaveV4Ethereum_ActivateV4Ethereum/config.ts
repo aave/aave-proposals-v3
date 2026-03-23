@@ -2,7 +2,7 @@ import {ConfigFile} from '../../generator/types';
 export const config: ConfigFile = {
   rootOptions: {
     pools: ['AaveV4Ethereum'],
-    title: 'Activate V4 Ethereum',
+    title: 'Aave V4 Activation on Ethereum Mainnet',
     shortName: 'ActivateV4Ethereum',
     date: '20260319',
     author: 'Aave Labs',

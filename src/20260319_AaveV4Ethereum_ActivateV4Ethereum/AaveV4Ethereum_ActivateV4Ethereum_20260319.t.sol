@@ -82,7 +82,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   // | Target             | Role                                   | ID  | Holder            |
   // |--------------------|----------------------------------------|-----|-------------------|
-  // | Access Manager     | ACCESS_MANAGER_DEFAULT_ADMIN           | 0   | DAO               |
+  // | Access Manager     | ACCESS_MANAGER_ADMIN_ROLE           | 0   | DAO               |
   // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | HubConfigurator   |
   // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | DAO               |
   // | Hub                | HUB_FEE_MINTER_ROLE                    | 102 | DAO               |
@@ -100,32 +100,32 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   // ---------------------------------------------------------------------------
 
   // TODO: Update these once final deployment addresses are confirmed.
-  address internal constant AAVE_LABS_MULTISIG = 0x7f1fa86B2D643dF2E27C61F72D2443D4F991A8F7;
-  address internal constant AAVE_LABS_DEPLOYER = 0x19eed38fdB33B11b24184C6a2aef5ba95E490c2E;
+  address internal constant SECURITY_COUNCIL = 0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9;
+  address internal constant DEPLOYER = 0xB00A89E5C8756bA8629846eEF8a4a9C71Ad1930A;
 
   function test_executorHasAccessManagerDefaultAdmin() public {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
     );
 
-    // Only DAO and Aave Labs multisig should have default admin
+    // Only DAO and Security Council should have default admin
     address[] memory expected = new address[](2);
-    expected[0] = AAVE_LABS_MULTISIG;
+    expected[0] = SECURITY_COUNCIL;
     expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-    _assertExactRoleHolders(Roles.ACCESS_MANAGER_DEFAULT_ADMIN, expected);
+    _assertExactRoleHolders(Roles.ACCESS_MANAGER_ADMIN_ROLE, expected);
 
     // Verify executor can grant the default admin role itself
     address randomAccount = address(0xBEEF);
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    accessManager.grantRole(Roles.ACCESS_MANAGER_DEFAULT_ADMIN, randomAccount, 0);
-    (bool granted, ) = accessManager.hasRole(Roles.ACCESS_MANAGER_DEFAULT_ADMIN, randomAccount);
+    accessManager.grantRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, randomAccount, 0);
+    (bool granted, ) = accessManager.hasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, randomAccount);
     assertTrue(granted, 'Default admin should be able to grant default admin role');
   }
 
   function test_hubConfiguratorHasHubConfiguratorRole() public {
-    // DAO, Aave Labs multisig, and HubConfigurator have hub configurator role
+    // DAO, Security Council, and HubConfigurator have hub configurator role
     address[] memory expected = new address[](3);
-    expected[0] = AAVE_LABS_MULTISIG;
+    expected[0] = SECURITY_COUNCIL;
     expected[1] = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_ROLE, expected);
@@ -171,7 +171,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   function test_executorHasHubFeeMinterRole() public {
     address[] memory expected = new address[](2);
-    expected[0] = AAVE_LABS_MULTISIG;
+    expected[0] = SECURITY_COUNCIL;
     expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_FEE_MINTER_ROLE, expected);
 
@@ -181,7 +181,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   function test_executorHasHubDeficitEliminatorRole() public {
     address[] memory expected = new address[](2);
-    expected[0] = AAVE_LABS_MULTISIG;
+    expected[0] = SECURITY_COUNCIL;
     expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, expected);
 
@@ -206,10 +206,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_executorHasHubConfiguratorDomainAdminRole() public {
-    // DAO, Aave Labs multisig, and deployer have hub configurator domain admin role
+    // DAO, Security Council, and deployer have hub configurator domain admin role
     address[] memory expected = new address[](3);
-    expected[0] = AAVE_LABS_MULTISIG;
-    expected[1] = AAVE_LABS_DEPLOYER;
+    expected[0] = SECURITY_COUNCIL;
+    expected[1] = DEPLOYER;
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
 
@@ -230,9 +230,9 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_spokeConfiguratorHasSpokeConfiguratorRole() public {
-    // DAO, Aave Labs multisig, and SpokeConfigurator have spoke configurator role
+    // DAO, Security Council, and SpokeConfigurator have spoke configurator role
     address[] memory expected = new address[](3);
-    expected[0] = AAVE_LABS_MULTISIG;
+    expected[0] = SECURITY_COUNCIL;
     expected[1] = AaveV4EthereumAddresses.SPOKE_CONFIGURATOR;
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.SPOKE_CONFIGURATOR_ROLE, expected);
@@ -248,7 +248,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   function test_executorHasSpokeUserPositionUpdaterRole() public {
     address[] memory expected = new address[](2);
-    expected[0] = AAVE_LABS_MULTISIG;
+    expected[0] = SECURITY_COUNCIL;
     expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, expected);
 
@@ -266,10 +266,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_executorHasSpokeConfiguratorDomainAdminRole() public {
-    // DAO, Aave Labs multisig, and deployer have spoke configurator domain admin role
+    // DAO, Security Council, and deployer have spoke configurator domain admin role
     address[] memory expected = new address[](3);
-    expected[0] = AAVE_LABS_MULTISIG;
-    expected[1] = AAVE_LABS_DEPLOYER;
+    expected[0] = SECURITY_COUNCIL;
+    expected[1] = DEPLOYER;
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
 
@@ -325,51 +325,51 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   // -- Tokenization Spoke proxy admin ownership → DAO --
-  // TODO: Currently owned by Aave Labs multisig. Update once ownership is
+  // TODO: Currently owned by Security Council. Update once ownership is
   // transferred to the DAO as part of the configuration phase.
   function test_tokenizationSpokeProxyAdminsOwnedByDAO() public view {
     // Core Hub
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WETH, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_wstETH, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_weETH, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_rsETH, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WBTC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_cbBTC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LBTC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDT, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LINK, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_AAVE, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_GHO, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_EURC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_RLUSD, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDG, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_frxUSD, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_XAUt, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WETH, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_wstETH, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_weETH, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_rsETH, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WBTC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_cbBTC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LBTC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDT, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LINK, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_AAVE, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_GHO, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_EURC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_RLUSD, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDG, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_frxUSD, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_XAUt, SECURITY_COUNCIL);
 
     // Plus Hub
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDT, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_GHO, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDe, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_sUSDe, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDT, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_GHO, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDe, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_sUSDe, SECURITY_COUNCIL);
     _assertProxyAdminOwner(
       AaveV4EthereumTokenizationSpokes.PLUS_PT_sUSDE_7MAY2026,
-      AAVE_LABS_MULTISIG
+      SECURITY_COUNCIL
     );
     _assertProxyAdminOwner(
       AaveV4EthereumTokenizationSpokes.PLUS_PT_USDe_7MAY2026,
-      AAVE_LABS_MULTISIG
+      SECURITY_COUNCIL
     );
 
     // Prime Hub
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WETH, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_wstETH, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WBTC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_cbBTC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDT, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDC, AAVE_LABS_MULTISIG);
-    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_GHO, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WETH, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_wstETH, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WBTC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_cbBTC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDT, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDC, SECURITY_COUNCIL);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_GHO, SECURITY_COUNCIL);
   }
 
   function _deactivateAllSpokes() internal {
@@ -405,7 +405,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   // TODO: Remove once new deployed contracts have the correct configuration phase roles already set.
   function _grantConfigurationPhaseRoles() internal {
-    address admin = AAVE_LABS_MULTISIG;
+    address admin = SECURITY_COUNCIL;
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
     );
@@ -413,7 +413,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
     vm.startPrank(admin);
     // Access manager default admin role
-    accessManager.grantRole(Roles.ACCESS_MANAGER_DEFAULT_ADMIN, executor, 0);
+    accessManager.grantRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, executor, 0);
 
     // Hub roles
     accessManager.grantRole(Roles.HUB_CONFIGURATOR_ROLE, executor, 0);
