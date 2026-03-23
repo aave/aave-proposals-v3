@@ -5,7 +5,7 @@ import {Test} from 'forge-std/Test.sol';
 import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 import {IHub} from './interfaces/IHub.sol';
 import {ISpoke} from './interfaces/ISpoke.sol';
-import {AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets} from './AaveV4EthereumAddresses.sol';
+import {AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets, AaveV4EthereumTokenizationSpokes} from './AaveV4EthereumAddresses.sol';
 
 /**
  * @dev Verifies Aave V4 Ethereum hub-spoke configuration matches the deployment spec.
@@ -13,7 +13,10 @@ import {AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets} from './
  */
 contract AaveV4Ethereum_HubSpokeConfiguration_20260319_Test is Test {
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 24693869);
+    // TODO: Switch back to vm.rpcUrl('mainnet') with a pinned block for final deployment
+    vm.createSelectFork(
+      'https://virtual.mainnet-aave.us-east.rpc.tenderly.co/38393fd3-0a79-4e60-b8cc-c6bb5903454a'
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -368,8 +371,228 @@ contract AaveV4Ethereum_HubSpokeConfiguration_20260319_Test is Test {
   }
 
   // ---------------------------------------------------------------------------
+  // Tokenization Spokes
+  // ---------------------------------------------------------------------------
+
+  function test_coreHubTokenizationSpokesListedAndActive() public view {
+    IHub hub = AaveV4EthereumHubs.CORE_HUB;
+
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.WETH_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_WETH,
+      'CORE_WETH'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.wstETH_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_wstETH,
+      'CORE_wstETH'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.weETH_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_weETH,
+      'CORE_weETH'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.rsETH_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_rsETH,
+      'CORE_rsETH'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.WBTC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_WBTC,
+      'CORE_WBTC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.cbBTC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_cbBTC,
+      'CORE_cbBTC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.LBTC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_LBTC,
+      'CORE_LBTC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.USDT_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_USDT,
+      'CORE_USDT'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.USDC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_USDC,
+      'CORE_USDC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.LINK_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_LINK,
+      'CORE_LINK'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.AAVE_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_AAVE,
+      'CORE_AAVE'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.GHO_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_GHO,
+      'CORE_GHO'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.EURC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.CORE_EURC,
+      'CORE_EURC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV4EthereumAssets.RLUSD,
+      AaveV4EthereumTokenizationSpokes.CORE_RLUSD,
+      'CORE_RLUSD'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV4EthereumAssets.USDG,
+      AaveV4EthereumTokenizationSpokes.CORE_USDG,
+      'CORE_USDG'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV4EthereumAssets.frxUSD,
+      AaveV4EthereumTokenizationSpokes.CORE_frxUSD,
+      'CORE_frxUSD'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV4EthereumAssets.XAUt,
+      AaveV4EthereumTokenizationSpokes.CORE_XAUt,
+      'CORE_XAUt'
+    );
+  }
+
+  function test_plusHubTokenizationSpokesListedAndActive() public view {
+    IHub hub = AaveV4EthereumHubs.PLUS_HUB;
+
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.USDT_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PLUS_USDT,
+      'PLUS_USDT'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.USDC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PLUS_USDC,
+      'PLUS_USDC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.GHO_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PLUS_GHO,
+      'PLUS_GHO'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.USDe_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PLUS_USDe,
+      'PLUS_USDe'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.sUSDe_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PLUS_sUSDe,
+      'PLUS_sUSDe'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV4EthereumAssets.PT_sUSDE_7MAY2026,
+      AaveV4EthereumTokenizationSpokes.PLUS_PT_sUSDE_7MAY2026,
+      'PLUS_PT_sUSDE'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV4EthereumAssets.PT_USDe_7MAY2026,
+      AaveV4EthereumTokenizationSpokes.PLUS_PT_USDe_7MAY2026,
+      'PLUS_PT_USDe'
+    );
+  }
+
+  function test_primeHubTokenizationSpokesListedAndActive() public view {
+    IHub hub = AaveV4EthereumHubs.PRIME_HUB;
+
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.WETH_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PRIME_WETH,
+      'PRIME_WETH'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.wstETH_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PRIME_wstETH,
+      'PRIME_wstETH'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.WBTC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PRIME_WBTC,
+      'PRIME_WBTC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.cbBTC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PRIME_cbBTC,
+      'PRIME_cbBTC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.USDT_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PRIME_USDT,
+      'PRIME_USDT'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.USDC_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PRIME_USDC,
+      'PRIME_USDC'
+    );
+    _assertTokenizationSpokeActive(
+      hub,
+      AaveV3EthereumAssets.GHO_UNDERLYING,
+      AaveV4EthereumTokenizationSpokes.PRIME_GHO,
+      'PRIME_GHO'
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  function _assertTokenizationSpokeActive(
+    IHub hub,
+    address underlying,
+    address tokenizationSpoke,
+    string memory name
+  ) internal view {
+    uint256 assetId = hub.getAssetId(underlying);
+    assertTrue(
+      hub.isSpokeListed(assetId, tokenizationSpoke),
+      string.concat(name, ' should be listed')
+    );
+    IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, tokenizationSpoke);
+    assertTrue(config.active, string.concat(name, ' should be active'));
+  }
 
   function _assertCollateralAndBorrowable(
     ISpoke spoke,

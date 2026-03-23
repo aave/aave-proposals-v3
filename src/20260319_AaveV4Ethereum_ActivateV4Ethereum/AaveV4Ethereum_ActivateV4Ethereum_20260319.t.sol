@@ -10,7 +10,7 @@ import {IHubConfigurator} from './interfaces/IHubConfigurator.sol';
 import {ISpoke} from './interfaces/ISpoke.sol';
 import {ISpokeConfigurator} from './interfaces/ISpokeConfigurator.sol';
 import {Roles} from './Roles.sol';
-import {AaveV4EthereumAddresses, AaveV4EthereumHubs, AaveV4EthereumSpokes} from './AaveV4EthereumAddresses.sol';
+import {AaveV4EthereumAddresses, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumTokenizationSpokes} from './AaveV4EthereumAddresses.sol';
 import {AaveV4Ethereum_ActivateV4Ethereum_20260319} from './AaveV4Ethereum_ActivateV4Ethereum_20260319.sol';
 
 /**
@@ -21,7 +21,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
   AaveV4Ethereum_ActivateV4Ethereum_20260319 internal proposal;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 24693869);
+    // TODO: Switch back to vm.rpcUrl('mainnet') once deployed to mainnet
+    vm.createSelectFork(
+      'https://virtual.mainnet-aave.us-east.rpc.tenderly.co/38393fd3-0a79-4e60-b8cc-c6bb5903454a'
+    );
     proposal = new AaveV4Ethereum_ActivateV4Ethereum_20260319();
 
     // TODO: Remove once new deployed contracts have the correct configuration phase
@@ -32,21 +35,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     // TODO: This is just for testing, remove when we have final deployed contracts
     // Deactivate all spokes so we start from a clean inactive state
     _deactivateAllSpokes();
-  }
-
-  function test_allSpokesActiveOnCoreHub() public {
-    GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.CORE_HUB);
-  }
-
-  function test_allSpokesActiveOnPlusHub() public {
-    GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PLUS_HUB);
-  }
-
-  function test_allSpokesActiveOnPrimeHub() public {
-    GovV3Helpers.executePayload(vm, address(proposal));
-    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PRIME_HUB);
   }
 
   function test_allSpokesInactiveBeforeExecution() public view {
@@ -63,6 +51,21 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
         }
       }
     }
+  }
+
+  function test_allSpokesActiveOnCoreHub() public {
+    _executePayload();
+    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.CORE_HUB);
+  }
+
+  function test_allSpokesActiveOnPlusHub() public {
+    _executePayload();
+    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PLUS_HUB);
+  }
+
+  function test_allSpokesActiveOnPrimeHub() public {
+    _executePayload();
+    _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PRIME_HUB);
   }
 
   // | Target             | Role                                   | ID  | Holder            |
@@ -85,8 +88,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
   // ---------------------------------------------------------------------------
 
   // TODO: Update these once final deployment addresses are confirmed.
-  address internal constant AAVE_LABS_MULTISIG = 0x9Fdf83e26ABb83d97424F5851F61601d9B8264e1;
-  address internal constant AAVE_LABS_DEPLOYER = 0xA972CCe333e8FC64CF10118DB2f98757617A9bC9;
+  address internal constant AAVE_LABS_MULTISIG = 0x7f1fa86B2D643dF2E27C61F72D2443D4F991A8F7;
+  address internal constant AAVE_LABS_DEPLOYER = 0x19eed38fdB33B11b24184C6a2aef5ba95E490c2E;
 
   function test_executorHasAccessManagerDefaultAdmin() public {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
@@ -216,11 +219,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
   }
 
   function test_executorHasAllSpokeRoles() public {
-    // DAO, Aave Labs multisig, and SpokeConfigurator have spoke user position updater role
-    address[] memory posUpdaterExpected = new address[](3);
+    // DAO and Aave Labs multisig have spoke user position updater role
+    address[] memory posUpdaterExpected = new address[](2);
     posUpdaterExpected[0] = AAVE_LABS_MULTISIG;
-    posUpdaterExpected[1] = AaveV4EthereumAddresses.SPOKE_CONFIGURATOR;
-    posUpdaterExpected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+    posUpdaterExpected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, posUpdaterExpected);
 
     // Test spoke user position updater role by updating user risk premium
@@ -270,28 +272,90 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
   //   assertTrue(accessManager.isRoleLabeled(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE), 'SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE not labeled');
   // }
 
-  // TODO: test_executorOwnsTokenizationSpoke
-  // Add once the tokenization spoke address is available.
+  // -- Tokenization Spoke proxy admin ownership → DAO --
+  // TODO: Currently owned by Aave Labs multisig. Update once ownership is
+  // transferred to the DAO as part of the configuration phase.
+  function test_tokenizationSpokeProxyAdminsOwnedByDAO() public view {
+    // Core Hub
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WETH, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_wstETH, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_weETH, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_rsETH, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_WBTC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_cbBTC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LBTC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDT, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_LINK, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_AAVE, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_GHO, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_EURC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_RLUSD, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_USDG, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_frxUSD, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.CORE_XAUt, AAVE_LABS_MULTISIG);
+
+    // Plus Hub
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDT, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_GHO, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_USDe, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PLUS_sUSDe, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(
+      AaveV4EthereumTokenizationSpokes.PLUS_PT_sUSDE_7MAY2026,
+      AAVE_LABS_MULTISIG
+    );
+    _assertProxyAdminOwner(
+      AaveV4EthereumTokenizationSpokes.PLUS_PT_USDe_7MAY2026,
+      AAVE_LABS_MULTISIG
+    );
+
+    // Prime Hub
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WETH, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_wstETH, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_WBTC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_cbBTC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDT, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_USDC, AAVE_LABS_MULTISIG);
+    _assertProxyAdminOwner(AaveV4EthereumTokenizationSpokes.PRIME_GHO, AAVE_LABS_MULTISIG);
+  }
 
   function _deactivateAllSpokes() internal {
     IHub[] memory hubs = AaveV4EthereumHubs.getHubs();
-    ISpoke[] memory spokes = AaveV4EthereumSpokes.getSpokes();
 
     vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     for (uint256 hubIdx; hubIdx < hubs.length; ++hubIdx) {
-      for (uint256 spokeIdx; spokeIdx < spokes.length; ++spokeIdx) {
-        IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).deactivateSpoke(
-          address(hubs[hubIdx]),
-          address(spokes[spokeIdx])
-        );
+      IHub hub = hubs[hubIdx];
+      uint256 assetCount = hub.getAssetCount();
+      for (uint256 assetId; assetId < assetCount; ++assetId) {
+        uint256 spokeCount = hub.getSpokeCount(assetId);
+        for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
+          address spoke = hub.getSpokeAddress(assetId, spokeIdx);
+          IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
+            address(hub),
+            assetId,
+            spoke,
+            false
+          );
+        }
       }
     }
     vm.stopPrank();
   }
 
+  // TODO: Switch to GovV3Helpers.executePayload once on mainnet with governance.
+  // Executes the payload as the executor via etch + delegatecall to match real
+  // AIP execution behavior (msg.sender = executor for downstream calls).
+  function _executePayload() internal {
+    // Deploy payload code at the executor address and delegatecall execute()
+    vm.etch(GovernanceV3Ethereum.EXECUTOR_LVL_1, address(proposal).code);
+    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    AaveV4Ethereum_ActivateV4Ethereum_20260319(GovernanceV3Ethereum.EXECUTOR_LVL_1).execute();
+  }
+
   // TODO: Remove once new deployed contracts have the correct configuration phase roles already set.
   function _grantConfigurationPhaseRoles() internal {
-    address admin = 0x9Fdf83e26ABb83d97424F5851F61601d9B8264e1;
+    address admin = AAVE_LABS_MULTISIG;
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
     );
@@ -363,6 +427,17 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
       }
       assertTrue(found, 'Expected role holder not found');
     }
+  }
+
+  /// @dev Reads the EIP-1967 admin slot to find the proxy admin, then checks its owner.
+  function _assertProxyAdminOwner(address proxy, address expectedOwner) internal view {
+    // EIP-1967 admin slot: bytes32(uint256(keccak256('eip1967.proxy.admin')) - 1)
+    bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+    address proxyAdmin = address(uint160(uint256(vm.load(proxy, adminSlot))));
+    (bool success, bytes memory data) = proxyAdmin.staticcall(abi.encodeWithSignature('owner()'));
+    require(success, 'owner() call failed on proxy admin');
+    address owner = abi.decode(data, (address));
+    assertEq(owner, expectedOwner, 'Proxy admin owner mismatch');
   }
 
   function _assertAllSpokesActiveOnHub(IHub hub) internal view {
