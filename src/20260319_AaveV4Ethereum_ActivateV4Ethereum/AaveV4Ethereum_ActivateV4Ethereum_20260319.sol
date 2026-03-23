@@ -29,8 +29,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319 is IProposalGenericExecutor 
   function _activateAsset(IHub hub, uint256 assetId) internal {
     uint256 spokeCount = hub.getSpokeCount(assetId);
 
-    for (uint256 spokeIdx; spokeIdx < spokeCount; ++spokeIdx) {
-      address spoke = hub.getSpokeAddress(assetId, spokeIdx);
+    for (uint256 spokeId; spokeId < spokeCount; ++spokeId) {
+      address spoke = hub.getSpokeAddress(assetId, spokeId);
       IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
         address(hub),
         assetId,
