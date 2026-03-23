@@ -21,16 +21,17 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   AaveV4Ethereum_ActivateV4Ethereum_20260319 internal proposal;
 
   function setUp() public {
-    // TODO: Switch back to vm.rpcUrl('mainnet') once deployed to mainnet
-    vm.createSelectFork(
-      'https://virtual.mainnet-aave.us-east.rpc.tenderly.co/38393fd3-0a79-4e60-b8cc-c6bb5903454a'
-    );
+    // TODO: Try tests on mainnet deployed addresses when they are ready
+    vm.createSelectFork(vm.rpcUrl('mainnet'));
     proposal = new AaveV4Ethereum_ActivateV4Ethereum_20260319();
 
     // TODO: Remove once new deployed contracts have the correct configuration phase
     // roles already set. These grants simulate the configuration that will be done
     // outside the AIP before it executes.
     _grantConfigurationPhaseRoles();
+
+    // TODO: Remove once deployer roles are revoked on the deployed contracts
+    _revokeDeployerRoles();
 
     // TODO: This is just for testing, remove when we have final deployed contracts
     // Deactivate all spokes so we start from a clean inactive state
@@ -103,7 +104,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   address internal constant SECURITY_COUNCIL = 0x7f1fa86B2D643dF2E27C61F72D2443D4F991A8F7;
   address internal constant DEPLOYER = 0x19eed38fdB33B11b24184C6a2aef5ba95E490c2E;
 
-  function test_executorHasAccessManagerDefaultAdmin() public {
+  function test_AccessManagerAdminRole() public {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
     );
@@ -206,11 +207,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_executorHasHubConfiguratorDomainAdminRole() public {
-    // DAO, Security Council, and deployer have hub configurator domain admin role
-    address[] memory expected = new address[](3);
+    // DAO and Security Council have hub configurator domain admin role
+    address[] memory expected = new address[](2);
     expected[0] = SECURITY_COUNCIL;
-    expected[1] = DEPLOYER; // TODO: Remove when deployer roles are revoked
-    expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
 
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
@@ -266,11 +266,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_executorHasSpokeConfiguratorDomainAdminRole() public {
-    // DAO, Security Council, and deployer have spoke configurator domain admin role
-    address[] memory expected = new address[](3);
+    // DAO and Security Council have spoke configurator domain admin role
+    address[] memory expected = new address[](2);
     expected[0] = SECURITY_COUNCIL;
-    expected[1] = DEPLOYER; // TODO: Remove when deployer roles are revoked
-    expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+    expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
 
     // Test spoke configurator domain admin role by calling updatePaused via executor
@@ -401,6 +400,18 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
       address(proposal),
       address(GovV3Helpers.getPayloadsController(ChainIds.MAINNET))
     );
+  }
+
+  // TODO: Remove once deployer roles are revoked on the deployed contracts
+  function _revokeDeployerRoles() internal {
+    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
+      AaveV4EthereumAddresses.ACCESS_MANAGER
+    );
+
+    vm.startPrank(SECURITY_COUNCIL);
+    accessManager.revokeRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, DEPLOYER);
+    accessManager.revokeRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, DEPLOYER);
+    vm.stopPrank();
   }
 
   // TODO: Remove once new deployed contracts have the correct configuration phase roles already set.
