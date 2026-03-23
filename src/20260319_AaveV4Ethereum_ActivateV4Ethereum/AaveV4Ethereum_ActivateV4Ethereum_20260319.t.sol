@@ -100,8 +100,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   // ---------------------------------------------------------------------------
 
   // TODO: Update these once final deployment addresses are confirmed.
-  address internal constant SECURITY_COUNCIL = 0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9;
-  address internal constant DEPLOYER = 0xB00A89E5C8756bA8629846eEF8a4a9C71Ad1930A;
+  address internal constant SECURITY_COUNCIL = 0x7f1fa86B2D643dF2E27C61F72D2443D4F991A8F7;
+  address internal constant DEPLOYER = 0x19eed38fdB33B11b24184C6a2aef5ba95E490c2E;
 
   function test_executorHasAccessManagerDefaultAdmin() public {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
@@ -179,7 +179,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     AaveV4EthereumHubs.CORE_HUB.mintFeeShares(0);
   }
 
-  function test_executorHasHubDeficitEliminatorRole() public {
+  function test_HubDeficitEliminatorRole() public {
     address[] memory expected = new address[](2);
     expected[0] = SECURITY_COUNCIL;
     expected[1] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
@@ -209,7 +209,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     // DAO, Security Council, and deployer have hub configurator domain admin role
     address[] memory expected = new address[](3);
     expected[0] = SECURITY_COUNCIL;
-    expected[1] = DEPLOYER;
+    expected[1] = DEPLOYER; // TODO: Remove when deployer roles are revoked
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
 
@@ -269,7 +269,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     // DAO, Security Council, and deployer have spoke configurator domain admin role
     address[] memory expected = new address[](3);
     expected[0] = SECURITY_COUNCIL;
-    expected[1] = DEPLOYER;
+    expected[1] = DEPLOYER; // TODO: Remove when deployer roles are revoked
     expected[2] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
     _assertExactRoleHolders(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, expected);
 
