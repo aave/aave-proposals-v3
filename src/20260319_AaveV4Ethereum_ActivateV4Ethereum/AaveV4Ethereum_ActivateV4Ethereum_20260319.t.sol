@@ -34,7 +34,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   /**
-   * @dev executes the generic test suite including e2e and config snapshots
+   * @dev executes the generic test suite including e2e
    */
   function test_defaultProposalExecution() public {
     _executePayload();
