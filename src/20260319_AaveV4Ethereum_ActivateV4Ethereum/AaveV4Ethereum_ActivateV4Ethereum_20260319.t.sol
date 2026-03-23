@@ -279,6 +279,48 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertTrue(configAfter.paused, 'Reserve should be paused after');
   }
 
+  function test_hasRole_AccessManagerAdminRole() public view {
+    _assertHasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, SECURITY_COUNCIL);
+  }
+
+  function test_hasRole_HubConfiguratorRole() public view {
+    _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, SECURITY_COUNCIL);
+    _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, AaveV4EthereumAddresses.HUB_CONFIGURATOR);
+  }
+
+  function test_hasRole_HubFeeMinterRole() public view {
+    _assertHasRole(Roles.HUB_FEE_MINTER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.HUB_FEE_MINTER_ROLE, SECURITY_COUNCIL);
+  }
+
+  function test_hasRole_HubDeficitEliminatorRole() public view {
+    _assertHasRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, SECURITY_COUNCIL);
+  }
+
+  function test_hasRole_HubConfiguratorDomainAdminRole() public view {
+    _assertHasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, SECURITY_COUNCIL);
+  }
+
+  function test_hasRole_SpokeConfiguratorRole() public view {
+    _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, SECURITY_COUNCIL);
+    _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, AaveV4EthereumAddresses.SPOKE_CONFIGURATOR);
+  }
+
+  function test_hasRole_SpokeUserPositionUpdaterRole() public view {
+    _assertHasRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, SECURITY_COUNCIL);
+  }
+
+  function test_hasRole_SpokeConfiguratorDomainAdminRole() public view {
+    _assertHasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertHasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, SECURITY_COUNCIL);
+  }
+
   function test_allRolesAreLabeled() public view {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
@@ -456,6 +498,14 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     }
 
     _assertExactRoleHolders(roleId, expected);
+  }
+
+  function _assertHasRole(uint64 roleId, address account) internal view {
+    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
+      AaveV4EthereumAddresses.ACCESS_MANAGER
+    );
+    (bool hasRole, ) = accessManager.hasRole(roleId, account);
+    assertTrue(hasRole, 'Expected account to have role');
   }
 
   function _assertExactRoleHolders(uint64 roleId, address[] memory expectedHolders) internal view {
