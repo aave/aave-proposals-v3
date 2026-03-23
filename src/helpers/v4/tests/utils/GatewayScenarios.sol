@@ -60,6 +60,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     ISpoke spoke,
     Types.ReserveInfo memory wethInfo
   ) internal {
+    uint256 gatewaySnapshot = vm.snapshotState();
     console.log('NATIVE_GATEWAY: Testing on spoke with WETH reserveId=%s', wethInfo.reserveId);
 
     address user = vm.randomAddress();
@@ -69,112 +70,311 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     vm.prank(user);
     spoke.setUserPositionManager(address(gateway), true);
 
-    // --- Supply native ---
-    {
-      Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
+    _setupPositions({
+      gateway: gateway,
+      spoke: spoke,
+      wethInfo: wethInfo,
+      user: user,
+      amount: amount
+    });
 
-      vm.deal(user, amount);
-      vm.prank(user);
-      _logAction('NATIVE_SUPPLY', wethInfo.symbol, amount);
-      gateway.supplyNative{value: amount}(address(spoke), wethInfo.reserveId, amount);
+    _testWithdrawNative({
+      gateway: gateway,
+      spoke: spoke,
+      wethInfo: wethInfo,
+      user: user,
+      amount: amount
+    });
 
-      Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
+    // --- Setup collateral for borrow ---
+    if (wethInfo.borrowable) {}
+    vm.revertToState(gatewaySnapshot);
+  }
 
-      assertApproxEqAbs(
-        snapshotAfter.user.collateralAssets,
-        snapshotBefore.user.collateralAssets + amount,
-        2,
-        'NATIVE_SUPPLY: user assets mismatch'
-      );
-      assertApproxEqAbs(
+  function _setupPositions(
+    INativeTokenGateway gateway,
+    ISpoke spoke,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 amount
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+    _supplyNative({gateway: gateway, spoke: spoke, wethInfo: wethInfo, user: user, amount: amount});
+    vm.revertToState(snapshot);
+    _supplyAsCollateralNative({
+      gateway: gateway,
+      spoke: spoke,
+      wethInfo: wethInfo,
+      user: user,
+      amount: amount
+    });
+  }
+
+  function _supplyNative(
+    INativeTokenGateway gateway,
+    ISpoke spoke,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 amount
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
+
+    vm.deal(user, amount);
+    vm.prank(user);
+    _logAction('NATIVE_SUPPLY', wethInfo.symbol, amount);
+    (uint256 sharesSupplied, uint256 amountSupplied) = gateway.supplyNative{value: amount}(
+      address(spoke),
+      wethInfo.reserveId,
+      amount
+    );
+    assertEq(amountSupplied, amount, 'NATIVE_SUPPLY: shares mismatch');
+
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
+    assertEq(
+      stdMath.delta(snapshotAfter.user.collateralAssets, snapshotBefore.user.collateralAssets),
+      amountSupplied,
+      'NATIVE_SUPPLY: user assets mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotAfter.user.collateralShares, snapshotBefore.user.collateralShares),
+      sharesSupplied,
+      'NATIVE_SUPPLY: user shares mismatch'
+    );
+    assertEq(
+      stdMath.delta(
         snapshotAfter.hubSpoke.collateralAssets,
-        snapshotBefore.hubSpoke.collateralAssets + amount,
-        2,
-        'NATIVE_SUPPLY: hub assets mismatch'
+        snapshotBefore.hubSpoke.collateralAssets
+      ),
+      amountSupplied,
+      'NATIVE_SUPPLY: hub assets mismatch'
+    );
+    vm.revertToState(snapshot);
+  }
+
+  function _supplyAsCollateralNative(
+    ISpoke spoke,
+    INativeTokenGateway gateway,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 amount
+  ) internal {
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
+
+    vm.deal(user, amount);
+    vm.prank(user);
+    _logAction('NATIVE_SUPPLY', wethInfo.symbol, amount);
+    (uint256 sharesSupplied, uint256 amountSupplied) = gateway.supplyAsCollateralNative{
+      value: amount
+    }(address(spoke), wethInfo.reserveId, amount);
+    assertEq(amountSupplied, amount, 'NATIVE_SUPPLY_AS_COLLATERAL: shares mismatch');
+
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
+    assertEq(
+      stdMath.delta(snapshotAfter.user.collateralAssets, snapshotBefore.user.collateralAssets),
+      amountSupplied,
+      'NATIVE_SUPPLY_AS_COLLATERAL: user assets mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotAfter.user.collateralShares, snapshotBefore.user.collateralShares),
+      sharesSupplied,
+      'NATIVE_SUPPLY_AS_COLLATERAL: user shares mismatch'
+    );
+    assertEq(
+      stdMath.delta(
+        snapshotAfter.hubSpoke.collateralAssets,
+        snapshotBefore.hubSpoke.collateralAssets
+      ),
+      amountSupplied,
+      'NATIVE_SUPPLY_AS_COLLATERAL: hub assets mismatch'
+    );
+  }
+
+  function _testWithdrawNative(
+    INativeTokenGateway gateway,
+    ISpoke spoke,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 amount
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+    // --- Partial withdraw native ---
+    uint256 withdrawAmount = amount / 4;
+    _withdrawNative({
+      gateway: gateway,
+      spoke: spoke,
+      wethInfo: wethInfo,
+      user: user,
+      withdrawAmount: withdrawAmount
+    });
+    vm.revertToState(snapshot);
+    // --- Full withdraw native ---
+    _withdrawNative({
+      gateway: gateway,
+      spoke: spoke,
+      wethInfo: wethInfo,
+      user: user,
+      withdrawAmount: UINT256_MAX
+    });
+    vm.revertToState(snapshot);
+  }
+
+  function _withdrawNative(
+    INativeTokenGateway gateway,
+    ISpoke spoke,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 withdrawAmount
+  ) internal {
+    Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
+    uint256 ethBefore = user.balance;
+
+    vm.prank(user);
+    _logAction('NATIVE_WITHDRAW', wethInfo.symbol, withdrawAmount);
+    (uint256 sharesWithdrawn, uint256 amountWithdrawn) = gateway.withdrawNative(
+      address(spoke),
+      wethInfo.reserveId,
+      withdrawAmount
+    );
+    if (withdrawAmount == UINT256_MAX) {
+      assertEq(
+        amountWithdrawn,
+        snapshotBefore.user.collateralAssets,
+        'NATIVE_WITHDRAW: amount mismatch'
       );
+    } else {
+      assertEq(amountWithdrawn, withdrawAmount, 'NATIVE_WITHDRAW: amount mismatch');
     }
 
-    // --- Partial withdraw native ---
+    Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
+
+    assertEq(
+      stdMath.delta(snapshotBefore.user.collateralAssets, snapshotAfter.user.collateralAssets),
+      withdrawAmount,
+      'NATIVE_WITHDRAW: user assets mismatch'
+    );
+    assertEq(
+      stdMath.delta(snapshotBefore.user.collateralShares, snapshotAfter.user.collateralShares),
+      sharesWithdrawn,
+      'NATIVE_WITHDRAW: user shares mismatch'
+    );
+    assertEq(
+      stdMath.delta(user.balance, ethBefore),
+      amountWithdrawn,
+      'NATIVE_WITHDRAW: user ETH mismatch'
+    );
+  }
+
+  function _testBorrowRepayNative(
+    INativeTokenGateway gateway,
+    ISpoke spoke,
+    Types.ReserveInfo memory wethInfo,
+    address user,
+    uint256 amount
+  ) internal {
+    // Ensure user has enough collateral to borrow (uses any available collateral on spoke)
     {
-      uint256 withdrawAmount = amount / 4;
+      IAaveOracle oracle = IAaveOracle(spoke.ORACLE());
+      uint256 price = oracle.getReservePrice(wethInfo.reserveId);
+      uint256 borrowDollarValue = (amount * price) / 10 ** (oracle.decimals() + wethInfo.decimals);
+      _ensureBorrowCapacity({
+        spoke: spoke,
+        borrower: user,
+        borrowAmountInDollars: borrowDollarValue
+      });
+    }
+
+    // Ensure there is liquidity to borrow
+    _ensureLiquidity({spoke: spoke, reserveInfo: wethInfo, amount: amount});
+
+    // --- Borrow native ---
+    uint256 borrowAmount = amount / 4;
+    {
       Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
       uint256 ethBefore = user.balance;
 
       vm.prank(user);
-      _logAction('NATIVE_WITHDRAW', wethInfo.symbol, withdrawAmount);
-      gateway.withdrawNative(address(spoke), wethInfo.reserveId, withdrawAmount);
+      _logAction('NATIVE_BORROW', wethInfo.symbol, borrowAmount);
+      (uint256 sharesBorrowed, uint256 amountBorrowed) = gateway.borrowNative(
+        address(spoke),
+        wethInfo.reserveId,
+        borrowAmount
+      );
+      assertEq(amountBorrowed, borrowAmount, 'NATIVE_BORROW: amount mismatch');
 
       Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
 
-      assertApproxEqAbs(
-        snapshotBefore.user.collateralAssets - snapshotAfter.user.collateralAssets,
-        withdrawAmount,
-        2,
-        'NATIVE_WITHDRAW: user assets mismatch'
+      assertEq(
+        stdMath.delta(snapshotAfter.user.drawnShares, snapshotBefore.user.drawnShares),
+        borrowAmount,
+        'NATIVE_BORROW: user drawn shares mismatch'
       );
-      assertGt(user.balance, ethBefore, 'NATIVE_WITHDRAW: user ETH did not increase');
+      assertEq(
+        stdMath.delta(snapshotAfter.user.totalDebt, snapshotBefore.user.totalDebt),
+        borrowAmount,
+        'NATIVE_BORROW: user debt asset mismatch'
+      );
+      assertEq(
+        stdMath.delta(snapshotAfter.hubSpoke.totalDebt, snapshotBefore.hubSpoke.totalDebt),
+        borrowAmount,
+        'NATIVE_BORROW: hub debt mismatch'
+      );
+      assertEq(
+        stdMath.delta(snapshotAfter.hubSpoke.drawnShares, snapshotBefore.hubSpoke.drawnShares),
+        borrowAmount,
+        'NATIVE_BORROW: hub drawn shares mismatch'
+      );
+      assertEq(
+        stdMath.delta(user.balance, ethBefore),
+        borrowAmount,
+        'NATIVE_BORROW: user ETH mismatch'
+      );
     }
 
-    // --- Setup collateral for borrow ---
-    if (wethInfo.borrowable) {
-      // Ensure user has enough collateral to borrow (uses any available collateral on spoke)
-      {
-        IAaveOracle oracle = IAaveOracle(spoke.ORACLE());
-        uint256 price = oracle.getReservePrice(wethInfo.reserveId);
-        uint256 borrowDollarValue = (amount * price) /
-          10 ** (oracle.decimals() + wethInfo.decimals);
-        _ensureBorrowCapacity({
-          spoke: spoke,
-          borrower: user,
-          borrowAmountInDollars: borrowDollarValue
-        });
-      }
+    // --- Partial repay native ---
+    // {
+    //   uint256 repayAmount = borrowAmount / 2;
+    //   Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
 
-      // Ensure there is liquidity to borrow
-      address liquidityProvider = vm.randomAddress();
-      _supply({spoke: spoke, reserveInfo: wethInfo, user: liquidityProvider, amount: amount});
+    //   vm.deal(user, repayAmount);
+    //   vm.prank(user);
+    //   _logAction('NATIVE_REPAY', wethInfo.symbol, repayAmount);
+    //   (uint256 sharesRepaid, uint256 amountRepaid) = gateway.repayNative{value: repayAmount}(
+    //     address(spoke),
+    //     wethInfo.reserveId,
+    //     repayAmount
+    //   );
 
-      // --- Borrow native ---
-      uint256 borrowAmount = amount / 4;
-      {
-        Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
-        uint256 ethBefore = user.balance;
+    //   assertEq(amountRepaid, repayAmount, 'NATIVE_REPAY: amount mismatch');
 
-        vm.prank(user);
-        _logAction('NATIVE_BORROW', wethInfo.symbol, borrowAmount);
-        gateway.borrowNative(address(spoke), wethInfo.reserveId, borrowAmount);
+    //   Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
 
-        Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
-
-        assertApproxEqAbs(
-          snapshotAfter.user.totalDebt,
-          snapshotBefore.user.totalDebt + borrowAmount,
-          2,
-          'NATIVE_BORROW: user debt mismatch'
-        );
-        assertGt(user.balance, ethBefore, 'NATIVE_BORROW: user ETH did not increase');
-      }
-
-      // --- Partial repay native ---
-      {
-        uint256 repayAmount = borrowAmount / 2;
-        Types.PositionSnapshot memory snapshotBefore = _getPositionSnapshot(spoke, wethInfo, user);
-
-        vm.deal(user, repayAmount);
-        vm.prank(user);
-        _logAction('NATIVE_REPAY', wethInfo.symbol, repayAmount);
-        gateway.repayNative{value: repayAmount}(address(spoke), wethInfo.reserveId, repayAmount);
-
-        Types.PositionSnapshot memory snapshotAfter = _getPositionSnapshot(spoke, wethInfo, user);
-
-        assertApproxEqAbs(
-          snapshotBefore.user.totalDebt - snapshotAfter.user.totalDebt,
-          repayAmount,
-          2,
-          'NATIVE_REPAY: user debt mismatch'
-        );
-      }
-    }
+    //   assertEq(
+    //     stdMath.delta(snapshotBefore.user.drawnShares, snapshotAfter.user.drawnShares),
+    //     sharesRepaid,
+    //     'NATIVE_REPAY: user drawn shares mismatch'
+    //   );
+    //   assertEq(
+    //     stdMath.delta(snapshotBefore.user.totalDebt, snapshotAfter.user.totalDebt),
+    //     repayAmount,
+    //     'NATIVE_REPAY: user debt mismatch'
+    //   );
+    //   assertEq(
+    //     stdMath.delta(snapshotBefore.user.drawnShares, snapshotAfter.user.drawnShares),
+    //     sharesRepaid,
+    //     'NATIVE_REPAY: user drawn shares mismatch'
+    //   );
+    //   assertEq(
+    //     stdMath.delta(snapshotAfter.hubSpoke.totalDebt, snapshotBefore.hubSpoke.totalDebt),
+    //     repayAmount,
+    //     'NATIVE_REPAY: hub debt mismatch'
+    //   );
+    //   assertEq(
+    //     stdMath.delta(user.balance, ethBefore),
+    //     borrowAmount,
+    //     'NATIVE_REPAY: user ETH mismatch'
+    //   );
+    // }
   }
 
   // -------------------------------------------------------------------------

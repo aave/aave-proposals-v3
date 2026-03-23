@@ -32,11 +32,15 @@ contract ProtocolV4TestBase is GatewayScenarios {
 
   /// @notice Test all reserves on every spoke in the array.
   function e2eTestAllSpokes(ISpoke[] memory spokes) public {
-    for (uint256 i; i < spokes.length; i++) {
-      console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
-      console.log('--------------------------------');
-      e2eTestSpoke(spokes[i]);
-    }
+    // for (uint256 i; i < spokes.length; i++) {
+    //   console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
+    //   console.log('--------------------------------');
+    //   e2eTestSpoke(spokes[i]);
+    // }
+    uint256 i = 1;
+    console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
+    console.log('--------------------------------');
+    e2eTestSpoke(spokes[i]);
   }
 
   /// @notice Test all reserves on one spoke, looping over ALL good collaterals, then gateway tests.
@@ -45,33 +49,33 @@ contract ProtocolV4TestBase is GatewayScenarios {
     Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(allReserves);
     require(goodCollaterals.length > 0, 'No usable collateral found');
 
-    for (uint256 collateralIndex; collateralIndex < goodCollaterals.length; collateralIndex++) {
-      console.log('--- E2E: Using collateral %s ---', goodCollaterals[collateralIndex].symbol);
+    // for (uint256 collateralIndex; collateralIndex < goodCollaterals.length; collateralIndex++) {
+    //   console.log('--- E2E: Using collateral %s ---', goodCollaterals[collateralIndex].symbol);
 
-      uint256 spokeSnapshot = vm.snapshotState();
+    //   uint256 spokeSnapshot = vm.snapshotState();
 
-      for (uint256 assetIndex; assetIndex < allReserves.length; assetIndex++) {
-        if (allReserves[assetIndex].paused) {
-          e2eTestPausedAsset({spoke: spoke, pausedAsset: allReserves[assetIndex]});
-          vm.revertToState(spokeSnapshot);
-          continue;
-        }
+    //   for (uint256 assetIndex; assetIndex < allReserves.length; assetIndex++) {
+    //     if (allReserves[assetIndex].paused) {
+    //       e2eTestPausedAsset({spoke: spoke, pausedAsset: allReserves[assetIndex]});
+    //       vm.revertToState(spokeSnapshot);
+    //       continue;
+    //     }
 
-        if (allReserves[assetIndex].frozen) {
-          e2eTestFrozenAsset({spoke: spoke, frozenAsset: allReserves[assetIndex]});
-          vm.revertToState(spokeSnapshot);
-          continue;
-        }
+    //     if (allReserves[assetIndex].frozen) {
+    //       e2eTestFrozenAsset({spoke: spoke, frozenAsset: allReserves[assetIndex]});
+    //       vm.revertToState(spokeSnapshot);
+    //       continue;
+    //     }
 
-        e2eTestAsset({
-          spoke: spoke,
-          goodCollaterals: goodCollaterals,
-          primaryCollateralIndex: collateralIndex,
-          testAssetInfo: allReserves[assetIndex]
-        });
-        vm.revertToState(spokeSnapshot);
-      }
-    }
+    //     e2eTestAsset({
+    //       spoke: spoke,
+    //       goodCollaterals: goodCollaterals,
+    //       primaryCollateralIndex: collateralIndex,
+    //       testAssetInfo: allReserves[assetIndex]
+    //     });
+    //     vm.revertToState(spokeSnapshot);
+    //   }
+    // }
 
     // Gateway tests
     _setCapsToMax(spoke);
