@@ -33,19 +33,6 @@ contract AaveV4Ethereum_HubSpokeConfiguration_20260319_Test is Test {
     );
   }
 
-  // TODO: Remove once new deployed contracts have the correct configuration phase roles already set.
-  function _grantConfigurationPhaseRoles() internal {
-    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
-      AaveV4EthereumAddresses.ACCESS_MANAGER
-    );
-    address executor = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-
-    vm.startPrank(DEPLOYER);
-    accessManager.grantRole(Roles.HUB_CONFIGURATOR_ROLE, executor, 0);
-    accessManager.grantRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, executor, 0);
-    vm.stopPrank();
-  }
-
   // ---------------------------------------------------------------------------
   // Core Hub Spokes
   // ---------------------------------------------------------------------------
@@ -605,6 +592,19 @@ contract AaveV4Ethereum_HubSpokeConfiguration_20260319_Test is Test {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  // TODO: Remove once new deployed contracts have the correct configuration phase roles already set.
+  function _grantConfigurationPhaseRoles() internal {
+    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
+      AaveV4EthereumAddresses.ACCESS_MANAGER
+    );
+    address executor = GovernanceV3Ethereum.EXECUTOR_LVL_1;
+
+    vm.startPrank(DEPLOYER);
+    accessManager.grantRole(Roles.HUB_CONFIGURATOR_ROLE, executor, 0);
+    accessManager.grantRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, executor, 0);
+    vm.stopPrank();
+  }
 
   function _assertTokenizationSpokeActive(
     IHub hub,
