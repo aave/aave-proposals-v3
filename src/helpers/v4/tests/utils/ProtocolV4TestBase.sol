@@ -9,7 +9,7 @@ import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IH
 import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITokenizationSpoke.sol';
 import {INativeTokenGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/INativeTokenGateway.sol';
 import {ISignatureGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISignatureGateway.sol';
-import {AaveV4EthereumPositionManagers} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
+import {AaveV4EthereumPositionManagers, AaveV4EthereumTokenizationSpokes} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
 import {Types} from './Types.sol';
 import {GatewayScenarios} from './GatewayScenarios.sol';
 
@@ -26,9 +26,11 @@ contract ProtocolV4TestBase is GatewayScenarios {
   function defaultTest(
     string memory /* reportName */,
     ISpoke[] memory spokes,
+    address[] memory tokenizationSpokes,
     address /* payload */
   ) public {
     e2eTestAllSpokes(spokes);
+    e2eTestAllTokenizationSpokes(tokenizationSpokes);
   }
 
   /// @notice Test all reserves on every spoke in the array.
@@ -284,9 +286,6 @@ contract ProtocolV4TestBase is GatewayScenarios {
   /// @notice Test all tokenization spokes in the array.
   function e2eTestAllTokenizationSpokes(address[] memory tokenizationSpokes) public {
     for (uint256 i; i < tokenizationSpokes.length; i++) {
-      if (tokenizationSpokes[i] == address(0)) {
-        continue;
-      }
       console.log('--- E2E: Testing tokenization spoke %s ---', tokenizationSpokes[i]);
       console.log('------------------------------------------');
       e2eTestTokenizationSpoke(ITokenizationSpoke(tokenizationSpokes[i]));
@@ -298,33 +297,46 @@ contract ProtocolV4TestBase is GatewayScenarios {
     Types.ReserveInfo memory reserveInfo = _getTokenizationReserveInfo(tokenizationSpoke);
     console.log('E2E: TokenizationSpoke asset: %s', reserveInfo.symbol);
 
-    uint256 snap;
+    uint256 snapshot = vm.snapshotState();
 
-    snap = vm.snapshotState();
     _testTokenizationAddCap(tokenizationSpoke, reserveInfo);
-    vm.revertToState(snap);
+    vm.revertToState(snapshot);
 
-    // Remove addCap for the rest of the tests
-    _setTokenizationCapsToMax(tokenizationSpoke);
+    uint256 addCap = IHub(reserveInfo.hub)
+      .getSpokeConfig(reserveInfo.assetId, address(tokenizationSpoke))
+      .addCap;
+    if (addCap == 0) {
+      console.log('E2E: Skipping tokenization spoke %s (addCap is 0)', reserveInfo.symbol);
+      return;
+    }
+    uint256 maxAddAmount = uint256(addCap) * 10 ** reserveInfo.decimals;
 
-    snap = vm.snapshotState();
-    _testTokenizationDepositWithdraw(tokenizationSpoke, reserveInfo);
-    vm.revertToState(snap);
+    _testTokenizationDepositWithdraw({
+      tokenizationSpoke: tokenizationSpoke,
+      reserveInfo: reserveInfo,
+      maxAddAmount: maxAddAmount
+    });
+    vm.revertToState(snapshot);
 
-    snap = vm.snapshotState();
-    _testTokenizationMintRedeem(tokenizationSpoke, reserveInfo);
-    vm.revertToState(snap);
+    _testTokenizationMintRedeem({
+      tokenizationSpoke: tokenizationSpoke,
+      reserveInfo: reserveInfo,
+      maxAddAmount: maxAddAmount
+    });
+    vm.revertToState(snapshot);
 
-    snap = vm.snapshotState();
-    _testTokenizationPreviewConsistency(tokenizationSpoke, reserveInfo);
-    vm.revertToState(snap);
+    _testTokenizationPermitDeposit({
+      tokenizationSpoke: tokenizationSpoke,
+      reserveInfo: reserveInfo,
+      maxAddAmount: maxAddAmount
+    });
+    vm.revertToState(snapshot);
 
-    snap = vm.snapshotState();
-    _testTokenizationPermitDeposit(tokenizationSpoke, reserveInfo);
-    vm.revertToState(snap);
-
-    snap = vm.snapshotState();
-    _testTokenizationTimeSkip(tokenizationSpoke, reserveInfo);
-    vm.revertToState(snap);
+    _testTokenizationTimeSkip({
+      tokenizationSpoke: tokenizationSpoke,
+      reserveInfo: reserveInfo,
+      maxAddAmount: maxAddAmount
+    });
+    vm.revertToState(snapshot);
   }
 }
