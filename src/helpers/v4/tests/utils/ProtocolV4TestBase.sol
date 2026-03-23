@@ -8,7 +8,7 @@ import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/
 import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITokenizationSpoke.sol';
 import {INativeTokenGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/INativeTokenGateway.sol';
 import {ISignatureGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISignatureGateway.sol';
-import {AaveV4EthereumAddresses} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
+import {AaveV4EthereumPositionManagers} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
 import {Types} from './Types.sol';
 import {GatewayScenarios} from './GatewayScenarios.sol';
 
@@ -24,7 +24,7 @@ contract ProtocolV4TestBase is GatewayScenarios {
   /// @notice Run e2e tests on a single spoke, optionally executing a payload first.
   function defaultTest(
     string memory /* reportName */,
-    address[] memory spokes,
+    ISpoke[] memory spokes,
     address payload
   ) public {
     executePayload(vm, payload);
@@ -32,11 +32,11 @@ contract ProtocolV4TestBase is GatewayScenarios {
   }
 
   /// @notice Test all reserves on every spoke in the array.
-  function e2eTestAllSpokes(address[] memory spokes) public {
+  function e2eTestAllSpokes(ISpoke[] memory spokes) public {
     for (uint256 i; i < spokes.length; i++) {
-      console.log('--- E2E: Testing spoke %s ---', spokes[i]);
+      console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
       console.log('--------------------------------');
-      e2eTestSpoke(ISpoke(spokes[i]));
+      e2eTestSpoke(spokes[i]);
     }
   }
 
@@ -81,7 +81,7 @@ contract ProtocolV4TestBase is GatewayScenarios {
     // NativeTokenGateway — only if spoke lists WETH
     {
       INativeTokenGateway nativeGateway = INativeTokenGateway(
-        AaveV4EthereumAddresses.NATIVE_TOKEN_GATEWAY
+        AaveV4EthereumPositionManagers.NATIVE_TOKEN_GATEWAY
       );
       (bool hasWeth, Types.ReserveInfo memory wethInfo) = _findNativeTokenReserveInfo(
         nativeGateway,
@@ -98,7 +98,7 @@ contract ProtocolV4TestBase is GatewayScenarios {
     if (goodCollaterals.length > 0 && goodDebtReserves.length > 0) {
       uint256 gwSnap = vm.snapshotState();
       _testSignatureGateway({
-        gateway: ISignatureGateway(AaveV4EthereumAddresses.SIGNATURE_GATEWAY),
+        gateway: ISignatureGateway(AaveV4EthereumPositionManagers.SIGNATURE_GATEWAY),
         spoke: spoke,
         reserveInfo: goodDebtReserves[0],
         collateralInfo: goodCollaterals[0]
