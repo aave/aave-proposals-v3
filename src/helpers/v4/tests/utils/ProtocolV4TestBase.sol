@@ -25,7 +25,7 @@ contract ProtocolV4TestBase is GatewayScenarios {
   function defaultTest(
     string memory /* reportName */,
     ISpoke[] memory spokes,
-    address payload
+    address /* payload */
   ) public {
     e2eTestAllSpokes(spokes);
   }
