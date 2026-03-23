@@ -160,7 +160,23 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV3TestBase {
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     coreHub.mintFeeShares(0);
 
-    // TODO: Hub deficit eliminator role? Isn't this only callable by spokes?
+    // Test hub deficit eliminator role: register executor as a spoke, activate it, then call eliminateDeficit
+    vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    coreHub.addSpoke(
+      0,
+      GovernanceV3Ethereum.EXECUTOR_LVL_1,
+      IHub.SpokeConfig({
+        addCap: type(uint40).max,
+        drawCap: 0,
+        riskPremiumThreshold: 0,
+        active: true,
+        halted: false
+      })
+    );
+    // Reverts with InvalidAmount rather than an access error, proving it has access.
+    vm.expectRevert(IHub.InvalidAmount.selector);
+    coreHub.eliminateDeficit(0, 1, spoke);
+    vm.stopPrank();
   }
 
   function test_executorHasHubConfiguratorDomainAdminRole() public {
