@@ -48,6 +48,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     defaultTest(
       'AaveV4Ethereum_ActivateV4Ethereum_20260319',
       AaveV4EthereumSpokes.getUserSpokes(),
+      AaveV4EthereumTokenizationSpokes.getTokenizationSpokes(),
       address(proposal)
     );
   }
@@ -106,7 +107,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   address internal constant SECURITY_COUNCIL = 0x7f1fa86B2D643dF2E27C61F72D2443D4F991A8F7;
   address internal constant DEPLOYER = 0x19eed38fdB33B11b24184C6a2aef5ba95E490c2E;
 
-  function test_AccessManagerAdminRole() public {
+  function test_AccessManagerAdminRole() public view {
     _assertRoleHolders(Roles.ACCESS_MANAGER_ADMIN_ROLE);
   }
 

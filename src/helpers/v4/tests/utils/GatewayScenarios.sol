@@ -580,7 +580,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     uint256 amount
   ) internal returns (uint256 sharesSupplied, uint256 amountSupplied) {
     uint256 nonceBefore = gateway.nonces(user, 0);
-    uint256 deadline = block.timestamp + 1 hours;
+    uint256 deadline = vm.getBlockTimestamp() + 1 hours;
 
     deal2(reserveInfo.underlying, user, amount);
     vm.prank(user);
@@ -673,7 +673,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     uint256 amount
   ) internal returns (uint256 sharesWithdrawn, uint256 amountWithdrawn) {
     uint256 nonceBefore = gateway.nonces(user, 0);
-    uint256 deadline = block.timestamp + 1 hours;
+    uint256 deadline = vm.getBlockTimestamp() + 1 hours;
 
     bytes32 structHash = keccak256(
       abi.encode(
@@ -776,7 +776,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
         useAsCollateral: true,
         onBehalfOf: user,
         nonce: nonceBefore,
-        deadline: block.timestamp + 1 hours
+        deadline: vm.getBlockTimestamp() + 1 hours
       });
     bytes32 structHash = keccak256(
       abi.encode(
@@ -858,7 +858,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     uint256 amount
   ) internal returns (uint256 sharesBorrowed, uint256 amountBorrowed) {
     uint256 nonceBefore = gateway.nonces(user, 0);
-    uint256 deadline = block.timestamp + 1 hours;
+    uint256 deadline = vm.getBlockTimestamp() + 1 hours;
 
     bytes32 structHash = keccak256(
       abi.encode(
@@ -957,7 +957,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     uint256 amount
   ) internal returns (uint256 sharesRepaid, uint256 amountRepaid) {
     uint256 nonceBefore = gateway.nonces(user, 0);
-    uint256 deadline = block.timestamp + 1 hours;
+    uint256 deadline = vm.getBlockTimestamp() + 1 hours;
 
     uint256 mintAmount = amount == UINT256_MAX
       ? spoke.getUserTotalDebt(reserveInfo.reserveId, user)

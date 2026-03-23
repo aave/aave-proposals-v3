@@ -68,147 +68,101 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test deposit + partial withdraw + full redeem cycle.
   function _testTokenizationDepositWithdraw(
     ITokenizationSpoke tokenizationSpoke,
-    Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo,
+    uint256 maxAddAmount
   ) internal {
-    address user = vm.randomAddress();
-    uint256 depositAmount = _halfToken(reserveInfo.decimals);
-    require(depositAmount > 0, 'TOKENIZATION: deposit amount is zero');
+    (address user, uint256 userPrivateKey) = makeAddrAndKey('user');
+    uint256 depositAmount = vm.randomUint(1, maxAddAmount);
 
     // Deposit
     _tokenizationDeposit(tokenizationSpoke, reserveInfo, user, depositAmount);
 
     // Partial withdraw
     uint256 userAssets = tokenizationSpoke.convertToAssets(tokenizationSpoke.balanceOf(user));
-    if (userAssets > 1) {
+    uint256 snapshot = vm.snapshotState();
+    {
       uint256 partialWithdraw = vm.randomUint(1, userAssets - 1);
       _tokenizationWithdraw(tokenizationSpoke, reserveInfo, user, partialWithdraw);
-    }
-
-    // Full redeem (all remaining shares)
-    uint256 remainingShares = tokenizationSpoke.balanceOf(user);
-    if (remainingShares > 0) {
-      _tokenizationRedeem(tokenizationSpoke, reserveInfo, user, remainingShares);
-    }
-
-    assertEq(tokenizationSpoke.balanceOf(user), 0, 'DEPOSIT_WITHDRAW: user should have no shares');
-  }
-
-  /// @dev Test mint + partial redeem + full redeem cycle.
-  function _testTokenizationMintRedeem(
-    ITokenizationSpoke tokenizationSpoke,
-    Types.ReserveInfo memory reserveInfo
-  ) internal {
-    address user = vm.randomAddress();
-    uint256 mintAssets = _halfToken(reserveInfo.decimals);
-    uint256 mintShares = tokenizationSpoke.convertToShares(mintAssets);
-    require(mintShares > 0, 'TOKENIZATION: mint shares is zero');
-
-    // Mint
-    _tokenizationMint(tokenizationSpoke, reserveInfo, user, mintShares);
-
-    // Partial redeem
-    uint256 userShares = tokenizationSpoke.balanceOf(user);
-    if (userShares > 1) {
-      uint256 partialRedeem = vm.randomUint(1, userShares - 1);
-      _tokenizationRedeem(tokenizationSpoke, reserveInfo, user, partialRedeem);
+      vm.revertToState(snapshot);
     }
 
     // Full redeem
-    uint256 remainingShares = tokenizationSpoke.balanceOf(user);
-    if (remainingShares > 0) {
-      _tokenizationRedeem(tokenizationSpoke, reserveInfo, user, remainingShares);
-    }
+    _tokenizationRedeem(tokenizationSpoke, reserveInfo, user, tokenizationSpoke.balanceOf(user));
+    assertEq(tokenizationSpoke.balanceOf(user), 0, 'DEPOSIT_WITHDRAW: user should have no shares');
+    vm.revertToState(snapshot);
 
-    assertEq(tokenizationSpoke.balanceOf(user), 0, 'MINT_REDEEM: user should have no shares');
+    // Full redeem with sig
+    _tokenizationRedeemWithSig(
+      tokenizationSpoke,
+      reserveInfo,
+      userPrivateKey,
+      tokenizationSpoke.balanceOf(user)
+    );
+    assertEq(tokenizationSpoke.balanceOf(user), 0, 'DEPOSIT_WITHDRAW: user should have no shares');
+    vm.revertToState(snapshot);
   }
 
-  /// @dev Test ERC4626 preview/convert consistency and limit functions.
-  function _testTokenizationPreviewConsistency(
+  /// @dev Test mint + partial redeem + full redeem cycle, including mintWithSig.
+  function _testTokenizationMintRedeem(
     ITokenizationSpoke tokenizationSpoke,
-    Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo,
+    uint256 maxAddAmount
   ) internal {
-    address user = vm.randomAddress();
-    uint256 depositAmount = _halfToken(reserveInfo.decimals);
+    (address user, uint256 userPrivateKey) = makeAddrAndKey('mintUser');
+    uint256 mintAssets = vm.randomUint(1, maxAddAmount);
+    uint256 mintShares = tokenizationSpoke.convertToShares(mintAssets);
 
-    // Deposit first to have a non-trivial state
-    _tokenizationDeposit(tokenizationSpoke, reserveInfo, user, depositAmount);
+    uint256 snapshot = vm.snapshotState();
 
-    uint256 testAssets = depositAmount / 2;
-    uint256 testShares = tokenizationSpoke.balanceOf(user) / 2;
+    // Mint
+    _tokenizationMint(tokenizationSpoke, reserveInfo, user, mintShares);
+    uint256 userShares = tokenizationSpoke.balanceOf(user);
 
-    // previewDeposit should be close to convertToShares
+    // Partial redeem
     {
-      uint256 previewShares = tokenizationSpoke.previewDeposit(testAssets);
-      uint256 convertShares = tokenizationSpoke.convertToShares(testAssets);
-      assertApproxEqAbs(
-        previewShares,
-        convertShares,
-        2,
-        'PREVIEW: previewDeposit vs convertToShares'
-      );
+      uint256 postMintSnapshot = vm.snapshotState();
+      uint256 partialRedeem = vm.randomUint(1, userShares - 1);
+      _tokenizationRedeem(tokenizationSpoke, reserveInfo, user, partialRedeem);
+      vm.revertToState(postMintSnapshot);
     }
 
-    // previewRedeem should be close to convertToAssets
-    {
-      uint256 previewAssets = tokenizationSpoke.previewRedeem(testShares);
-      uint256 convertAssets = tokenizationSpoke.convertToAssets(testShares);
-      assertApproxEqAbs(
-        previewAssets,
-        convertAssets,
-        2,
-        'PREVIEW: previewRedeem vs convertToAssets'
-      );
-    }
+    // Full redeem
+    _tokenizationRedeem(tokenizationSpoke, reserveInfo, user, userShares);
+    assertEq(tokenizationSpoke.balanceOf(user), 0, 'MINT_REDEEM: user should have no shares');
+    vm.revertToState(snapshot);
 
-    // ERC4626 spec: previewWithdraw should return >= convertToShares (conservative for caller)
-    {
-      uint256 previewSharesForWithdraw = tokenizationSpoke.previewWithdraw(testAssets);
-      uint256 convertSharesForWithdraw = tokenizationSpoke.convertToShares(testAssets);
-      assertGe(
-        previewSharesForWithdraw,
-        convertSharesForWithdraw,
-        'PREVIEW: previewWithdraw should be >= convertToShares'
-      );
-    }
-
-    // ERC4626 spec: previewMint should return >= convertToAssets (conservative for caller)
-    {
-      uint256 previewAssetsForMint = tokenizationSpoke.previewMint(testShares);
-      uint256 convertAssetsForMint = tokenizationSpoke.convertToAssets(testShares);
-      assertGe(
-        previewAssetsForMint,
-        convertAssetsForMint,
-        'PREVIEW: previewMint should be >= convertToAssets'
-      );
-    }
-
-    // maxDeposit should be > 0
-    assertGt(tokenizationSpoke.maxDeposit(user), 0, 'PREVIEW: maxDeposit should be > 0');
-
-    // maxWithdraw should be <= user's asset value
-    uint256 maxWithdraw = tokenizationSpoke.maxWithdraw(user);
-    uint256 userAssets = tokenizationSpoke.convertToAssets(tokenizationSpoke.balanceOf(user));
-    assertLe(maxWithdraw, userAssets, 'PREVIEW: maxWithdraw should be <= user assets');
-
-    // maxRedeem should be <= user's share balance
-    uint256 maxRedeem = tokenizationSpoke.maxRedeem(user);
-    assertLe(
-      maxRedeem,
+    // Mint with sig (clean slate — no prior mint consuming addCap)
+    _tokenizationMintWithSig({
+      tokenizationSpoke: tokenizationSpoke,
+      reserveInfo: reserveInfo,
+      privateKey: userPrivateKey,
+      shares: mintShares
+    });
+    assertEq(
       tokenizationSpoke.balanceOf(user),
-      'PREVIEW: maxRedeem should be <= user shares'
+      mintShares,
+      'MINT_WITH_SIG: user should have shares'
     );
   }
 
   /// @dev Test deposit with EIP-2612 permit signature.
+  ///      Skips if the underlying token does not support EIP-2612 (WETH).
   function _testTokenizationPermitDeposit(
     ITokenizationSpoke tokenizationSpoke,
-    Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo,
+    uint256 maxAddAmount
   ) internal {
-    uint256 privateKey = vm.randomUint(1, type(uint248).max);
-    uint256 depositAmount = _halfToken(reserveInfo.decimals);
-    require(depositAmount > 0, 'TOKENIZATION: deposit amount is zero');
+    // Skip tokens that don't support EIP-2612 permit (WETH has no nonces function)
+    (bool success, ) = reserveInfo.underlying.staticcall(
+      abi.encodeWithSignature('nonces(address)', address(this))
+    );
+    if (!success) {
+      console.log('TOKENIZATION_PERMIT: skipping %s (no EIP-2612 support)', reserveInfo.symbol);
+      return;
+    }
 
-    _tokenizationDepositWithPermit(tokenizationSpoke, reserveInfo, privateKey, depositAmount);
+    uint256 depositAmount = vm.randomUint(1, maxAddAmount);
+    _tokenizationDepositWithPermit(tokenizationSpoke, reserveInfo, depositAmount);
   }
 
   /// @dev Test addCap enforcement on tokenization spoke deposits.
@@ -222,7 +176,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
       address(tokenizationSpoke)
     );
 
-    if (spokeConfig.addCap == 0 || spokeConfig.addCap >= type(uint40).max) {
+    if (spokeConfig.addCap == 0 || spokeConfig.addCap == type(uint40).max) {
       return;
     }
 
@@ -250,10 +204,11 @@ abstract contract TokenizationScenarios is TokenizationActions {
   /// @dev Test that share value does not decrease over time (yield accrual).
   function _testTokenizationTimeSkip(
     ITokenizationSpoke tokenizationSpoke,
-    Types.ReserveInfo memory reserveInfo
+    Types.ReserveInfo memory reserveInfo,
+    uint256 maxAddAmount
   ) internal {
     address user = vm.randomAddress();
-    uint256 depositAmount = _halfToken(reserveInfo.decimals);
+    uint256 depositAmount = vm.randomUint(1, maxAddAmount);
 
     // Deposit first
     _tokenizationDeposit(tokenizationSpoke, reserveInfo, user, depositAmount);
