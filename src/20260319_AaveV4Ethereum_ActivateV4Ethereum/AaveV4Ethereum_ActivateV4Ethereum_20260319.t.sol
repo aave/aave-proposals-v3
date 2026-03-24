@@ -20,17 +20,12 @@ import {AaveV4Ethereum_ActivateV4Ethereum_20260319} from './AaveV4Ethereum_Activ
 contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   AaveV4Ethereum_ActivateV4Ethereum_20260319 internal proposal;
 
+  address internal constant DEPLOYER = 0xB00A89E5C8756bA8629846eEF8a4a9C71Ad1930A;
+  address internal constant SECURITY_COUNCIL = 0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9;
+
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 24723214);
     proposal = new AaveV4Ethereum_ActivateV4Ethereum_20260319();
-
-    // TODO: Remove once new deployed contracts have the correct configuration phase
-    // roles already set. These grants simulate the configuration that will be done
-    // outside the AIP before it executes.
-    _grantConfigurationPhaseRoles();
-
-    // TODO: Remove once deployer roles are revoked on the deployed contracts
-    _revokeDeployerRoles();
   }
 
   /**
@@ -79,22 +74,23 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   // | Target             | Role                                   | ID  | Holder                                   |
   // |--------------------|----------------------------------------|-----|------------------------------------------|
   // | Access Manager     | ACCESS_MANAGER_ADMIN_ROLE              | 0   | DAO, Security Council                    |
-  // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | DAO, Security Council, HubConfigurator   |
+  // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | HubConfigurator   |
   // | Hub                | HUB_FEE_MINTER_ROLE                    | 102 | DAO, Security Council                    |
   // | Hub                | HUB_DEFICIT_ELIMINATOR_ROLE            | 103 | DAO, Security Council                    |
-  // | HubConfigurator    | HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE     | 200 | DAO, Security Council                    |
-  // | Spoke              | SPOKE_CONFIGURATOR_ROLE                | 301 | DAO, Security Council, SpokeConfigurator |
+  // | HubConfigurator    | HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE     | 200 | DAO                                      |
+  // | Spoke              | SPOKE_CONFIGURATOR_ROLE                | 301 | SpokeConfigurator |
   // | Spoke              | SPOKE_USER_POSITION_UPDATER_ROLE       | 302 | DAO, Security Council                    |
   // | SpokeConfigurator  | SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE   | 400 | DAO, Security Council                    |
+  // | Hub                | Proxy Admin Owner                      |     | Security Council                         |
+  // | Spoke              | Proxy Admin Owner                      |     | Security Council                         |
   // | Tokenization Spoke | Proxy Admin Owner                      |     | Security Council                         |
+  // | Position Managers  | Owner                                  |     | Security Council                         |
+  // | Treasury Spoke     | Owner                                  |     | Security Council                         |
   //
   // NOTE: These tests currently pass because setUp() grants all roles via prank.
   // Once configuration phase is complete on mainnet, _grantConfigurationPhaseRoles()
   // should be removed from setUp() and these tests must still pass.
   // ---------------------------------------------------------------------------
-
-  address internal constant DEPLOYER = 0xB00A89E5C8756bA8629846eEF8a4a9C71Ad1930A;
-  address internal constant SECURITY_COUNCIL = 0x778b07a501a7a8d7625e51C3Ea84D090118f0161;
 
   function test_AccessManagerAdminRole() public view {
     _assertRoleHolders(Roles.ACCESS_MANAGER_ADMIN_ROLE);
@@ -293,62 +289,11 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     }
   }
 
-  // TODO: Change expected owner to SECURITY_COUNCIL after ownership transfer is complete
   function test_tokenizationSpokeProxyAdminsOwnedBySecurityCouncil() public view {
     address[] memory tokenizationSpokes = AaveV4EthereumTokenizationSpokes.getTokenizationSpokes();
     for (uint256 spokeIdx; spokeIdx < tokenizationSpokes.length; ++spokeIdx) {
-      _assertProxyAdminOwner(tokenizationSpokes[spokeIdx], DEPLOYER);
+      _assertProxyAdminOwner(tokenizationSpokes[spokeIdx], SECURITY_COUNCIL);
     }
-  }
-
-  // TODO: Remove once deployer roles are revoked on the deployed contracts
-  function _revokeDeployerRoles() internal {
-    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
-      AaveV4EthereumAddresses.ACCESS_MANAGER
-    );
-
-    vm.startPrank(DEPLOYER);
-    accessManager.revokeRole(Roles.HUB_CONFIGURATOR_ROLE, DEPLOYER);
-    accessManager.revokeRole(Roles.HUB_FEE_MINTER_ROLE, DEPLOYER);
-    accessManager.revokeRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, DEPLOYER);
-    accessManager.revokeRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, DEPLOYER);
-    accessManager.revokeRole(Roles.SPOKE_CONFIGURATOR_ROLE, DEPLOYER);
-    accessManager.revokeRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, DEPLOYER);
-    accessManager.revokeRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, DEPLOYER);
-    // Revoke admin last since it's needed to revoke the other roles
-    accessManager.revokeRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, DEPLOYER);
-    vm.stopPrank();
-  }
-
-  // TODO: Remove once new deployed contracts have the correct configuration phase roles already set.
-  function _grantConfigurationPhaseRoles() internal {
-    address admin = DEPLOYER;
-    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
-      AaveV4EthereumAddresses.ACCESS_MANAGER
-    );
-    address executor = GovernanceV3Ethereum.EXECUTOR_LVL_1;
-
-    vm.startPrank(admin);
-
-    // Grant DAO executor all roles
-    accessManager.grantRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, executor, 0);
-    accessManager.grantRole(Roles.HUB_CONFIGURATOR_ROLE, executor, 0);
-    accessManager.grantRole(Roles.HUB_FEE_MINTER_ROLE, executor, 0);
-    accessManager.grantRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, executor, 0);
-    accessManager.grantRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, executor, 0);
-    accessManager.grantRole(Roles.SPOKE_CONFIGURATOR_ROLE, executor, 0);
-    accessManager.grantRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, executor, 0);
-    accessManager.grantRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, executor, 0);
-
-    // Grant Security Council all roles (SC already has 200, 400 on mainnet)
-    accessManager.grantRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, SECURITY_COUNCIL, 0);
-    accessManager.grantRole(Roles.HUB_CONFIGURATOR_ROLE, SECURITY_COUNCIL, 0);
-    accessManager.grantRole(Roles.HUB_FEE_MINTER_ROLE, SECURITY_COUNCIL, 0);
-    accessManager.grantRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, SECURITY_COUNCIL, 0);
-    accessManager.grantRole(Roles.SPOKE_CONFIGURATOR_ROLE, SECURITY_COUNCIL, 0);
-    accessManager.grantRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, SECURITY_COUNCIL, 0);
-
-    vm.stopPrank();
   }
 
   /// @dev Asserts DAO + Security Council hold the given role.
