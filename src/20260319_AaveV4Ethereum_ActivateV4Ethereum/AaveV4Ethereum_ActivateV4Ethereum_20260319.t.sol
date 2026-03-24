@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
-import {GovV3Helpers, ChainIds} from 'aave-helpers/src/GovV3Helpers.sol';
 import {ProtocolV4TestBase} from 'src/helpers/v4/tests/utils/ProtocolV4TestBase.sol';
 import {IAccessManagerEnumerable} from './interfaces/IAccessManagerEnumerable.sol';
 import {IHub} from './interfaces/IHub.sol';
