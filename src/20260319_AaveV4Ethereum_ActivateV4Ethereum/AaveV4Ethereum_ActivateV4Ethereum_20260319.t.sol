@@ -38,8 +38,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
       'AaveV4Ethereum_ActivateV4Ethereum_20260319',
       AaveV4EthereumSpokes.getUserSpokes(),
       AaveV4EthereumTokenizationSpokes.getTokenizationSpokes(),
-      address(proposal),
-      false // e2e tested separately
+      address(proposal)
     );
   }
 
