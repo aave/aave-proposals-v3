@@ -717,5 +717,12 @@ contract ProtocolV4TestBase is SnapshotV4 {
       maxAddAmount: maxAddAmount
     });
     vm.revertToState(snapshot);
+
+    _testTokenizationTransferAndWithdraw({
+      tokenizationSpoke: tokenizationSpoke,
+      reserveInfo: reserveInfo,
+      maxAddAmount: maxAddAmount
+    });
+    vm.revertToState(snapshot);
   }
 }
