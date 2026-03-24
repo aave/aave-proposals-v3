@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {console2 as console} from 'forge-std/console2.sol';
-
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {GovV3Helpers, ChainIds} from 'aave-helpers/src/GovV3Helpers.sol';
 import {ProtocolV4TestBase} from 'src/helpers/v4/tests/utils/ProtocolV4TestBase.sol';
@@ -97,7 +95,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     uint64 roleId = Roles.ACCESS_MANAGER_ADMIN_ROLE;
 
     _assertRoleHolders(roleId);
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
   }
 
   /// @dev Executor can grant roles to another account
@@ -126,7 +124,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   /// @dev HubConfigurator can change config on a spoke
   function test_HubConfiguratorRole() public {
     uint64 roleId = Roles.HUB_CONFIGURATOR_ROLE;
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
 
     address[] memory expected = new address[](1);
     expected[0] = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
@@ -155,7 +153,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   function test_FeeMinterRole() public {
     uint64 roleId = Roles.HUB_FEE_MINTER_ROLE;
 
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
     _assertZeroRoleHolders(roleId);
 
     IHub hub = _getRandomHub();
@@ -175,7 +173,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   function test_HubDeficitEliminatorRole() public {
     uint64 roleId = Roles.HUB_DEFICIT_ELIMINATOR_ROLE;
 
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
     _assertZeroRoleHolders(roleId);
 
     IHub hub = _getRandomHub();
@@ -210,7 +208,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     address[] memory expectedHolders = new address[](1);
     expectedHolders[0] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
 
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
     _assertExactRoleHolders(roleId, expectedHolders);
 
     address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress({assetId: 0, index: 0});
@@ -239,7 +237,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   function test_SpokeConfiguratorRole() public {
     uint64 roleId = Roles.SPOKE_CONFIGURATOR_ROLE;
 
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
     address[] memory expected = new address[](1);
     expected[0] = AaveV4EthereumAddresses.SPOKE_CONFIGURATOR;
     _assertExactRoleHolders(roleId, expected);
@@ -261,7 +259,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   /// @dev SpokeUserPositionUpdaterRole - role not granted
   function test_SpokeUserPositionUpdaterRole() public {
     uint64 roleId = Roles.SPOKE_USER_POSITION_UPDATER_ROLE;
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
     _assertZeroRoleHolders(roleId);
 
     vm.expectRevert(
@@ -277,7 +275,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   /// @dev SpokeConfiguratorDomainAdminRole - role not granted
   function test_SpokeConfiguratorDomainAdminRole() public {
     uint64 roleId = Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE;
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
     _assertZeroRoleHolders(roleId);
 
     vm.expectRevert(
@@ -294,48 +292,54 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     });
   }
 
+  /// @dev AccessManagerAdminRole - DAO, Security Council
   function test_hasRole_AccessManagerAdminRole() public view {
     _assertHasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
     _assertHasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, SECURITY_COUNCIL);
   }
 
+  /// @dev HubConfigurator Role - hub configurator contract
   function test_hasRole_HubConfiguratorRole() public view {
-    _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, SECURITY_COUNCIL);
     _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, AaveV4EthereumAddresses.HUB_CONFIGURATOR);
   }
 
+  /// @dev HubFeeMinterRole - not granted to any account
   function test_hasRole_HubFeeMinterRole() public view {
-    _assertHasRole(Roles.HUB_FEE_MINTER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.HUB_FEE_MINTER_ROLE, SECURITY_COUNCIL);
+    uint64 roleId = Roles.HUB_FEE_MINTER_ROLE;
+    _assertTempAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
   }
 
   function test_hasRole_HubDeficitEliminatorRole() public view {
     uint64 roleId = Roles.HUB_DEFICIT_ELIMINATOR_ROLE;
 
-    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertTempAddrsDoNotHaveRole(roleId);
     _assertDoesNotHaveRole(roleId, GovernanceV3Ethereum.EXECUTOR_LVL_1);
     _assertDoesNotHaveRole(roleId, SECURITY_COUNCIL);
   }
 
+  /// @dev HubConfiguratorDomainAdminRole - DAO
   function test_hasRole_HubConfiguratorDomainAdminRole() public view {
     _assertHasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
   }
 
+  /// @dev SpokeConfiguratorRole - spokeConfigurator contract
   function test_hasRole_SpokeConfiguratorRole() public view {
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, SECURITY_COUNCIL);
     _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, AaveV4EthereumAddresses.SPOKE_CONFIGURATOR);
   }
 
+  /// @dev SpokeUserPositionUpdaterRole - role not granted
   function test_hasRole_SpokeUserPositionUpdaterRole() public view {
-    _assertHasRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, SECURITY_COUNCIL);
+    uint64 roleId = Roles.SPOKE_USER_POSITION_UPDATER_ROLE;
+    _assertTempAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
   }
 
+  /// @dev SpokeConfiguratorDomainAdminRole - role not granted
   function test_hasRole_SpokeConfiguratorDomainAdminRole() public view {
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, SECURITY_COUNCIL);
+    uint64 roleId = Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE;
+    _assertTempAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
   }
 
   function test_allRolesAreLabeled() public view {
@@ -401,7 +405,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertFalse(hasRole, 'Expected account to not have role');
   }
 
-  function _assertTmpAddrsDoNotHaveRole(uint64 roleId) internal view {
+  function _assertTempAddrsDoNotHaveRole(uint64 roleId) internal view {
     _assertDoesNotHaveRole(roleId, DEPLOYER);
     _assertDoesNotHaveRole(roleId, TMP_EXECUTOR);
   }
