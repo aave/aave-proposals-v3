@@ -259,9 +259,18 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     });
   }
 
+  /// @dev SpokeUserPositionUpdaterRole - role not granted
   function test_SpokeUserPositionUpdaterRole() public {
-    _assertRoleHolders(Roles.SPOKE_USER_POSITION_UPDATER_ROLE);
+    uint64 roleId = Roles.SPOKE_USER_POSITION_UPDATER_ROLE;
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
 
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IAccessManaged.AccessManagedUnauthorized.selector,
+        GovernanceV3Ethereum.EXECUTOR_LVL_1
+      )
+    );
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     AaveV4EthereumSpokes.MAIN_SPOKE.updateUserRiskPremium(address(this));
   }
