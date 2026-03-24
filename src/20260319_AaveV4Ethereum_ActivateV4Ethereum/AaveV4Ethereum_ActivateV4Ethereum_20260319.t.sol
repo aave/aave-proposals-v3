@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {console2 as console} from 'forge-std/console2.sol';
+
 import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {GovV3Helpers, ChainIds} from 'aave-helpers/src/GovV3Helpers.sol';
 import {ProtocolV4TestBase} from 'src/helpers/v4/tests/utils/ProtocolV4TestBase.sol';
@@ -131,28 +133,22 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     expected[0] = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
     _assertExactRoleHolders(roleId, expected);
 
-    uint256 assetId = 0;
-    index = bound(index, 0, AaveV4EthereumHubs.CORE_HUB.getSpokeCount(assetId) - 1);
-    // random spoke
-    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress({assetId: assetId, index: 0});
-    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
-      assetId: 0,
-      spoke: spoke
-    });
+    IHub hub = _getRandomHub();
+    uint256 assetId = _getRandomAssetId(hub);
+    address spoke = _getRandomSpoke(hub, assetId);
+
+    IHub.SpokeConfig memory configBefore = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
     assertFalse(configBefore.active, 'Spoke should be inactive before');
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
-      hub: address(AaveV4EthereumHubs.CORE_HUB),
-      assetId: 0,
+      hub: address(hub),
+      assetId: assetId,
       spoke: spoke,
       active: true
     });
 
-    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
-      assetId: 0,
-      spoke: spoke
-    });
+    IHub.SpokeConfig memory configAfter = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
@@ -163,7 +159,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     _assertTmpAddrsDoNotHaveRole(roleId);
     _assertZeroRoleHolders(roleId);
 
-    uint256 assetId = vm.randomUint(AaveV4EthereumHubs.CORE_HUB.getAssetCount() - 1);
+    IHub hub = _getRandomHub();
+    uint256 assetId = _getRandomAssetId(hub);
 
     vm.expectRevert(
       abi.encodeWithSelector(
@@ -172,29 +169,39 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
       )
     );
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _getRandomHub().mintFeeShares({assetId: 0});
+    hub.mintFeeShares({assetId: assetId});
   }
 
+  /// @dev HubDeficitEliminatorRole - not granted to any account
   function test_HubDeficitEliminatorRole() public {
-    _assertRoleHolders(Roles.HUB_DEFICIT_ELIMINATOR_ROLE);
+    uint64 roleId = Roles.HUB_DEFICIT_ELIMINATOR_ROLE;
 
-    IHub coreHub = IHub(address(AaveV4EthereumHubs.CORE_HUB));
-    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
 
-    vm.startPrank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    coreHub.addSpoke(
-      0,
-      GovernanceV3Ethereum.EXECUTOR_LVL_1,
-      IHub.SpokeConfig({
+    IHub hub = _getRandomHub();
+    uint256 assetId = _getRandomAssetId(hub);
+    address spoke = makeAddr('newSpoke');
+
+    vm.startPrank(AaveV4EthereumAddresses.HUB_CONFIGURATOR);
+    hub.addSpoke({
+      assetId: 0,
+      spoke: spoke,
+      params: IHub.SpokeConfig({
         addCap: type(uint40).max,
         drawCap: 0,
         riskPremiumThreshold: 0,
         active: true,
         halted: false
       })
+    });
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IAccessManaged.AccessManagedUnauthorized.selector,
+        AaveV4EthereumAddresses.HUB_CONFIGURATOR
+      )
     );
-    vm.expectRevert(IHub.InvalidAmount.selector);
-    coreHub.eliminateDeficit(0, 1, spoke);
+    hub.eliminateDeficit({assetId: assetId, amount: 1, spoke: spoke});
     vm.stopPrank();
   }
 
@@ -403,7 +410,19 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function _getRandomHub() internal view returns (IHub) {
-    return AaveV4EthereumHubs.getHubs()[vm.randomUint(AaveV4EthereumHubs.getHubs().length - 1)];
+    return AaveV4EthereumHubs.getHubs()[vm.randomUint(0, AaveV4EthereumHubs.getHubs().length - 1)];
+  }
+
+  function _getRandomAssetId(IHub hub) internal view returns (uint256) {
+    return vm.randomUint(0, hub.getAssetCount() - 1);
+  }
+
+  function _getRandomSpoke(IHub hub, uint256 assetId) internal view returns (address) {
+    return
+      hub.getSpokeAddress({
+        assetId: assetId,
+        index: vm.randomUint(0, hub.getSpokeCount(assetId) - 1)
+      });
   }
 
   /// @dev Reads the EIP-1967 admin slot to find the proxy admin, then checks its owner.
