@@ -294,20 +294,22 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     });
   }
 
+  /// @dev AccessManagerAdminRole - DAO, Security Council
   function test_hasRole_AccessManagerAdminRole() public view {
     _assertHasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
     _assertHasRole(Roles.ACCESS_MANAGER_ADMIN_ROLE, SECURITY_COUNCIL);
   }
 
+  /// @dev HubConfigurator Role - hub configurator contract
   function test_hasRole_HubConfiguratorRole() public view {
-    _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, SECURITY_COUNCIL);
     _assertHasRole(Roles.HUB_CONFIGURATOR_ROLE, AaveV4EthereumAddresses.HUB_CONFIGURATOR);
   }
 
+  /// @dev HubFeeMinterRole - not granted to any account
   function test_hasRole_HubFeeMinterRole() public view {
-    _assertHasRole(Roles.HUB_FEE_MINTER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.HUB_FEE_MINTER_ROLE, SECURITY_COUNCIL);
+    uint64 roleId = Roles.HUB_FEE_MINTER_ROLE;
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
   }
 
   function test_hasRole_HubDeficitEliminatorRole() public view {
@@ -318,24 +320,28 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     _assertDoesNotHaveRole(roleId, SECURITY_COUNCIL);
   }
 
+  /// @dev HubConfiguratorDomainAdminRole - DAO
   function test_hasRole_HubConfiguratorDomainAdminRole() public view {
     _assertHasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
   }
 
+  /// @dev SpokeConfiguratorRole - spokeConfigurator contract
   function test_hasRole_SpokeConfiguratorRole() public view {
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, SECURITY_COUNCIL);
     _assertHasRole(Roles.SPOKE_CONFIGURATOR_ROLE, AaveV4EthereumAddresses.SPOKE_CONFIGURATOR);
   }
 
+  /// @dev SpokeUserPositionUpdaterRole - role not granted
   function test_hasRole_SpokeUserPositionUpdaterRole() public view {
-    _assertHasRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.SPOKE_USER_POSITION_UPDATER_ROLE, SECURITY_COUNCIL);
+    uint64 roleId = Roles.SPOKE_USER_POSITION_UPDATER_ROLE;
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
   }
 
+  /// @dev SpokeConfiguratorDomainAdminRole - role not granted
   function test_hasRole_SpokeConfiguratorDomainAdminRole() public view {
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, SECURITY_COUNCIL);
+    uint64 roleId = Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE;
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
   }
 
   function test_allRolesAreLabeled() public view {
