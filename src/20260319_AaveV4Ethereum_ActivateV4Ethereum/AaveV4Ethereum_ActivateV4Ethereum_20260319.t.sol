@@ -78,11 +78,11 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   // | Target             | Role                                   | ID  | Holder                                   |
   // |--------------------|----------------------------------------|-----|------------------------------------------|
   // | Access Manager     | ACCESS_MANAGER_ADMIN_ROLE              | 0   | DAO, Security Council                    |
-  // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | HubConfigurator   |
+  // | Hub                | HUB_CONFIGURATOR_ROLE                  | 101 | HubConfigurator                          |
   // | Hub                | HUB_FEE_MINTER_ROLE                    | 102 | DAO, Security Council                    |
   // | Hub                | HUB_DEFICIT_ELIMINATOR_ROLE            | 103 | DAO, Security Council                    |
   // | HubConfigurator    | HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE     | 200 | DAO                                      |
-  // | Spoke              | SPOKE_CONFIGURATOR_ROLE                | 301 | SpokeConfigurator |
+  // | Spoke              | SPOKE_CONFIGURATOR_ROLE                | 301 | SpokeConfigurator                        |
   // | Spoke              | SPOKE_USER_POSITION_UPDATER_ROLE       | 302 | DAO, Security Council                    |
   // | SpokeConfigurator  | SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE   | 400 | DAO, Security Council                    |
   // | Hub                | Proxy Admin Owner                      |     | Security Council                         |
@@ -90,7 +90,6 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   // | Tokenization Spoke | Proxy Admin Owner                      |     | Security Council                         |
   // | Position Managers  | Owner                                  |     | Security Council                         |
   // | Treasury Spoke     | Owner                                  |     | Security Council                         |
-  //
   // ---------------------------------------------------------------------------
 
   /// @dev Access Manager Admin Role - DAO, Security Council
@@ -275,21 +274,24 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     AaveV4EthereumSpokes.MAIN_SPOKE.updateUserRiskPremium(address(this));
   }
 
+  /// @dev SpokeConfiguratorDomainAdminRole - role not granted
   function test_SpokeConfiguratorDomainAdminRole() public {
-    _assertRoleHolders(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE);
+    uint64 roleId = Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE;
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
 
-    ISpoke.ReserveConfig memory configBefore = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
-    assertFalse(configBefore.paused, 'Reserve should not be paused before');
-
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
-      address(AaveV4EthereumSpokes.MAIN_SPOKE),
-      0,
-      true
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IAccessManaged.AccessManagedUnauthorized.selector,
+        GovernanceV3Ethereum.EXECUTOR_LVL_1
+      )
     );
-
-    ISpoke.ReserveConfig memory configAfter = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
-    assertTrue(configAfter.paused, 'Reserve should be paused after');
+    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused({
+      spoke: address(AaveV4EthereumSpokes.MAIN_SPOKE),
+      reserveId: 0,
+      paused: true
+    });
   }
 
   function test_hasRole_AccessManagerAdminRole() public view {
