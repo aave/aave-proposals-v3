@@ -93,8 +93,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   /// @dev Access Manager Admin Role - DAO, Security Council
   function test_AccessManagerAdminRole() public view {
-    _assertRoleHolders(Roles.ACCESS_MANAGER_ADMIN_ROLE);
-    _assertTmpAddrsDoNotHaveRole(Roles.ACCESS_MANAGER_ADMIN_ROLE);
+    uint64 roleId = Roles.ACCESS_MANAGER_ADMIN_ROLE;
+
+    _assertRoleHolders(roleId);
+    _assertTmpAddrsDoNotHaveRole(roleId);
   }
 
   /// @dev Executor can grant roles to another account
@@ -122,10 +124,12 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   /// @dev HubConfigurator can change config on a spoke
   function test_HubConfiguratorRole(uint256 index) public {
-    _assertTmpAddrsDoNotHaveRole(Roles.HUB_CONFIGURATOR_ROLE);
+    uint64 roleId = Roles.HUB_CONFIGURATOR_ROLE;
+    _assertTmpAddrsDoNotHaveRole(roleId);
+
     address[] memory expected = new address[](1);
     expected[0] = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
-    _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_ROLE, expected);
+    _assertExactRoleHolders(roleId, expected);
 
     uint256 assetId = 0;
     index = bound(index, 0, AaveV4EthereumHubs.CORE_HUB.getSpokeCount(assetId) - 1);
@@ -152,6 +156,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
+  /// @dev HubFeeMinterRole - not granted to any account
   function test_FeeMinterRole() public {
     uint64 roleId = Roles.HUB_FEE_MINTER_ROLE;
 
