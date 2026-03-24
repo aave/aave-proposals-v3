@@ -258,4 +258,69 @@ abstract contract TokenizationScenarios is TokenizationActions {
 
     _assertTokenizationNoDebt(snapshotAfter);
   }
+
+  /// @dev Test that vault shares can be transferred to third parties who can then redeem.
+  function _testTokenizationTransferAndWithdraw(
+    ITokenizationSpoke tokenizationSpoke,
+    Types.ReserveInfo memory reserveInfo,
+    uint256 maxAddAmount
+  ) internal {
+    address depositor = makeAddr('TRANSFER_DEPOSITOR');
+    address[3] memory recipients = [
+      makeAddr('TRANSFER_RECIPIENT_0'),
+      makeAddr('TRANSFER_RECIPIENT_1'),
+      makeAddr('TRANSFER_RECIPIENT_2')
+    ];
+
+    uint256 depositAmount = vm.randomUint(3, maxAddAmount);
+    _tokenizationDeposit(tokenizationSpoke, reserveInfo, depositor, depositAmount);
+
+    uint256 totalShares = tokenizationSpoke.balanceOf(depositor);
+    uint256 sharePerRecipient = totalShares / 3;
+    require(sharePerRecipient > 0, 'TRANSFER: share per recipient is zero');
+
+    // Transfer shares to each recipient
+    vm.startPrank(depositor);
+    for (uint256 i; i < 3; i++) {
+      _logAction('TOKENIZATION_TRANSFER', reserveInfo.symbol, sharePerRecipient);
+      uint256 amount = i < 2 ? sharePerRecipient : tokenizationSpoke.balanceOf(depositor);
+      tokenizationSpoke.transfer(recipients[i], amount);
+    }
+    vm.stopPrank();
+
+    assertEq(
+      tokenizationSpoke.balanceOf(depositor),
+      0,
+      'TRANSFER: depositor should have 0 shares after transfers'
+    );
+
+    // Each recipient redeems all their shares
+    for (uint256 i; i < 3; i++) {
+      uint256 recipientShares = tokenizationSpoke.balanceOf(recipients[i]);
+      assertGt(recipientShares, 0, 'TRANSFER: recipient should have shares');
+
+      uint256 underlyingBefore = IERC20(reserveInfo.underlying).balanceOf(recipients[i]);
+
+      _logAction('TOKENIZATION_REDEEM', reserveInfo.symbol, recipientShares);
+      vm.prank(recipients[i]);
+      tokenizationSpoke.redeem(recipientShares, recipients[i], recipients[i]);
+
+      assertEq(
+        tokenizationSpoke.balanceOf(recipients[i]),
+        0,
+        'TRANSFER: recipient should have 0 shares after redeem'
+      );
+      assertEq(
+        IERC20(reserveInfo.underlying).balanceOf(recipients[i]),
+        underlyingBefore + recipientShares,
+        'TRANSFER: recipient should have received underlying tokens'
+      );
+    }
+
+    assertEq(
+      tokenizationSpoke.totalSupply(),
+      0,
+      'TRANSFER: totalSupply should be 0 after all redeems'
+    );
+  }
 }
