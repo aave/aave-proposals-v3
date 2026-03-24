@@ -13,6 +13,7 @@ ffi = true
 fs_permissions = [
   { access = "read-write", path = "./reports" },
   { access = "read", path = "./zkout" },
+  { access = "read-write", path = "./diffs" },
 ]
 evm_version = 'shanghai'
 cache_path = 'cache/shanghai'
