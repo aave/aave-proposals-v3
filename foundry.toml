@@ -10,6 +10,7 @@ bytecode_hash = 'none'
 libs = ['lib']
 remappings = []
 ffi = true
+gas_limit = 9223372036854775807
 fs_permissions = [
   { access = "read-write", path = "./reports" },
   { access = "read", path = "./zkout" },
