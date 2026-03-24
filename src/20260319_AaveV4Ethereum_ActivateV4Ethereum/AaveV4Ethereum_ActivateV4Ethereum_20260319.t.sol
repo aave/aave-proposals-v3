@@ -211,25 +211,22 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     _assertTempAddrsDoNotHaveRole(roleId);
     _assertExactRoleHolders(roleId, expectedHolders);
 
-    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress({assetId: 0, index: 0});
-    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
-      assetId: 0,
-      spoke: spoke
-    });
+    IHub hub = _getRandomHub();
+    uint256 assetId = _getRandomAssetId(hub);
+    address spoke = _getRandomSpoke(hub, assetId);
+
+    IHub.SpokeConfig memory configBefore = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
     assertFalse(configBefore.active, 'Spoke should be inactive before');
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
-      hub: address(AaveV4EthereumHubs.CORE_HUB),
-      assetId: 0,
+      hub: address(hub),
+      assetId: assetId,
       spoke: spoke,
       active: true
     });
 
-    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
-      assetId: 0,
-      spoke: spoke
-    });
+    IHub.SpokeConfig memory configAfter = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
@@ -242,6 +239,8 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     expected[0] = AaveV4EthereumAddresses.SPOKE_CONFIGURATOR;
     _assertExactRoleHolders(roleId, expected);
 
+    address spoke = _getRandomSpoke();
+
     vm.expectRevert(
       abi.encodeWithSelector(
         IAccessManaged.AccessManagedUnauthorized.selector,
@@ -250,7 +249,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     );
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused({
-      spoke: address(AaveV4EthereumSpokes.MAIN_SPOKE),
+      spoke: spoke,
       reserveId: 0,
       paused: true
     });
@@ -378,7 +377,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     }
   }
 
-  /// @dev Asserts DAO + Security Council hold the ACCESS_MANAGER_ADMIN_ROLE.
+  /// @dev Asserts DAO + Security Council hold the given role defined by roleId.
   function _assertRoleHolders(uint64 roleId) internal view {
     address[] memory expected = new address[](2);
     expected[0] = SECURITY_COUNCIL;
@@ -386,6 +385,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     _assertExactRoleHolders(roleId, expected);
   }
 
+  /// @dev Asserts the given account has the given role defined by roleId.
   function _assertHasRole(uint64 roleId, address account) internal view {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
@@ -394,6 +394,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertTrue(hasRole, 'Expected account to have role');
   }
 
+  /// @dev Asserts the given account does not have the given role defined by roleId.
   function _assertDoesNotHaveRole(uint64 roleId, address account) internal view {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
@@ -402,11 +403,13 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertFalse(hasRole, 'Expected account to not have role');
   }
 
+  /// @dev Asserts the temporary addresses (deployer and tmp executor) do not have the given role defined by roleId.
   function _assertTempAddrsDoNotHaveRole(uint64 roleId) internal view {
     _assertDoesNotHaveRole(roleId, DEPLOYER);
     _assertDoesNotHaveRole(roleId, TMP_EXECUTOR);
   }
 
+  /// @dev Asserts the given role has no members.
   function _assertZeroRoleHolders(uint64 roleId) internal view {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
@@ -415,6 +418,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertEq(memberCount, 0, 'Role should have no members');
   }
 
+  /// @dev Asserts the role has the exact given holders.
   function _assertExactRoleHolders(uint64 roleId, address[] memory expectedHolders) internal view {
     for (uint256 i; i < expectedHolders.length; ++i) {
       for (uint256 j = i + 1; j < expectedHolders.length; ++j) {
@@ -441,14 +445,23 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     }
   }
 
+  /// @dev Returns a random hub.
   function _getRandomHub() internal view returns (IHub) {
     return AaveV4EthereumHubs.getHubs()[vm.randomUint(0, AaveV4EthereumHubs.getHubs().length - 1)];
   }
 
+  /// @dev Returns a random asset id from the given hub.
   function _getRandomAssetId(IHub hub) internal view returns (uint256) {
     return vm.randomUint(0, hub.getAssetCount() - 1);
   }
 
+  /// @dev Returns a random spoke.
+  function _getRandomSpoke() internal view returns (address) {
+    ISpoke[] memory spokes = AaveV4EthereumSpokes.getSpokes();
+    return address(spokes[vm.randomUint(0, spokes.length - 1)]);
+  }
+
+  /// @dev Returns a random spoke from the given hub and asset id.
   function _getRandomSpoke(IHub hub, uint256 assetId) internal view returns (address) {
     return
       hub.getSpokeAddress({
@@ -468,6 +481,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertEq(owner, expectedOwner, 'Proxy admin owner mismatch');
   }
 
+  /// @dev Asserts all spokes on the given hub are active.
   function _assertAllSpokesActiveOnHub(IHub hub) internal view {
     for (uint256 assetId; assetId < hub.getAssetCount(); ++assetId) {
       uint256 spokeCount = hub.getSpokeCount(assetId);
