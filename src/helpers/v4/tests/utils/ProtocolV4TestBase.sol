@@ -100,6 +100,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
       console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
       console.log('--------------------------------');
       e2eTestSpoke(spokes[i]);
+      e2eTestGateways(spokes[i]);
     }
   }
 
@@ -136,9 +137,14 @@ contract ProtocolV4TestBase is SnapshotV4 {
         vm.revertToState(spokeSnapshot);
       }
     }
+  }
 
-    // Gateway tests
+  /// @notice Test all gateways on a spoke.
+  function e2eTestGateways(ISpoke spoke) public {
+    // set caps to max to simplify user ops
     _setCapsToMax(spoke);
+
+    Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
     Types.ReserveInfo[] memory goodDebtReserves = _getAllUsableDebtReserves(allReserves);
 
     // NativeTokenGateway — only if spoke lists WETH
