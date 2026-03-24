@@ -9,6 +9,7 @@ import {IHub} from './interfaces/IHub.sol';
 import {IHubConfigurator} from './interfaces/IHubConfigurator.sol';
 import {ISpoke} from './interfaces/ISpoke.sol';
 import {ISpokeConfigurator} from './interfaces/ISpokeConfigurator.sol';
+import {IAccessManaged} from './interfaces/IAccessManaged.sol';
 import {Roles} from './Roles.sol';
 import {AaveV4EthereumAddresses, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumTokenizationSpokes} from './AaveV4EthereumAddresses.sol';
 import {AaveV4Ethereum_ActivateV4Ethereum_20260319} from './AaveV4Ethereum_ActivateV4Ethereum_20260319.sol';
@@ -152,10 +153,21 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_FeeMinterRole() public {
-    _assertRoleHolders(Roles.HUB_FEE_MINTER_ROLE);
+    uint64 roleId = Roles.HUB_FEE_MINTER_ROLE;
 
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertZeroRoleHolders(roleId);
+
+    uint256 assetId = vm.randomUint(AaveV4EthereumHubs.CORE_HUB.getAssetCount() - 1);
+
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IAccessManaged.AccessManagedUnauthorized.selector,
+        GovernanceV3Ethereum.EXECUTOR_LVL_1
+      )
+    );
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    AaveV4EthereumHubs.CORE_HUB.mintFeeShares(0);
+    _getRandomHub().mintFeeShares({assetId: 0});
   }
 
   function test_HubDeficitEliminatorRole() public {
@@ -351,6 +363,14 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     _assertDoesNotHaveRole(roleId, TMP_EXECUTOR);
   }
 
+  function _assertZeroRoleHolders(uint64 roleId) internal view {
+    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
+      AaveV4EthereumAddresses.ACCESS_MANAGER
+    );
+    uint256 memberCount = accessManager.getRoleMemberCount(roleId);
+    assertEq(memberCount, 0, 'Role should have no members');
+  }
+
   function _assertExactRoleHolders(uint64 roleId, address[] memory expectedHolders) internal view {
     for (uint256 i; i < expectedHolders.length; ++i) {
       for (uint256 j = i + 1; j < expectedHolders.length; ++j) {
@@ -375,6 +395,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
       }
       assertTrue(found, 'Expected role holder not found');
     }
+  }
+
+  function _getRandomHub() internal view returns (IHub) {
+    return AaveV4EthereumHubs.getHubs()[vm.randomUint(AaveV4EthereumHubs.getHubs().length - 1)];
   }
 
   /// @dev Reads the EIP-1967 admin slot to find the proxy admin, then checks its owner.
