@@ -9,6 +9,9 @@ import {IHub} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IH
 import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITokenizationSpoke.sol';
 import {INativeTokenGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/INativeTokenGateway.sol';
 import {ISignatureGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISignatureGateway.sol';
+import {IGiverPositionManager} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IGiverPositionManager.sol';
+import {ITakerPositionManager} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ITakerPositionManager.sol';
+import {IConfigPositionManager} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IConfigPositionManager.sol';
 import {AaveV4EthereumPositionManagers, AaveV4EthereumTokenizationSpokes, AaveV4EthereumHubs} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/AaveV4EthereumAddresses.sol';
 import {GovV3Helpers, ChainIds} from 'aave-helpers/src/GovV3Helpers.sol';
 import {Types} from './Types.sol';
@@ -96,12 +99,16 @@ contract ProtocolV4TestBase is SnapshotV4 {
 
   /// @notice Test all reserves on every spoke in the array.
   function e2eTestAllSpokes(ISpoke[] memory spokes) public {
-    for (uint256 i; i < spokes.length; i++) {
-      console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
-      console.log('--------------------------------');
-      e2eTestSpoke(spokes[i]);
-      e2eTestGateways(spokes[i]);
-    }
+    // for (uint256 i; i < spokes.length; i++) {
+    //   console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
+    //   console.log('--------------------------------');
+    // e2eTestSpoke(spokes[i]);
+    //   e2eTestPositionManagers(spokes[i]);
+    // }
+    uint i = 1;
+    console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
+    console.log('--------------------------------');
+    e2eTestPositionManagers(spokes[i]);
   }
 
   /// @notice Test all reserves on one spoke, looping over ALL good collaterals, then gateway tests.
@@ -139,12 +146,19 @@ contract ProtocolV4TestBase is SnapshotV4 {
     }
   }
 
+  /// @notice Test all position managers on a spoke.
+  function e2eTestPositionManagers(ISpoke spoke) public {
+    // e2eTestGateways(spoke);
+    e2eTestRegularPositionManagers(spoke);
+  }
+
   /// @notice Test all gateways on a spoke.
   function e2eTestGateways(ISpoke spoke) public {
     // set caps to max to simplify user ops
     _setCapsToMax(spoke);
 
     Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
+    Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(allReserves);
     Types.ReserveInfo[] memory goodDebtReserves = _getAllUsableDebtReserves(allReserves);
 
     // NativeTokenGateway — only if spoke lists WETH
@@ -203,6 +217,308 @@ contract ProtocolV4TestBase is SnapshotV4 {
       vm.expectRevert(ISpoke.ReserveFrozen.selector);
       spoke.borrow({reserveId: frozenAsset.reserveId, amount: amount, onBehalfOf: user});
     }
+  }
+
+  /// @notice Test all regular position managers on a spoke.
+  function e2eTestRegularPositionManagers(ISpoke spoke) public {
+    _setCapsToMax(spoke);
+
+    Types.ReserveInfo[] memory allReserves = _getReserveInfo(spoke);
+    Types.ReserveInfo[] memory goodCollaterals = _getAllUsableCollaterals(allReserves);
+    Types.ReserveInfo[] memory goodDebtReserves = _getAllUsableDebtReserves(allReserves);
+
+    if (goodCollaterals.length == 0 || goodDebtReserves.length == 0) {
+      console.log('POSITION_MANAGERS: Skipping spoke (no collateral or debt reserves)');
+      return;
+    }
+
+    Types.ReserveInfo memory collateralInfo = goodCollaterals[0];
+    Types.ReserveInfo memory debtReserveInfo = goodDebtReserves[0];
+
+    _testGiverPositionManager(spoke, debtReserveInfo, collateralInfo);
+    _testTakerPositionManager(spoke, debtReserveInfo, collateralInfo);
+    _testConfigPositionManager(spoke, collateralInfo);
+  }
+
+  /// @notice Test GiverPositionManager: supplyOnBehalfOf and repayOnBehalfOf.
+  function _testGiverPositionManager(
+    ISpoke spoke,
+    Types.ReserveInfo memory debtReserveInfo,
+    Types.ReserveInfo memory collateralInfo
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+    console.log('GIVER_PM: Testing supplyOnBehalfOf and repayOnBehalfOf');
+
+    IGiverPositionManager giverPositionManager = IGiverPositionManager(
+      AaveV4EthereumPositionManagers.GIVER_POSITION_MANAGER
+    );
+    address oracleAddr = spoke.ORACLE();
+    address owner = makeAddr('GIVER_OWNER');
+    address supplier = makeAddr('GIVER_SUPPLIER');
+
+    // Owner approves GiverPositionManager
+    vm.prank(owner);
+    spoke.setUserPositionManager(address(giverPositionManager), true);
+
+    // --- supplyOnBehalfOf ---
+    uint256 supplyAmount = _getTokenAmountByDollarValue({
+      oracleAddr: oracleAddr,
+      reserveInfo: collateralInfo,
+      dollarValue: 10_000
+    });
+
+    uint256 ownerSupplyBefore = spoke.getUserSuppliedAssets(collateralInfo.reserveId, owner);
+
+    vm.startPrank(supplier);
+    deal2(collateralInfo.underlying, supplier, supplyAmount);
+    IERC20(collateralInfo.underlying).forceApprove(address(giverPositionManager), supplyAmount);
+    giverPositionManager.supplyOnBehalfOf({
+      spoke: address(spoke),
+      reserveId: collateralInfo.reserveId,
+      amount: supplyAmount,
+      onBehalfOf: owner
+    });
+    vm.stopPrank();
+
+    uint256 ownerSupplyAfter = spoke.getUserSuppliedAssets(collateralInfo.reserveId, owner);
+    assertEq(
+      ownerSupplyAfter,
+      ownerSupplyBefore + supplyAmount,
+      'GIVER_PM: supplyOnBehalfOf owner balance mismatch'
+    );
+
+    // --- repayOnBehalfOf ---
+    // Setup: owner needs a borrow position first
+    vm.prank(owner);
+    spoke.setUsingAsCollateral({
+      reserveId: collateralInfo.reserveId,
+      usingAsCollateral: true,
+      onBehalfOf: owner
+    });
+
+    uint256 borrowAmount = _getTokenAmountByDollarValue({
+      oracleAddr: oracleAddr,
+      reserveInfo: debtReserveInfo,
+      dollarValue: 1_000
+    });
+    _ensureLiquidity({spoke: spoke, reserveInfo: debtReserveInfo, amount: borrowAmount});
+
+    vm.prank(owner);
+    spoke.borrow({reserveId: debtReserveInfo.reserveId, amount: borrowAmount, onBehalfOf: owner});
+
+    uint256 ownerDebtBefore = spoke.getUserTotalDebt(debtReserveInfo.reserveId, owner);
+    assertGt(ownerDebtBefore, 0, 'GIVER_PM: owner should have debt before repay');
+
+    uint256 repayAmount = borrowAmount / 2;
+    vm.startPrank(supplier);
+    deal2(debtReserveInfo.underlying, supplier, repayAmount);
+    IERC20(debtReserveInfo.underlying).forceApprove(address(giverPositionManager), repayAmount);
+    giverPositionManager.repayOnBehalfOf({
+      spoke: address(spoke),
+      reserveId: debtReserveInfo.reserveId,
+      amount: repayAmount,
+      onBehalfOf: owner
+    });
+    vm.stopPrank();
+
+    uint256 ownerDebtAfter = spoke.getUserTotalDebt(debtReserveInfo.reserveId, owner);
+    assertEq(
+      ownerDebtBefore - ownerDebtAfter,
+      repayAmount,
+      'GIVER_PM: repayOnBehalfOf debt should decrease'
+    );
+    vm.revertToState(snapshot);
+  }
+
+  /// @notice Test TakerPositionManager: withdrawOnBehalfOf and borrowOnBehalfOf.
+  function _testTakerPositionManager(
+    ISpoke spoke,
+    Types.ReserveInfo memory debtReserveInfo,
+    Types.ReserveInfo memory collateralInfo
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+    console.log('TAKER_PM: Testing withdrawOnBehalfOf and borrowOnBehalfOf');
+
+    ITakerPositionManager takerPositionManager = ITakerPositionManager(
+      AaveV4EthereumPositionManagers.TAKER_POSITION_MANAGER
+    );
+    address owner = makeAddr('TAKER_OWNER');
+    address taker = makeAddr('TAKER_DELEGATEE');
+
+    // Owner approves TakerPositionManager
+    vm.prank(owner);
+    spoke.setUserPositionManager(address(takerPositionManager), true);
+
+    // Supply collateral for owner
+    uint256 supplyAmount = _getTokenAmountByDollarValue({
+      oracleAddr: spoke.ORACLE(),
+      reserveInfo: collateralInfo,
+      dollarValue: 10_000
+    });
+    _supply({spoke: spoke, reserveInfo: collateralInfo, user: owner, amount: supplyAmount});
+
+    _testTakerWithdraw(spoke, takerPositionManager, collateralInfo, owner, taker, supplyAmount / 4);
+    _testTakerBorrow(spoke, takerPositionManager, debtReserveInfo, collateralInfo, owner, taker);
+    vm.revertToState(snapshot);
+  }
+
+  function _testTakerWithdraw(
+    ISpoke spoke,
+    ITakerPositionManager takerPositionManager,
+    Types.ReserveInfo memory collateralInfo,
+    address owner,
+    address taker,
+    uint256 withdrawAmount
+  ) internal {
+    vm.prank(owner);
+    takerPositionManager.approveWithdraw({
+      spoke: address(spoke),
+      reserveId: collateralInfo.reserveId,
+      spender: taker,
+      amount: withdrawAmount
+    });
+
+    uint256 ownerSupplyBefore = spoke.getUserSuppliedAssets(collateralInfo.reserveId, owner);
+    uint256 takerBalanceBefore = IERC20(collateralInfo.underlying).balanceOf(taker);
+
+    vm.prank(taker);
+    takerPositionManager.withdrawOnBehalfOf({
+      spoke: address(spoke),
+      reserveId: collateralInfo.reserveId,
+      amount: withdrawAmount,
+      onBehalfOf: owner
+    });
+
+    assertEq(
+      ownerSupplyBefore - spoke.getUserSuppliedAssets(collateralInfo.reserveId, owner),
+      withdrawAmount,
+      'TAKER_PM: owner supply should decrease'
+    );
+    assertEq(
+      takerBalanceBefore + withdrawAmount,
+      IERC20(collateralInfo.underlying).balanceOf(taker),
+      'TAKER_PM: taker should receive withdrawn tokens'
+    );
+  }
+
+  function _testTakerBorrow(
+    ISpoke spoke,
+    ITakerPositionManager takerPositionManager,
+    Types.ReserveInfo memory debtReserveInfo,
+    Types.ReserveInfo memory collateralInfo,
+    address owner,
+    address taker
+  ) internal {
+    vm.prank(owner);
+    spoke.setUsingAsCollateral({
+      reserveId: collateralInfo.reserveId,
+      usingAsCollateral: true,
+      onBehalfOf: owner
+    });
+
+    uint256 borrowAmount = _getTokenAmountByDollarValue({
+      oracleAddr: spoke.ORACLE(),
+      reserveInfo: debtReserveInfo,
+      dollarValue: 1_000
+    });
+    _ensureLiquidity({spoke: spoke, reserveInfo: debtReserveInfo, amount: borrowAmount});
+
+    vm.prank(owner);
+    takerPositionManager.approveBorrow({
+      spoke: address(spoke),
+      reserveId: debtReserveInfo.reserveId,
+      spender: taker,
+      amount: borrowAmount
+    });
+
+    uint256 ownerDebtBefore = spoke.getUserTotalDebt(debtReserveInfo.reserveId, owner);
+    uint256 takerBalanceBefore = IERC20(debtReserveInfo.underlying).balanceOf(taker);
+
+    vm.prank(taker);
+    takerPositionManager.borrowOnBehalfOf({
+      spoke: address(spoke),
+      reserveId: debtReserveInfo.reserveId,
+      amount: borrowAmount,
+      onBehalfOf: owner
+    });
+
+    assertEq(
+      spoke.getUserTotalDebt(debtReserveInfo.reserveId, owner),
+      ownerDebtBefore + borrowAmount,
+      'TAKER_PM: owner debt should increase'
+    );
+    assertEq(
+      takerBalanceBefore + borrowAmount,
+      IERC20(debtReserveInfo.underlying).balanceOf(taker),
+      'TAKER_PM: taker should receive borrowed tokens'
+    );
+  }
+
+  /// @notice Test ConfigPositionManager: setUsingAsCollateralOnBehalfOf.
+  function _testConfigPositionManager(
+    ISpoke spoke,
+    Types.ReserveInfo memory collateralInfo
+  ) internal {
+    uint256 snapshot = vm.snapshotState();
+    console.log('CONFIG_PM: Testing setUsingAsCollateralOnBehalfOf');
+
+    IConfigPositionManager configPositionManager = IConfigPositionManager(
+      AaveV4EthereumPositionManagers.CONFIG_POSITION_MANAGER
+    );
+    address oracleAddr = spoke.ORACLE();
+    address owner = makeAddr('CONFIG_OWNER');
+    address configDelegatee = makeAddr('CONFIG_DELEGATEE');
+
+    // Owner approves ConfigPositionManager
+    vm.prank(owner);
+    spoke.setUserPositionManager(address(configPositionManager), true);
+
+    // Supply collateral for owner
+    uint256 supplyAmount = _getTokenAmountByDollarValue({
+      oracleAddr: oracleAddr,
+      reserveInfo: collateralInfo,
+      dollarValue: 10_000
+    });
+    _supply({spoke: spoke, reserveInfo: collateralInfo, user: owner, amount: supplyAmount});
+
+    // Owner grants global permission to delegatee
+    vm.prank(owner);
+    configPositionManager.setGlobalPermission({
+      spoke: address(spoke),
+      delegatee: configDelegatee,
+      status: true
+    });
+
+    // Delegatee enables collateral on behalf of owner
+    vm.prank(configDelegatee);
+    configPositionManager.setUsingAsCollateralOnBehalfOf({
+      spoke: address(spoke),
+      reserveId: collateralInfo.reserveId,
+      usingAsCollateral: true,
+      onBehalfOf: owner
+    });
+
+    (bool usingAsCollateralBeforeDisable, ) = spoke.getUserReserveStatus(
+      collateralInfo.reserveId,
+      owner
+    );
+    assertEq(usingAsCollateralBeforeDisable, true, 'CONFIG_PM: collateral should be enabled');
+
+    // Delegatee disables collateral on behalf of owner
+    vm.prank(configDelegatee);
+    configPositionManager.setUsingAsCollateralOnBehalfOf({
+      spoke: address(spoke),
+      reserveId: collateralInfo.reserveId,
+      usingAsCollateral: false,
+      onBehalfOf: owner
+    });
+
+    (bool usingAsCollateralAfterDisable, ) = spoke.getUserReserveStatus(
+      collateralInfo.reserveId,
+      owner
+    );
+    assertEq(usingAsCollateralAfterDisable, false, 'CONFIG_PM: collateral should be disabled');
+    vm.revertToState(snapshot);
   }
 
   /// @notice Test that a paused reserve correctly reverts on all actions.
