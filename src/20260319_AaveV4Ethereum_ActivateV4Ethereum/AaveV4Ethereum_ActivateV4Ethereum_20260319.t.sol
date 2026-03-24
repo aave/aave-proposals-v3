@@ -22,9 +22,10 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
 
   address internal constant DEPLOYER = 0xB00A89E5C8756bA8629846eEF8a4a9C71Ad1930A;
   address internal constant SECURITY_COUNCIL = 0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9;
+  address internal constant TMP_EXECUTOR = 0x778b07a501a7a8d7625e51C3Ea84D090118f0161;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 24723214);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 24728084);
     proposal = new AaveV4Ethereum_ActivateV4Ethereum_20260319();
   }
 
@@ -87,15 +88,15 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   // | Position Managers  | Owner                                  |     | Security Council                         |
   // | Treasury Spoke     | Owner                                  |     | Security Council                         |
   //
-  // NOTE: These tests currently pass because setUp() grants all roles via prank.
-  // Once configuration phase is complete on mainnet, _grantConfigurationPhaseRoles()
-  // should be removed from setUp() and these tests must still pass.
   // ---------------------------------------------------------------------------
 
+  /// @dev Access Manager Admin Role - DAO, Security Council
   function test_AccessManagerAdminRole() public view {
     _assertRoleHolders(Roles.ACCESS_MANAGER_ADMIN_ROLE);
+    _assertTmpAddrsDoNotHaveRole(Roles.ACCESS_MANAGER_ADMIN_ROLE);
   }
 
+  /// @dev Executor can grant roles to another account
   function test_executorCanGrantRoles() public {
     IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
       AaveV4EthereumAddresses.ACCESS_MANAGER
@@ -118,22 +119,35 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     assertTrue(selfGranted, 'Executor should be able to grant itself another role');
   }
 
-  function test_HubConfiguratorRole() public {
-    _assertRoleHolders(Roles.HUB_CONFIGURATOR_ROLE);
+  /// @dev HubConfigurator can change config on a spoke
+  function test_HubConfiguratorRole(uint256 index) public {
+    _assertTmpAddrsDoNotHaveRole(Roles.HUB_CONFIGURATOR_ROLE);
+    address[] memory expected = new address[](1);
+    expected[0] = AaveV4EthereumAddresses.HUB_CONFIGURATOR;
+    _assertExactRoleHolders(Roles.HUB_CONFIGURATOR_ROLE, expected);
 
-    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
-    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    uint256 assetId = 0;
+    index = bound(index, 0, AaveV4EthereumHubs.CORE_HUB.getSpokeCount(assetId) - 1);
+    // random spoke
+    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress({assetId: assetId, index: 0});
+    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
+      assetId: 0,
+      spoke: spoke
+    });
     assertFalse(configBefore.active, 'Spoke should be inactive before');
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
-      address(AaveV4EthereumHubs.CORE_HUB),
-      0,
-      spoke,
-      true
-    );
+    IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
+      hub: address(AaveV4EthereumHubs.CORE_HUB),
+      assetId: 0,
+      spoke: spoke,
+      active: true
+    });
 
-    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
+      assetId: 0,
+      spoke: spoke
+    });
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
@@ -322,6 +336,19 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     );
     (bool hasRole, ) = accessManager.hasRole(roleId, account);
     assertTrue(hasRole, 'Expected account to have role');
+  }
+
+  function _assertDoesNotHaveRole(uint64 roleId, address account) internal view {
+    IAccessManagerEnumerable accessManager = IAccessManagerEnumerable(
+      AaveV4EthereumAddresses.ACCESS_MANAGER
+    );
+    (bool hasRole, ) = accessManager.hasRole(roleId, account);
+    assertFalse(hasRole, 'Expected account to not have role');
+  }
+
+  function _assertTmpAddrsDoNotHaveRole(uint64 roleId) internal view {
+    _assertDoesNotHaveRole(roleId, DEPLOYER);
+    _assertDoesNotHaveRole(roleId, TMP_EXECUTOR);
   }
 
   function _assertExactRoleHolders(uint64 roleId, address[] memory expectedHolders) internal view {
