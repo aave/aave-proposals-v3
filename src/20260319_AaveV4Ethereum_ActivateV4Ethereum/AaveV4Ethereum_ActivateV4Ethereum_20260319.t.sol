@@ -125,7 +125,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   /// @dev HubConfigurator can change config on a spoke
-  function test_HubConfiguratorRole(uint256 index) public {
+  function test_HubConfiguratorRole() public {
     uint64 roleId = Roles.HUB_CONFIGURATOR_ROLE;
     _assertTmpAddrsDoNotHaveRole(roleId);
 
@@ -205,40 +205,58 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     vm.stopPrank();
   }
 
+  /// @dev HubConfiguratorDomainAdminRole - DAO
   function test_HubConfiguratorDomainAdminRole() public {
-    _assertRoleHolders(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE);
+    uint64 roleId = Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE;
+    address[] memory expectedHolders = new address[](1);
+    expectedHolders[0] = GovernanceV3Ethereum.EXECUTOR_LVL_1;
 
-    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress(0, 0);
-    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertExactRoleHolders(roleId, expectedHolders);
+
+    address spoke = AaveV4EthereumHubs.CORE_HUB.getSpokeAddress({assetId: 0, index: 0});
+    IHub.SpokeConfig memory configBefore = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
+      assetId: 0,
+      spoke: spoke
+    });
     assertFalse(configBefore.active, 'Spoke should be inactive before');
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive(
-      address(AaveV4EthereumHubs.CORE_HUB),
-      0,
-      spoke,
-      true
-    );
+    IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
+      hub: address(AaveV4EthereumHubs.CORE_HUB),
+      assetId: 0,
+      spoke: spoke,
+      active: true
+    });
 
-    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig(0, spoke);
+    IHub.SpokeConfig memory configAfter = AaveV4EthereumHubs.CORE_HUB.getSpokeConfig({
+      assetId: 0,
+      spoke: spoke
+    });
     assertTrue(configAfter.active, 'Spoke should be active after');
   }
 
+  /// @dev SpokeConfiguratorRole - spokeConfigurator contract
   function test_SpokeConfiguratorRole() public {
-    _assertRoleHolders(Roles.SPOKE_CONFIGURATOR_ROLE);
+    uint64 roleId = Roles.SPOKE_CONFIGURATOR_ROLE;
 
-    ISpoke.ReserveConfig memory configBefore = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
-    assertFalse(configBefore.paused, 'Reserve should not be paused before');
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    address[] memory expected = new address[](1);
+    expected[0] = AaveV4EthereumAddresses.SPOKE_CONFIGURATOR;
+    _assertExactRoleHolders(roleId, expected);
 
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused(
-      address(AaveV4EthereumSpokes.MAIN_SPOKE),
-      0,
-      true
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        IAccessManaged.AccessManagedUnauthorized.selector,
+        GovernanceV3Ethereum.EXECUTOR_LVL_1
+      )
     );
-
-    ISpoke.ReserveConfig memory configAfter = AaveV4EthereumSpokes.MAIN_SPOKE.getReserveConfig(0);
-    assertTrue(configAfter.paused, 'Reserve should be paused after');
+    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    ISpokeConfigurator(AaveV4EthereumAddresses.SPOKE_CONFIGURATOR).updatePaused({
+      spoke: address(AaveV4EthereumSpokes.MAIN_SPOKE),
+      reserveId: 0,
+      paused: true
+    });
   }
 
   function test_SpokeUserPositionUpdaterRole() public {
@@ -282,13 +300,15 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_hasRole_HubDeficitEliminatorRole() public view {
-    _assertHasRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.HUB_DEFICIT_ELIMINATOR_ROLE, SECURITY_COUNCIL);
+    uint64 roleId = Roles.HUB_DEFICIT_ELIMINATOR_ROLE;
+
+    _assertTmpAddrsDoNotHaveRole(roleId);
+    _assertDoesNotHaveRole(roleId, GovernanceV3Ethereum.EXECUTOR_LVL_1);
+    _assertDoesNotHaveRole(roleId, SECURITY_COUNCIL);
   }
 
   function test_hasRole_HubConfiguratorDomainAdminRole() public view {
     _assertHasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertHasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, SECURITY_COUNCIL);
   }
 
   function test_hasRole_SpokeConfiguratorRole() public view {
