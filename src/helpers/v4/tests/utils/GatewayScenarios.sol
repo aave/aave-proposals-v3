@@ -60,7 +60,7 @@ abstract contract GatewayScenarios is TokenizationScenarios {
     ISpoke spoke,
     Types.ReserveInfo memory wethInfo
   ) internal {
-    // console.log('NATIVE_GATEWAY: Testing on spoke with WETH reserveId=%s', wethInfo.reserveId);
+    console.log('NATIVE_GATEWAY: Testing on spoke with WETH reserveId=%s', wethInfo.reserveId);
     uint256 gatewaySnapshot = vm.snapshotState();
 
     address user = vm.randomAddress();

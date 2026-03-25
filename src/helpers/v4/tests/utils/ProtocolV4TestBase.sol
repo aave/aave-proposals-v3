@@ -100,8 +100,8 @@ contract ProtocolV4TestBase is SnapshotV4 {
   /// @notice Test all reserves on every spoke in the array.
   function e2eTestAllSpokes(ISpoke[] memory spokes) public {
     for (uint256 i; i < spokes.length; i++) {
-      // console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
-      // console.log('--------------------------------');
+      console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
+      console.log('--------------------------------');
       e2eTestSpoke(spokes[i]);
       e2eTestPositionManagers(spokes[i]);
     }
@@ -114,7 +114,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
     require(goodCollaterals.length > 0, 'No usable collateral found');
 
     for (uint256 collateralIndex; collateralIndex < goodCollaterals.length; collateralIndex++) {
-      // console.log('--- E2E: Using collateral %s ---', goodCollaterals[collateralIndex].symbol);
+      console.log('--- E2E: Using collateral %s ---', goodCollaterals[collateralIndex].symbol);
 
       uint256 spokeSnapshot = vm.snapshotState();
 
@@ -188,7 +188,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
 
   /// @notice Test that a frozen reserve correctly reverts on supply and borrow.
   function e2eTestFrozenAsset(ISpoke spoke, Types.ReserveInfo memory frozenAsset) public {
-    // console.log('E2E: Testing frozen reserve %s (should revert)', frozenAsset.symbol);
+    console.log('E2E: Testing frozen reserve %s (should revert)', frozenAsset.symbol);
 
     address oracleAddr = spoke.ORACLE();
     address user = vm.randomAddress();
@@ -224,7 +224,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
     Types.ReserveInfo[] memory goodDebtReserves = _getAllUsableDebtReserves(allReserves);
 
     if (goodCollaterals.length == 0 || goodDebtReserves.length == 0) {
-      // console.log('POSITION_MANAGERS: Skipping spoke (no collateral or debt reserves)');
+      console.log('POSITION_MANAGERS: Skipping spoke (no collateral or debt reserves)');
       return;
     }
 
@@ -243,7 +243,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
     Types.ReserveInfo memory collateralInfo
   ) internal {
     uint256 snapshot = vm.snapshotState();
-    // console.log('GIVER_PM: Testing supplyOnBehalfOf and repayOnBehalfOf');
+    console.log('GIVER_PM: Testing supplyOnBehalfOf and repayOnBehalfOf');
 
     IGiverPositionManager giverPositionManager = IGiverPositionManager(
       AaveV4EthereumPositionManagers.GIVER_POSITION_MANAGER
@@ -333,7 +333,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
     Types.ReserveInfo memory collateralInfo
   ) internal {
     uint256 snapshot = vm.snapshotState();
-    // console.log('TAKER_PM: Testing withdrawOnBehalfOf and borrowOnBehalfOf');
+    console.log('TAKER_PM: Testing withdrawOnBehalfOf and borrowOnBehalfOf');
 
     ITakerPositionManager takerPositionManager = ITakerPositionManager(
       AaveV4EthereumPositionManagers.TAKER_POSITION_MANAGER
@@ -456,7 +456,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
     Types.ReserveInfo memory collateralInfo
   ) internal {
     uint256 snapshot = vm.snapshotState();
-    // console.log('CONFIG_PM: Testing setUsingAsCollateralOnBehalfOf');
+    console.log('CONFIG_PM: Testing setUsingAsCollateralOnBehalfOf');
 
     IConfigPositionManager configPositionManager = IConfigPositionManager(
       AaveV4EthereumPositionManagers.CONFIG_POSITION_MANAGER
@@ -519,7 +519,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
 
   /// @notice Test that a paused reserve correctly reverts on all actions.
   function e2eTestPausedAsset(ISpoke spoke, Types.ReserveInfo memory pausedAsset) public {
-    // console.log('E2E: Testing paused reserve %s (should revert)', pausedAsset.symbol);
+    console.log('E2E: Testing paused reserve %s (should revert)', pausedAsset.symbol);
 
     address oracleAddr = spoke.ORACLE();
     address user = vm.randomAddress();
@@ -564,7 +564,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
     Types.ReserveInfo memory testAssetInfo
   ) public {
     Types.ReserveInfo memory collateralInfo = goodCollaterals[primaryCollateralIndex];
-    // console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
+    console.log('E2E: Collateral %s, TestAsset %s', collateralInfo.symbol, testAssetInfo.symbol);
     require(collateralInfo.collateralEnabled, 'COLLATERAL_CONFIG_MUST_BE_COLLATERAL');
 
     uint256 scenarioSnapshot;
@@ -665,8 +665,8 @@ contract ProtocolV4TestBase is SnapshotV4 {
   /// @notice Test all tokenization spokes in the array.
   function e2eTestAllTokenizationSpokes(address[] memory tokenizationSpokes) public {
     for (uint256 i; i < tokenizationSpokes.length; i++) {
-      // console.log('--- E2E: Testing tokenization spoke %s ---', tokenizationSpokes[i]);
-      // console.log('------------------------------------------');
+      console.log('--- E2E: Testing tokenization spoke %s ---', tokenizationSpokes[i]);
+      console.log('------------------------------------------');
       e2eTestTokenizationSpoke(ITokenizationSpoke(tokenizationSpokes[i]));
     }
   }
@@ -674,7 +674,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
   /// @notice Run all tokenization spoke scenarios for a single spoke.
   function e2eTestTokenizationSpoke(ITokenizationSpoke tokenizationSpoke) public {
     Types.ReserveInfo memory reserveInfo = _getTokenizationReserveInfo(tokenizationSpoke);
-    // console.log('E2E: TokenizationSpoke asset: %s', reserveInfo.symbol);
+    console.log('E2E: TokenizationSpoke asset: %s', reserveInfo.symbol);
 
     uint256 snapshot = vm.snapshotState();
 
@@ -685,7 +685,7 @@ contract ProtocolV4TestBase is SnapshotV4 {
       .getSpokeConfig(reserveInfo.assetId, address(tokenizationSpoke))
       .addCap;
     if (addCap == 0) {
-      // console.log('E2E: Skipping tokenization spoke %s (addCap is 0)', reserveInfo.symbol);
+      console.log('E2E: Skipping tokenization spoke %s (addCap is 0)', reserveInfo.symbol);
       return;
     }
     uint256 maxAddAmount = uint256(addCap) * 10 ** reserveInfo.decimals;

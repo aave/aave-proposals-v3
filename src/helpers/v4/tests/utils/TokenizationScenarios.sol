@@ -157,7 +157,7 @@ abstract contract TokenizationScenarios is TokenizationActions {
       abi.encodeWithSignature('nonces(address)', address(this))
     );
     if (!success) {
-      // console.log('TOKENIZATION_PERMIT: skipping %s (no EIP-2612 support)', reserveInfo.symbol);
+      console.log('TOKENIZATION_PERMIT: skipping %s (no EIP-2612 support)', reserveInfo.symbol);
       return;
     }
 
