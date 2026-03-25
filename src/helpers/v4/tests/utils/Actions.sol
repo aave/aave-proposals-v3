@@ -18,9 +18,9 @@ abstract contract Actions is CommonTestBase {
 
   function _logAction(string memory action, string memory symbol, uint256 amount) internal pure {
     if (amount == UINT256_MAX) {
-      console.log('%s: %s, Amount: UINT256_MAX', action, symbol);
+      // console.log('%s: %s, Amount: UINT256_MAX', action, symbol);
     } else {
-      console.log('%s: %s, Amount: %e', action, symbol, amount);
+      // console.log('%s: %s, Amount: %e', action, symbol, amount);
     }
   }
 
@@ -399,18 +399,18 @@ abstract contract Actions is CommonTestBase {
     IERC20(debtInfo.underlying).forceApprove(address(spoke), debtToCover);
 
     if (debtToCover == UINT256_MAX) {
-      console.log(
-        'LIQUIDATE: %s, DebtToCover: UINT256_MAX, TotalDebt: %e',
-        debtInfo.symbol,
-        debtSnapshotBefore.user.totalDebt
-      );
+      // console.log(
+      //   'LIQUIDATE: %s, DebtToCover: UINT256_MAX, TotalDebt: %e',
+      //   debtInfo.symbol,
+      //   debtSnapshotBefore.user.totalDebt
+      // );
     } else {
-      console.log(
-        'LIQUIDATE: %s, DebtToCover: %e, TotalDebt: %e',
-        debtInfo.symbol,
-        debtToCover,
-        debtSnapshotBefore.user.totalDebt
-      );
+      // console.log(
+      //   'LIQUIDATE: %s, DebtToCover: %e, TotalDebt: %e',
+      //   debtInfo.symbol,
+      //   debtToCover,
+      //   debtSnapshotBefore.user.totalDebt
+      // );
     }
 
     spoke.liquidationCall({

@@ -611,7 +611,7 @@ abstract contract Scenarios is Helpers {
     // Remove addCaps so enough collateral can be supplied to borrow up to drawCap
     _setAddCapsToMax(spoke);
 
-    console.log('TEST_DRAW_CAP: drawCap=%e', drawCap);
+    // console.log('TEST_DRAW_CAP: drawCap=%e', drawCap);
     address borrower = vm.randomAddress();
     uint256 drawCapScaled = uint256(drawCap) * 10 ** reserveInfo.decimals;
     uint256 currentDebt = spoke.getReserveTotalDebt(reserveInfo.reserveId);
