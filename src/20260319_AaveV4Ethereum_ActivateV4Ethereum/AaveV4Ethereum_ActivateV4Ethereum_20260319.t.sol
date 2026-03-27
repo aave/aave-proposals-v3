@@ -32,14 +32,14 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   /**
    * @dev executes the generic test suite including e2e
    */
-  // function test_defaultProposalExecution() public {
-  //   defaultTest(
-  //     'AaveV4Ethereum_ActivateV4Ethereum_20260319',
-  //     AaveV4EthereumSpokes.getUserSpokes(),
-  //     AaveV4EthereumTokenizationSpokes.getTokenizationSpokes(),
-  //     address(0) // to avoid executing the proposal
-  //   );
-  // }
+  function test_defaultProposalExecution() public {
+    defaultTest(
+      'AaveV4Ethereum_ActivateV4Ethereum_20260319',
+      AaveV4EthereumSpokes.getUserSpokes(),
+      AaveV4EthereumTokenizationSpokes.getTokenizationSpokes(),
+      address(0) // to avoid executing the proposal
+    );
+  }
 
   function test_allSpokesActiveBeforeExecution() public {
     IHub[] memory hubs = AaveV4EthereumHubs.getHubs();
