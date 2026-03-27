@@ -25,7 +25,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   address internal constant TMP_EXECUTOR = 0x778b07a501a7a8d7625e51C3Ea84D090118f0161;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 24728084);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 24729090);
     proposal = new AaveV4Ethereum_ActivateV4Ethereum_20260319();
   }
 
@@ -304,12 +304,12 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     _assertZeroRoleHolders(roleId);
   }
 
+  /// @dev HubDeficitEliminatorRole - not granted to any account
   function test_hasRole_HubDeficitEliminatorRole() public view {
     uint64 roleId = Roles.HUB_DEFICIT_ELIMINATOR_ROLE;
 
     _assertTempAddrsDoNotHaveRole(roleId);
-    _assertDoesNotHaveRole(roleId, GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    _assertDoesNotHaveRole(roleId, SECURITY_COUNCIL);
+    _assertZeroRoleHolders(roleId);
   }
 
   /// @dev HubConfiguratorDomainAdminRole - DAO
