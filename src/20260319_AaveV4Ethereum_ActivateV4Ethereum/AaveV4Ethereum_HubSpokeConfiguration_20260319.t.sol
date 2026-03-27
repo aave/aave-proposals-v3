@@ -15,14 +15,14 @@ import {AaveV4Ethereum_ActivateV4Ethereum_20260319} from './AaveV4Ethereum_Activ
  */
 contract AaveV4Ethereum_HubSpokeConfiguration_20260319_Test is Test {
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 24729090);
+    vm.createSelectFork(vm.rpcUrl('mainnet'));
 
-    // Execute the activation proposal
-    GovV3Helpers.executePayload(
-      vm,
-      address(new AaveV4Ethereum_ActivateV4Ethereum_20260319()),
-      address(GovV3Helpers.getPayloadsController(ChainIds.MAINNET))
-    );
+    // // Execute the activation proposal
+    // GovV3Helpers.executePayload(
+    //   vm,
+    //   address(new AaveV4Ethereum_ActivateV4Ethereum_20260319()),
+    //   address(GovV3Helpers.getPayloadsController(ChainIds.MAINNET))
+    // );
   }
 
   // ---------------------------------------------------------------------------

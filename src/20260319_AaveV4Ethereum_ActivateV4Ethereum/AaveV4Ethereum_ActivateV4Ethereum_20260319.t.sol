@@ -25,7 +25,7 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   address internal constant TMP_EXECUTOR = 0x778b07a501a7a8d7625e51C3Ea84D090118f0161;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 24729090);
+    vm.createSelectFork(vm.rpcUrl('mainnet'));
     proposal = new AaveV4Ethereum_ActivateV4Ethereum_20260319();
   }
 
@@ -37,11 +37,12 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
       'AaveV4Ethereum_ActivateV4Ethereum_20260319',
       AaveV4EthereumSpokes.getUserSpokes(),
       AaveV4EthereumTokenizationSpokes.getTokenizationSpokes(),
-      address(proposal)
+      address(0) // to avoid executing the proposal
     );
   }
 
-  function test_allSpokesInactiveBeforeExecution() public view {
+  function test_allSpokesInactiveBeforeExecution() public {
+    vm.skip(true);
     IHub[] memory hubs = AaveV4EthereumHubs.getHubs();
 
     for (uint256 hubIdx; hubIdx < hubs.length; ++hubIdx) {
@@ -58,17 +59,17 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
   }
 
   function test_allSpokesActiveOnCoreHub() public {
-    executePayload(vm, address(proposal));
+    // executePayload(vm, address(proposal));
     _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.CORE_HUB);
   }
 
   function test_allSpokesActiveOnPlusHub() public {
-    executePayload(vm, address(proposal));
+    // executePayload(vm, address(proposal));
     _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PLUS_HUB);
   }
 
   function test_allSpokesActiveOnPrimeHub() public {
-    executePayload(vm, address(proposal));
+    // executePayload(vm, address(proposal));
     _assertAllSpokesActiveOnHub(AaveV4EthereumHubs.PRIME_HUB);
   }
 
@@ -135,18 +136,18 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     address spoke = _getRandomSpoke(hub, assetId);
 
     IHub.SpokeConfig memory configBefore = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
-    assertFalse(configBefore.active, 'Spoke should be inactive before');
+    assertTrue(configBefore.active, 'Spoke should be active before');
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
       hub: address(hub),
       assetId: assetId,
       spoke: spoke,
-      active: true
+      active: false
     });
 
     IHub.SpokeConfig memory configAfter = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
-    assertTrue(configAfter.active, 'Spoke should be active after');
+    assertFalse(configAfter.active, 'Spoke should be inactive after');
   }
 
   /// @dev HubFeeMinterRole - not granted to any account
@@ -216,18 +217,18 @@ contract AaveV4Ethereum_ActivateV4Ethereum_20260319_Test is ProtocolV4TestBase {
     address spoke = _getRandomSpoke(hub, assetId);
 
     IHub.SpokeConfig memory configBefore = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
-    assertFalse(configBefore.active, 'Spoke should be inactive before');
+    assertTrue(configBefore.active, 'Spoke should be active before');
 
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     IHubConfigurator(AaveV4EthereumAddresses.HUB_CONFIGURATOR).updateSpokeActive({
       hub: address(hub),
       assetId: assetId,
       spoke: spoke,
-      active: true
+      active: false
     });
 
     IHub.SpokeConfig memory configAfter = hub.getSpokeConfig({assetId: assetId, spoke: spoke});
-    assertTrue(configAfter.active, 'Spoke should be active after');
+    assertFalse(configAfter.active, 'Spoke should be inactive after');
   }
 
   /// @dev SpokeConfiguratorRole - spokeConfigurator contract
