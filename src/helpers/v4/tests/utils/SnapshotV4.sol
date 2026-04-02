@@ -9,11 +9,11 @@ import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interf
 import {IAssetInterestRateStrategy} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IAssetInterestRateStrategy.sol';
 import {Types} from './Types.sol';
 import {V4DiffWriter} from './V4DiffWriter.sol';
-import {GatewayScenarios} from './GatewayScenarios.sol';
+import {Helpers} from './Helpers.sol';
 
 /// @title SnapshotV4
 /// @notice Snapshot capture for Aave V4. JSON + markdown diff delegated to V4DiffWriter.
-abstract contract SnapshotV4 is GatewayScenarios {
+abstract contract SnapshotV4 is Helpers {
   /// @notice Capture a full V4 configuration snapshot from the given spokes and hubs.
   function createV4Snapshot(
     ISpoke[] memory spokes,

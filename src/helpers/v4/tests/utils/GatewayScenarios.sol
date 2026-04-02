@@ -10,11 +10,11 @@ import {IAaveOracle} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interf
 import {INativeTokenGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/INativeTokenGateway.sol';
 import {ISignatureGateway} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISignatureGateway.sol';
 import {Types} from './Types.sol';
-import {TokenizationScenarios} from './TokenizationScenarios.sol';
+import {Helpers} from './Helpers.sol';
 
 /// @title GatewayScenarios
 /// @notice E2E test scenarios for NativeTokenGateway and SignatureGateway.
-abstract contract GatewayScenarios is TokenizationScenarios {
+abstract contract GatewayScenarios is Helpers {
   using SafeERC20 for IERC20;
 
   // -------------------------------------------------------------------------

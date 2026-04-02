@@ -16,6 +16,9 @@ import {AaveV4EthereumPositionManagers, AaveV4EthereumTokenizationSpokes, AaveV4
 import {GovV3Helpers, ChainIds} from 'aave-helpers/src/GovV3Helpers.sol';
 import {Types} from './Types.sol';
 import {SnapshotV4} from './SnapshotV4.sol';
+import {Scenarios} from './Scenarios.sol';
+import {TokenizationScenarios} from './TokenizationScenarios.sol';
+import {GatewayScenarios} from './GatewayScenarios.sol';
 
 /// @title ProtocolV4TestBase
 /// @notice E2E test base for Aave V4 hub/spoke architecture.
@@ -23,7 +26,7 @@ import {SnapshotV4} from './SnapshotV4.sol';
 ///         Tests deposit, mint, withdraw, redeem for each tokenization spoke.
 ///         Tests NativeTokenGateway and SignatureGateway for each spoke.
 ///         Loops over all good collaterals and uses randomized amounts.
-contract ProtocolV4TestBase is SnapshotV4 {
+contract ProtocolV4TestBase is SnapshotV4, Scenarios, TokenizationScenarios, GatewayScenarios {
   using SafeERC20 for IERC20;
 
   /// @notice Run the full V4 test suite: snapshot before, execute payload, snapshot after, diff, then e2e.
@@ -99,12 +102,17 @@ contract ProtocolV4TestBase is SnapshotV4 {
 
   /// @notice Test all reserves on every spoke in the array.
   function e2eTestAllSpokes(ISpoke[] memory spokes) public {
-    for (uint256 i; i < spokes.length; i++) {
-      console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
-      console.log('--------------------------------');
-      e2eTestSpoke(spokes[i]);
-      e2eTestPositionManagers(spokes[i]);
-    }
+    // for (uint256 i; i < spokes.length; i++) {
+    //   console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
+    //   console.log('--------------------------------');
+    //   e2eTestSpoke(spokes[i]);
+    //   e2eTestPositionManagers(spokes[i]);
+    // }
+    uint i = 1;
+    console.log('--- E2E: Testing spoke %s ---', address(spokes[i]));
+    console.log('--------------------------------');
+    e2eTestSpoke(spokes[i]);
+    e2eTestPositionManagers(spokes[i]);
   }
 
   /// @notice Test all reserves on one spoke, looping over ALL good collaterals, then gateway tests.

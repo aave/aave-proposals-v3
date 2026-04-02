@@ -8,11 +8,11 @@ import {ITokenizationSpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum
 import {ISpoke} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/ISpoke.sol';
 import {IHubBase} from 'src/20260319_AaveV4Ethereum_ActivateV4Ethereum/interfaces/IHubBase.sol';
 import {Types} from './Types.sol';
-import {Scenarios} from './Scenarios.sol';
+import {Helpers} from './Helpers.sol';
 
 /// @title TokenizationActions
 /// @notice Low-level tokenization spoke (ERC4626) actions with hub accounting assertions.
-abstract contract TokenizationActions is Scenarios {
+abstract contract TokenizationActions is Helpers {
   using SafeERC20 for IERC20;
 
   // -------------------------------------------------------------------------
