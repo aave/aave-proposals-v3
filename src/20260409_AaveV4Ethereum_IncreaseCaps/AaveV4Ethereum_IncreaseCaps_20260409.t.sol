@@ -225,6 +225,45 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   }
 
   // ================================================================
+  // Credit Lines
+  //
+  // | Origin   | Target Spoke     | Asset | Current Credit Line | Proposed Credit Line |
+  // |----------|------------------|-------|---------------------|----------------------|
+  // | Core Hub | Ethena Ecosystem | USDC  |             125,000 |              250,000 |
+  // | Core Hub | Ethena Ecosystem | USDT  |             125,000 |              250,000 |
+  // | Core Hub | Ethena Ecosystem | frxUSD|              62,500 |              125,000 |
+  // | Core Hub | Bluechip         | USDC  |             125,000 |              250,000 |
+  // | Core Hub | Bluechip         | USDT  |             125,000 |              250,000 |
+  // | Core Hub | Bluechip         | frxUSD|              62,500 |              125,000 |
+  // | Core Hub | Bluechip         | EURC  |              50,000 |              100,000 |
+  // ================================================================
+
+  // prettier-ignore
+  function test_creditLines() public {
+    // --- before ---
+    //                                                                                                                                      addCap  drawCap
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      125_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      125_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING,                     0,      62_500);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      125_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      125_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.frxUSD_UNDERLYING,                     0,      62_500);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.EURC_UNDERLYING,                       0,      50_000);
+
+    _executePayload();
+
+    // --- after ---
+    //                                                                                                                                      addCap  drawCap
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      250_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      250_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING,                     0,      125_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      250_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      250_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.frxUSD_UNDERLYING,                     0,      125_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.EURC_UNDERLYING,                       0,      100_000);
+  }
+
+  // ================================================================
   // Helpers
   // ================================================================
 
