@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import {AaveV4Payload, IAaveV4ConfigEngine} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/config-engine/AaveV4Payload.sol';
 import {EngineFlags} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/config-engine/libraries/EngineFlags.sol';
-import {Roles} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/deployments/utils/libraries/Roles.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
 
 /**
@@ -13,8 +12,7 @@ import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4Ethereum
  * - To be executed by the Aave Security Council
  */
 contract AaveV4Ethereum_IncreaseCaps_20260409 is AaveV4Payload {
-  // todo: remove this once aave-helpers introduces v4-config-engine/ helpers
-  constructor(IAaveV4ConfigEngine configEngine) AaveV4Payload(configEngine) {}
+  constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
 
   // prettier-ignore
   function hubSpokeConfigUpdates()

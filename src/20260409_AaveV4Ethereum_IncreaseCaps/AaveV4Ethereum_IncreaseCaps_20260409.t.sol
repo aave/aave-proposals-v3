@@ -31,11 +31,10 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 24843480);
 
-    payload = new AaveV4Ethereum_IncreaseCaps_20260409(AaveV4Ethereum.CONFIG_ENGINE);
+    payload = new AaveV4Ethereum_IncreaseCaps_20260409();
 
     // Grant HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE to the executor so the
     // payload (delegatecalled by executor) can update spoke caps.
-    // This will be
     vm.prank(SECURITY_COUNCIL);
     ACCESS_MANAGER.grantRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR, 0);
   }
