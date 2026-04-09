@@ -8,7 +8,7 @@ import {AaveV4Ethereum_IncreaseCaps_20260409} from './AaveV4Ethereum_IncreaseCap
 
 /**
  * @dev Deploy Ethereum
- * deploy-command: make deploy-ledger contract=src/20260409_AaveV4Ethereum_IncreaseCaps/IncreaseCaps_20260409.s.sol chain=mainnet
+ * deploy-command: make deploy-account contract=src/20260409_AaveV4Ethereum_IncreaseCaps/IncreaseCaps_20260409.s.sol chain=mainnet
  * verify-command: FOUNDRY_PROFILE=deploy npx catapulta-verify -b broadcast/IncreaseCaps_20260409.s.sol/1/run-latest.json
  */
 contract DeployEthereum is EthereumScript {
