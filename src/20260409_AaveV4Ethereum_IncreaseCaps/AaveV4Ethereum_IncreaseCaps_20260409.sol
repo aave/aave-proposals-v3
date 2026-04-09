@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {AaveV4Payload, IAaveV4ConfigEngine} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/config-engine/AaveV4Payload.sol';
 import {EngineFlags} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/config-engine/libraries/EngineFlags.sol';
+import {Roles} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/deployments/utils/libraries/Roles.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
 
 /**
@@ -29,7 +30,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409 is AaveV4Payload {
     address PLUS = address(AaveV4EthereumHubs.PLUS_HUB);
 
     IAaveV4ConfigEngine.SpokeConfigUpdate[]
-      memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](35);
+      memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](33);
 
     uint256 i = 0;
 
