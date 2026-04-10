@@ -79,23 +79,6 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     diffV4Snapshots(reportName, snapshotBefore, snapshotAfter);
   }
 
-  function _executePayloadWithRecording()
-    internal
-    returns (string memory rawDiff, string memory logsJson)
-  {
-    uint256 startGas = gasleft();
-    vm.startStateDiffRecording();
-    vm.recordLogs();
-
-    _executePayload();
-
-    uint256 gasUsed = startGas - gasleft();
-    assertLt(gasUsed, (block.gaslimit * 95) / 100, 'BLOCK_GAS_LIMIT_EXCEEDED');
-
-    rawDiff = vm.getStateDiffJson();
-    logsJson = vm.getRecordedLogsJson();
-  }
-
   // ================================================================
   // E2E tests (supply, borrow, repay, liquidation, tokenization, gateways)
   // ================================================================
@@ -335,5 +318,22 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spoke);
     assertEq(config.addCap, expectedAddCap, 'addCap mismatch');
     assertEq(config.drawCap, expectedDrawCap, 'drawCap mismatch');
+  }
+
+  function _executePayloadWithRecording()
+    internal
+    returns (string memory rawDiff, string memory logsJson)
+  {
+    uint256 startGas = gasleft();
+    vm.startStateDiffRecording();
+    vm.recordLogs();
+
+    _executePayload();
+
+    uint256 gasUsed = startGas - gasleft();
+    assertLt(gasUsed, (block.gaslimit * 95) / 100, 'BLOCK_GAS_LIMIT_EXCEEDED');
+
+    rawDiff = vm.getStateDiffJson();
+    logsJson = vm.getRecordedLogsJson();
   }
 }
