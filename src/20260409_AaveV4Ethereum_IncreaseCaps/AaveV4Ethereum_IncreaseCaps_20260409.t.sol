@@ -6,7 +6,7 @@ import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
 import {Roles} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/deployments/utils/libraries/Roles.sol';
 import {AaveV4ConfigEngine} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/config-engine/AaveV4ConfigEngine.sol';
-import {ProtocolV4TestBase} from 'aave-helpers/src/ProtocolV4TestBase.sol';
+import 'aave-helpers/src/ProtocolV4TestBase.sol';
 import {AaveV4EthereumSpokeHelpers, AaveV4EthereumTokenizationSpokeHelpers} from 'aave-helpers/src/dependencies/v4/AaveV4EthereumHelpers.sol';
 
 import {AaveV4Ethereum_IncreaseCaps_20260409} from './AaveV4Ethereum_IncreaseCaps_20260409.sol';
@@ -55,9 +55,34 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     assertTrue(hasRole, 'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution');
   }
 
-  function test_executeWithRecording() private {
-    string memory afterName = string.concat('AaveV4Ethereum_IncreaseCaps_20260409', '_after');
+  function test_executeWithRecording() public {
+    string memory reportName = 'AaveV4Ethereum_IncreaseCaps_20260409';
 
+    IHub[] memory hubs = AaveV4EthereumHubHelpers.getHubs();
+    ISpoke[] memory spokes = AaveV4EthereumSpokeHelpers.getUserSpokes();
+
+    string memory beforeName = string.concat(reportName, '_before');
+    string memory afterName = string.concat(reportName, '_after');
+
+    Types.V4Snapshot memory snapshotBefore = createV4Snapshot(spokes, hubs);
+    writeV4SnapshotJson(beforeName, snapshotBefore);
+
+    (string memory rawDiff, string memory logsJson) = _executePayloadWithRecording();
+
+    Types.V4Snapshot memory snapshotAfter = createV4Snapshot(spokes, hubs);
+    writeV4SnapshotJson(afterName, snapshotAfter);
+
+    string memory afterPath = string.concat('./reports/', afterName, '.json');
+    vm.writeJson(rawDiff, afterPath, '$.raw');
+    vm.writeJson(logsJson, afterPath, '$.logs');
+
+    diffV4Snapshots(reportName, snapshotBefore, snapshotAfter);
+  }
+
+  function _executePayloadWithRecording()
+    internal
+    returns (string memory rawDiff, string memory logsJson)
+  {
     uint256 startGas = gasleft();
     vm.startStateDiffRecording();
     vm.recordLogs();
@@ -67,12 +92,8 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     uint256 gasUsed = startGas - gasleft();
     assertLt(gasUsed, (block.gaslimit * 95) / 100, 'BLOCK_GAS_LIMIT_EXCEEDED');
 
-    string memory rawDiff = vm.getStateDiffJson();
-    string memory logsJson = vm.getRecordedLogsJson();
-
-    string memory afterPath = string.concat('./reports/', afterName, '.json');
-    vm.writeJson(rawDiff, afterPath, '$.raw');
-    vm.writeJson(logsJson, afterPath, '$.logs');
+    rawDiff = vm.getStateDiffJson();
+    logsJson = vm.getRecordedLogsJson();
   }
 
   // ================================================================

@@ -15,7 +15,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is
   function setUp() public override {
     string memory rpcUrl = vm.envOr('RPC_TENDERLY_VTESTNET', string(''));
     vm.skip(bytes(rpcUrl).length == 0);
-    vm.createSelectFork(rpcUrl, 24844481);
+    vm.createSelectFork(rpcUrl, 24846420);
   }
 
   /// @dev Skip, no pre-execution state.

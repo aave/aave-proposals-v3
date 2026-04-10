@@ -11,6 +11,7 @@ remappings = []
 ffi = true
 fs_permissions = [
   { access = "read-write", path = "./reports" },
+  { access = "read-write", path = "./diffs" },
   { access = "read", path = "./zkout" },
 ]
 evm_version = 'cancun'
