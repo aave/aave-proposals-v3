@@ -55,7 +55,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     assertTrue(hasRole, 'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution');
   }
 
-  function test_executeWithRecording() public {
+  function test_executeWithRecording() public virtual {
     string memory reportName = 'AaveV4Ethereum_IncreaseCaps_20260409';
 
     IHub[] memory hubs = AaveV4EthereumHubHelpers.getHubs();

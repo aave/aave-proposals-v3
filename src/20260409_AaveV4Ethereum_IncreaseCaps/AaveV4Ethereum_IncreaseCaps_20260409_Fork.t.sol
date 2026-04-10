@@ -18,6 +18,9 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is
     vm.createSelectFork(rpcUrl, 24846420);
   }
 
+  /// @dev Skip, no diff report for fork tests (no pre-execution state).
+  function test_executeWithRecording() public override {}
+
   /// @dev Skip, no pre-execution state.
   function test_caps_coreHub_before() public override {}
   function test_caps_primeHub_before() public override {}
