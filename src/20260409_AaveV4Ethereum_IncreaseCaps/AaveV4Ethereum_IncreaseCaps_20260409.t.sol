@@ -6,7 +6,7 @@ import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
 import {Roles} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/deployments/utils/libraries/Roles.sol';
 import {AaveV4ConfigEngine} from 'aave-helpers/lib/aave-address-book/lib/aave-v4/src/config-engine/AaveV4ConfigEngine.sol';
-import {ProtocolV4TestBase} from 'aave-helpers/src/ProtocolV4TestBase.sol';
+import 'aave-helpers/src/ProtocolV4TestBase.sol';
 import {AaveV4EthereumSpokeHelpers, AaveV4EthereumTokenizationSpokeHelpers} from 'aave-helpers/src/dependencies/v4/AaveV4EthereumHelpers.sol';
 
 import {AaveV4Ethereum_IncreaseCaps_20260409} from './AaveV4Ethereum_IncreaseCaps_20260409.sol';
@@ -28,7 +28,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   IHub internal constant PRIME_HUB = AaveV4EthereumHubs.PRIME_HUB;
   IHub internal constant PLUS_HUB = AaveV4EthereumHubs.PLUS_HUB;
 
-  function setUp() public {
+  function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 24843480);
 
     payload = new AaveV4Ethereum_IncreaseCaps_20260409();
@@ -43,23 +43,47 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // Execution & role revocation
   // ================================================================
 
-  function test_executorHasRoleBeforeExecution() public view {
+  function test_executorHasRoleBeforeExecution() public view virtual {
     (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
     assertTrue(hasRole, 'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE before execution');
   }
 
-  function test_roleActiveAfterExecution() public {
+  function test_roleActiveAfterExecution() public virtual {
     _executePayload();
 
     (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
     assertTrue(hasRole, 'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution');
   }
 
+  function test_executeWithRecording() public virtual {
+    string memory reportName = 'AaveV4Ethereum_IncreaseCaps_20260409';
+
+    IHub[] memory hubs = AaveV4EthereumHubHelpers.getHubs();
+    ISpoke[] memory spokes = AaveV4EthereumSpokeHelpers.getUserSpokes();
+
+    string memory beforeName = string.concat(reportName, '_before');
+    string memory afterName = string.concat(reportName, '_after');
+
+    Types.V4Snapshot memory snapshotBefore = createV4Snapshot(spokes, hubs);
+    writeV4SnapshotJson(beforeName, snapshotBefore);
+
+    (string memory rawDiff, string memory logsJson) = _executePayloadWithRecording();
+
+    Types.V4Snapshot memory snapshotAfter = createV4Snapshot(spokes, hubs);
+    writeV4SnapshotJson(afterName, snapshotAfter);
+
+    string memory afterPath = string.concat('./reports/', afterName, '.json');
+    vm.writeJson(rawDiff, afterPath, '$.raw');
+    vm.writeJson(logsJson, afterPath, '$.logs');
+
+    diffV4Snapshots(reportName, snapshotBefore, snapshotAfter);
+  }
+
   // ================================================================
   // E2E tests (supply, borrow, repay, liquidation, tokenization, gateways)
   // ================================================================
 
-  function test_e2e() public {
+  function test_e2e() public virtual {
     _executePayload();
 
     vm.pauseGasMetering();
@@ -99,8 +123,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_caps_coreHub() public {
-    // --- before ---
+  function test_caps_coreHub_before() public virtual {
     //                                                                                                                  addCap     drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.WETH_UNDERLYING,          0,         530);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.weETH_UNDERLYING,         500,       0);
@@ -122,10 +145,12 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),      AaveV4EthereumAssets.frxUSD_UNDERLYING,        500_000,   312_500);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),      AaveV4EthereumAssets.weETH_UNDERLYING,         58,        0);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),      AaveV4EthereumAssets.wstETH_UNDERLYING,        229,       0);
+  }
 
+  // prettier-ignore
+  function test_caps_coreHub() public virtual {
     _executePayload();
 
-    // --- after ---
     //                                                                                                                  addCap     drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.WETH_UNDERLYING,          0,         1_600);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.weETH_UNDERLYING,         1_500,     0);
@@ -164,8 +189,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_caps_primeHub() public {
-    // --- before ---
+  function test_caps_primeHub_before() public virtual {
     //                                                                                                                   addCap     drawCap
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,            500_000,   562_500);
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,           150_000,   175_000);
@@ -174,10 +198,12 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.WETH_UNDERLYING,           130,       0);
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.cbBTC_UNDERLYING,          5,         0);
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.wstETH_UNDERLYING,         114,       0);
+  }
 
+  // prettier-ignore
+  function test_caps_primeHub() public virtual {
     _executePayload();
 
-    // --- after ---
     //                                                                                                                   addCap     drawCap
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,            2_000_000, 2_250_000);
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,           750_000,   875_000);
@@ -202,8 +228,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_caps_plusHub() public {
-    // --- before ---
+  function test_caps_plusHub_before() public virtual {
     //                                                                                                                                        addCap     drawCap
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,                          500_000,   562_500);
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.PT_sUSDE_7MAY2026_UNDERLYING,            1_400_000, 0);
@@ -211,10 +236,12 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,                         150_000,   187_500);
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING,                         312_500,   300_000);
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.sUSDe_UNDERLYING,                        375_000,   0);
+  }
 
+  // prettier-ignore
+  function test_caps_plusHub() public virtual {
     _executePayload();
 
-    // --- after ---
     //                                                                                                                                         addCap     drawCap
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,                           750_000,   850_000);
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.PT_sUSDE_7MAY2026_UNDERLYING,             2_000_000, 0);
@@ -239,8 +266,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_creditLines() public {
-    // --- before ---
+  function test_creditLines_before() public virtual {
     //                                                                                                                                      addCap  drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      125_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      125_000);
@@ -249,10 +275,12 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      125_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.frxUSD_UNDERLYING,                     0,      62_500);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.EURC_UNDERLYING,                       0,      50_000);
+  }
 
+  // prettier-ignore
+  function test_creditLines() public virtual {
     _executePayload();
 
-    // --- after ---
     //                                                                                                                                      addCap  drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      250_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      250_000);
@@ -268,7 +296,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   /// @dev Executes the payload via the executor using delegatecall.
-  function _executePayload() internal {
+  function _executePayload() internal virtual {
     vm.prank(SECURITY_COUNCIL);
     IExecutor(EXECUTOR).executeTransaction(
       address(payload),
@@ -290,5 +318,22 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
     IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spoke);
     assertEq(config.addCap, expectedAddCap, 'addCap mismatch');
     assertEq(config.drawCap, expectedDrawCap, 'drawCap mismatch');
+  }
+
+  function _executePayloadWithRecording()
+    internal
+    returns (string memory rawDiff, string memory logsJson)
+  {
+    uint256 startGas = gasleft();
+    vm.startStateDiffRecording();
+    vm.recordLogs();
+
+    _executePayload();
+
+    uint256 gasUsed = startGas - gasleft();
+    assertLt(gasUsed, (block.gaslimit * 95) / 100, 'BLOCK_GAS_LIMIT_EXCEEDED');
+
+    rawDiff = vm.getStateDiffJson();
+    logsJson = vm.getRecordedLogsJson();
   }
 }
