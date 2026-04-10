@@ -1,37 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IHub} from 'aave-address-book/AaveV4.sol';
-import {AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
-import {ProtocolV4TestBase} from 'aave-helpers/src/ProtocolV4TestBase.sol';
-import {AaveV4EthereumSpokeHelpers, AaveV4EthereumTokenizationSpokeHelpers} from 'aave-helpers/src/dependencies/v4/AaveV4EthereumHelpers.sol';
+import {AaveV4EthereumSpokes, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
+
+import {AaveV4Ethereum_IncreaseCaps_20260409_Test} from './AaveV4Ethereum_IncreaseCaps_20260409.t.sol';
 
 /**
  * @dev Fork test - forks from a block where the payload has already been executed.
  * Verifies post-execution state: caps, credit lines, and e2e flows.
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260409_AaveV4Ethereum_IncreaseCaps/AaveV4Ethereum_IncreaseCaps_20260409_Fork.t.sol -vv
  */
-contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is ProtocolV4TestBase {
-  IHub internal constant CORE_HUB = AaveV4EthereumHubs.CORE_HUB;
-  IHub internal constant PRIME_HUB = AaveV4EthereumHubs.PRIME_HUB;
-  IHub internal constant PLUS_HUB = AaveV4EthereumHubs.PLUS_HUB;
-
-  function setUp() public {
+contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is
+  AaveV4Ethereum_IncreaseCaps_20260409_Test
+{
+  function setUp() public override {
     vm.createSelectFork(vm.rpcUrl('vtestnet'), 24844481);
   }
 
-  function test_e2e() public {
-    vm.pauseGasMetering();
-    e2eTestAllSpokes({
-      spokes: AaveV4EthereumSpokeHelpers.getUserSpokes(),
-      testPositionManagers: true
-    });
-    e2eTestAllTokenizationSpokes(AaveV4EthereumTokenizationSpokeHelpers.getTokenizationSpokes());
-    vm.resumeGasMetering();
-  }
-
   // prettier-ignore
-  function test_caps_coreHub() public view {
+  function test_caps_coreHub() public override {
     //                                                                                                                  addCap     drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.WETH_UNDERLYING,          0,         1_600);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.weETH_UNDERLYING,         1_500,     0);
@@ -56,7 +43,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is ProtocolV4TestBase {
   }
 
   // prettier-ignore
-  function test_caps_primeHub() public view {
+  function test_caps_primeHub() public override {
     //                                                                                                                   addCap     drawCap
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,            2_000_000, 2_250_000);
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,           750_000,   875_000);
@@ -68,7 +55,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is ProtocolV4TestBase {
   }
 
   // prettier-ignore
-  function test_caps_plusHub() public view {
+  function test_caps_plusHub() public override {
     //                                                                                                                                         addCap     drawCap
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,                           750_000,   850_000);
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.PT_sUSDE_7MAY2026_UNDERLYING,             2_000_000, 0);
@@ -79,7 +66,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is ProtocolV4TestBase {
   }
 
   // prettier-ignore
-  function test_creditLines() public view {
+  function test_creditLines() public override {
     //                                                                                                                                      addCap  drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      250_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,                       0,      250_000);
@@ -90,16 +77,9 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_ForkTest is ProtocolV4TestBase {
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.EURC_UNDERLYING,                       0,      100_000);
   }
 
-  function _assertCaps(
-    IHub hub,
-    address spoke,
-    address underlying,
-    uint256 expectedAddCap,
-    uint256 expectedDrawCap
-  ) internal view {
-    uint256 assetId = hub.getAssetId(underlying);
-    IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spoke);
-    assertEq(config.addCap, expectedAddCap, 'addCap mismatch');
-    assertEq(config.drawCap, expectedDrawCap, 'drawCap mismatch');
-  }
+  /// @dev Skip, no pre-execution state.
+  function test_executorHasRoleBeforeExecution() public view override {}
+
+  /// @dev No-op, payload already executed on the fork.
+  function _executePayload() internal override {}
 }

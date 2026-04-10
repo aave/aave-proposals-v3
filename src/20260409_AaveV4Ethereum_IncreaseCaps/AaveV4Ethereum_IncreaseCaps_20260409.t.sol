@@ -28,7 +28,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   IHub internal constant PRIME_HUB = AaveV4EthereumHubs.PRIME_HUB;
   IHub internal constant PLUS_HUB = AaveV4EthereumHubs.PLUS_HUB;
 
-  function setUp() public {
+  function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 24843480);
 
     payload = new AaveV4Ethereum_IncreaseCaps_20260409();
@@ -43,12 +43,12 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // Execution & role revocation
   // ================================================================
 
-  function test_executorHasRoleBeforeExecution() public view {
+  function test_executorHasRoleBeforeExecution() public view virtual {
     (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
     assertTrue(hasRole, 'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE before execution');
   }
 
-  function test_roleActiveAfterExecution() public {
+  function test_roleActiveAfterExecution() public virtual {
     _executePayload();
 
     (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
@@ -59,7 +59,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // E2E tests (supply, borrow, repay, liquidation, tokenization, gateways)
   // ================================================================
 
-  function test_e2e() public {
+  function test_e2e() public virtual {
     _executePayload();
 
     vm.pauseGasMetering();
@@ -99,7 +99,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_caps_coreHub() public {
+  function test_caps_coreHub() public  {
     // --- before ---
     //                                                                                                                  addCap     drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.WETH_UNDERLYING,          0,         530);
@@ -268,7 +268,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   /// @dev Executes the payload via the executor using delegatecall.
-  function _executePayload() internal {
+  function _executePayload() internal virtual {
     vm.prank(SECURITY_COUNCIL);
     IExecutor(EXECUTOR).executeTransaction(
       address(payload),
