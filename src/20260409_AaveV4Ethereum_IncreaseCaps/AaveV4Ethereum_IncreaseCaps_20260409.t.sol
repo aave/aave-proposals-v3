@@ -99,7 +99,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_caps_coreHub() public  {
+  function test_caps_coreHub() public virtual {
     // --- before ---
     //                                                                                                                  addCap     drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_E_SPOKE), AaveV4EthereumAssets.WETH_UNDERLYING,          0,         530);
@@ -164,7 +164,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_caps_primeHub() public {
+  function test_caps_primeHub() public virtual {
     // --- before ---
     //                                                                                                                   addCap     drawCap
     _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,            500_000,   562_500);
@@ -202,7 +202,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_caps_plusHub() public {
+  function test_caps_plusHub() public virtual {
     // --- before ---
     //                                                                                                                                        addCap     drawCap
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.GHO_UNDERLYING,                          500_000,   562_500);
@@ -239,7 +239,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260409_Test is ProtocolV4TestBase {
   // ================================================================
 
   // prettier-ignore
-  function test_creditLines() public {
+  function test_creditLines() public virtual {
     // --- before ---
     //                                                                                                                                      addCap  drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,                       0,      125_000);
