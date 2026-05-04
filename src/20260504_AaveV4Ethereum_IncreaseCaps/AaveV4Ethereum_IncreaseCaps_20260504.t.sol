@@ -17,7 +17,6 @@ import 'aave-helpers/src/ProtocolV4TestBase.sol';
  */
 contract AaveV4Ethereum_IncreaseCaps_20260504_Test is ProtocolV4TestBase {
   AaveV4Ethereum_IncreaseCaps_20260504 internal payload;
-
   IAccessManagerEnumerable internal constant ACCESS_MANAGER = AaveV4Ethereum.ACCESS_MANAGER;
 
   address internal constant SECURITY_COUNCIL = 0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9;
