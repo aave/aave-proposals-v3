@@ -68,7 +68,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260504_Test is ProtocolV4TestBase {
     vm.writeJson(rawDiff, afterPath, '$.raw');
     vm.writeJson(logsJson, afterPath, '$.logs');
 
-    diffV4Snapshots(reportName, snapshotBefore, snapshotAfter);
+    diffV4Snapshots(reportName);
   }
 
   // ================================================================
