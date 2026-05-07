@@ -16,9 +16,6 @@ contract AaveV4Ethereum_SVRfeeds_20260507_ForkTest is AaveV4Ethereum_SVRfeeds_20
     vm.createSelectFork(rpcUrl);
   }
 
-  /// @dev Skip, no diff report for fork tests (no pre-execution state).
-  function test_executeWithRecording() public override {}
-
   /// @dev Skip, no pre-execution state to verify on a post-execution fork.
   function test_priceSources_coreHub_before() public override {}
   function test_priceSources_primeHub_before() public override {}

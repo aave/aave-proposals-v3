@@ -51,6 +51,9 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
   // Capped LBTC / BTC / USD SVR
   // https://etherscan.io/address/0xf8c04B50499872A5B5137219DEc0F791f7f620D0
   address public constant SVR_LBTC_USD = AaveV3EthereumAssets.LBTC_ORACLE;
+  // Capped USDT / USD SVR
+  // https://etherscan.io/address/0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6
+  address public constant SVR_USDT_USD = 0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6;
 
   constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
 
@@ -66,7 +69,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     IHub PLUS = AaveV4EthereumHubs.PLUS_HUB;
 
     IAaveV4ConfigEngine.ReserveConfigUpdate[]
-      memory updates = new IAaveV4ConfigEngine.ReserveConfigUpdate[](27);
+      memory updates = new IAaveV4ConfigEngine.ReserveConfigUpdate[](34);
 
     uint256 i = 0;
 
@@ -82,6 +85,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.AAVE_UNDERLYING,         SVR_AAVE_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.LINK_UNDERLYING,         SVR_LINK_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
 
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHERFI_E_SPOKE,   AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHERFI_E_SPOKE,   AaveV4EthereumAssets.weETH_UNDERLYING,        SVR_weETH_USD);
@@ -97,13 +101,17 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.LBTC_UNDERLYING,         SVR_LBTC_USD);
 
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.FOREX_SPOKE,       AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.FOREX_SPOKE,       AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
 
-    // BLUECHIP credit-line copy of USDC under Core hub.
+    // BLUECHIP credit-line copies under Core hub.
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
 
-    // ETHENA_ECOSYSTEM credit-line copy of USDC under Core hub.
+    // ETHENA_ECOSYSTEM credit-line copies under Core hub.
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT_USD);
 
     // ================================================================
     // Prime Hub spokes
@@ -113,12 +121,13 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC_USD);
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_BTC_USD);
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
 
     // ================================================================
     // Plus Hub spokes
     // ================================================================
-    // ETHENA_ECOSYSTEM PLUS-hub copy of USDC.
     updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC_USD);
+    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT_USD);
 
     require(i == updates.length, 'Invalid number of updates');
     return updates;
