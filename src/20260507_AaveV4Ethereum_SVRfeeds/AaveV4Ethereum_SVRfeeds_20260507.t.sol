@@ -6,6 +6,7 @@ import {IPriceFeed} from 'aave-v4/spoke/interfaces/IPriceFeed.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumSpokePriceFeeds, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
 import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
+import {ChainlinkEthereum} from 'aave-address-book/ChainlinkEthereum.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {AaveV4EthereumSpokeHelpers, AaveV4EthereumTokenizationSpokeHelpers} from 'aave-helpers/src/dependencies/v4/AaveV4EthereumHelpers.sol';
 import {V4Constants} from 'src/helpers/v4-constants/V4Constants.sol';
@@ -31,23 +32,6 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   address internal constant EXECUTOR = V4Constants.EXECUTOR;
   uint256 internal constant PRICE_TOLERANCE_BPS = 50; // 0.50%
   uint256 internal constant PERCENTAGE_FACTOR = 100_00;
-
-  // ----------------------------------------------------------------
-  // Underlying SVR feed addresses, hardcoded from Chainlink's official
-  // SVR-enabled feeds list:
-  //   https://docs.chain.link/data-feeds/price-feeds/addresses?showSvr=true
-  // ----------------------------------------------------------------
-
-  // ETH / USD SVR — wrapped by capped wstETH/weETH/rsETH adapters
-  // https://etherscan.io/address/0x5424384B256154046E9667dDFaaa5e550145215e
-  address internal constant CHAINLINK_ETH_USD_SVR = 0x5424384B256154046E9667dDFaaa5e550145215e;
-  // BTC / USD SVR — wrapped by capped wBTC/BTC and LBTC/BTC adapters
-  // https://etherscan.io/address/0xb41E773f507F7a7EA890b1afB7d2b660c30C8B0A
-  address internal constant CHAINLINK_BTC_USD_SVR = 0xb41E773f507F7a7EA890b1afB7d2b660c30C8B0A;
-  // USDC / USD SVR — wrapped by the capped USDC/USD adapter
-  // https://etherscan.io/address/0xEa674bBC33AE708Bc9EB4ba348b04E4eB55b496b
-  address internal constant CHAINLINK_USDC_USD_SVR = 0xEa674bBC33AE708Bc9EB4ba348b04E4eB55b496b;
-
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 25043850);
 
@@ -288,7 +272,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   function test_capped_wstETH_underlyingIsSVR() public view virtual {
     assertEq(
       IPriceCapAdapter(payload.SVR_wstETH_USD()).BASE_TO_USD_AGGREGATOR(),
-      CHAINLINK_ETH_USD_SVR,
+      ChainlinkEthereum.AAVE_SVR_ETH__USD,
       'wstETH adapter base != ETH/USD SVR'
     );
   }
@@ -296,7 +280,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   function test_capped_weETH_underlyingIsSVR() public view virtual {
     assertEq(
       IPriceCapAdapter(payload.SVR_weETH_USD()).BASE_TO_USD_AGGREGATOR(),
-      CHAINLINK_ETH_USD_SVR,
+      ChainlinkEthereum.AAVE_SVR_ETH__USD,
       'weETH adapter base != ETH/USD SVR'
     );
   }
@@ -304,7 +288,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   function test_capped_rsETH_underlyingIsSVR() public view virtual {
     assertEq(
       IPriceCapAdapter(payload.SVR_rsETH_USD()).BASE_TO_USD_AGGREGATOR(),
-      CHAINLINK_ETH_USD_SVR,
+      ChainlinkEthereum.AAVE_SVR_ETH__USD,
       'rsETH adapter base != ETH/USD SVR'
     );
   }
@@ -312,7 +296,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   function test_capped_LBTC_underlyingIsSVR() public view virtual {
     assertEq(
       IPriceCapAdapter(payload.SVR_LBTC_USD()).BASE_TO_USD_AGGREGATOR(),
-      CHAINLINK_BTC_USD_SVR,
+      ChainlinkEthereum.AAVE_SVR_BTC__USD,
       'LBTC adapter base != BTC/USD SVR'
     );
   }
@@ -322,7 +306,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     // because it's a stable cap adapter.
     assertEq(
       IPriceCapAdapter(payload.SVR_USDC_USD()).ASSET_TO_USD_AGGREGATOR(),
-      CHAINLINK_USDC_USD_SVR,
+      ChainlinkEthereum.AAVE_SVR_USDC__USD,
       'USDC adapter asset != USDC/USD SVR'
     );
   }
