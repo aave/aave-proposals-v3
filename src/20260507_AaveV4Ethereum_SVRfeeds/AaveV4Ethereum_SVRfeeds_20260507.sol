@@ -9,7 +9,7 @@ import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
 /**
  * @title Migrate Aave V4 Ethereum reserves to SVR (Secure Value Recapture) Chainlink price feeds, matching V3.
  * @author Aave Labs
- * - Discussion: https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293
+ * - Discussion: TODO
  * - To be executed by the Aave Security Council
  */
 contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
