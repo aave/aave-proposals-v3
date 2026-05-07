@@ -89,20 +89,21 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     IHub hub,
     ISpoke spoke,
     address underlying,
-    address svrFeed
+    address newFeed
   ) internal pure returns (IAaveV4ConfigEngine.ReserveConfigUpdate memory) {
+    uint256 KC = EngineFlags.KEEP_CURRENT;
     return
       IAaveV4ConfigEngine.ReserveConfigUpdate({
         spokeConfigurator: AaveV4Ethereum.SPOKE_CONFIGURATOR,
         spoke: address(spoke),
         hub: address(hub),
         underlying: underlying,
-        priceSource: svrFeed,
-        collateralRisk: EngineFlags.KEEP_CURRENT,
-        paused: EngineFlags.KEEP_CURRENT,
-        frozen: EngineFlags.KEEP_CURRENT,
-        borrowable: EngineFlags.KEEP_CURRENT,
-        receiveSharesEnabled: EngineFlags.KEEP_CURRENT
+        priceSource: newFeed,
+        collateralRisk: KC,
+        paused: KC,
+        frozen: KC,
+        borrowable: KC,
+        receiveSharesEnabled: KC
       });
   }
 }

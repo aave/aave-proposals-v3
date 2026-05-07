@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IHub, IHubConfigurator, IAccessManagerEnumerable, IAaveOracle} from 'aave-address-book/AaveV4.sol';
+import {IPriceFeed} from 'aave-v4/spoke/interfaces/IPriceFeed.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumSpokePriceFeeds, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
 import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
@@ -21,23 +22,21 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   AaveV4Ethereum_SVRfeeds_20260507 internal payload;
   IAccessManagerEnumerable internal constant ACCESS_MANAGER = AaveV4Ethereum.ACCESS_MANAGER;
 
-  address internal constant SECURITY_COUNCIL = V4Constants.SECURITY_COUNCIL;
-  address internal constant EXECUTOR = V4Constants.EXECUTOR;
-
   IHub internal constant CORE_HUB = AaveV4EthereumHubs.CORE_HUB;
   IHub internal constant PRIME_HUB = AaveV4EthereumHubs.PRIME_HUB;
   IHub internal constant PLUS_HUB = AaveV4EthereumHubs.PLUS_HUB;
+
+  address internal constant SECURITY_COUNCIL = V4Constants.SECURITY_COUNCIL;
+  address internal constant EXECUTOR = V4Constants.EXECUTOR;
+  uint256 internal constant PRICE_TOLERANCE_BPS = 50; // 0.50%
+  uint256 internal constant PERCENTAGE_FACTOR = 100_00;
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 25043850);
 
     payload = new AaveV4Ethereum_SVRfeeds_20260507();
 
-    // Spoke-side updateReservePriceSource is gated by SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE.
-    // The Aave V4 IncreaseCaps lifecycle only granted HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
-    // so for SVR migrations the executor needs the spoke-side role too. Production
-    // deployment requires a separate governance step to grant this role; we simulate
-    // that here.
+    // Spoke-side updateReservePriceSource requires SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE.
     vm.prank(SECURITY_COUNCIL);
     ACCESS_MANAGER.grantRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR, 0);
   }
@@ -47,20 +46,45 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   // ================================================================
 
   function test_executorHasRoleBeforeExecution() public view virtual {
-    (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
+    (bool hasSpokeRole, ) = ACCESS_MANAGER.hasRole(
+      Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
+      EXECUTOR
+    );
     assertTrue(
-      hasRole,
+      hasSpokeRole,
       'Executor should have SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE before execution'
+    );
+
+    (bool hasHubRole, ) = ACCESS_MANAGER.hasRole(
+      Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
+      EXECUTOR
+    );
+    assertTrue(
+      hasHubRole,
+      'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE before execution'
     );
   }
 
   function test_roleActiveAfterExecution() public virtual {
     _executePayload();
 
-    (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
+    (bool hasSpokeRole, ) = ACCESS_MANAGER.hasRole(
+      Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
+      EXECUTOR
+    );
     assertTrue(
-      hasRole,
+      hasSpokeRole,
       'Executor should have SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution'
+    );
+
+    // HUB role must remain untouched
+    (bool hasHubRole, ) = ACCESS_MANAGER.hasRole(
+      Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
+      EXECUTOR
+    );
+    assertTrue(
+      hasHubRole,
+      'Executor should still have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution'
     );
   }
 
@@ -222,6 +246,45 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _executePayload();
 
     _assertPriceSource(PLUS_HUB, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING, AaveV3EthereumAssets.USDC_ORACLE);
+  }
+
+  // prettier-ignore
+  function test_valid_latestAnswer_after() public virtual {
+    _executePayload();
+    _assertValidPrices();
+  }
+
+  /// @dev For every (oldFeed, newFeed) pair touched by the migration,
+  /// assert their latestAnswer values agree within `PRICE_TOLERANCE_BPS`.
+  // prettier-ignore
+  function _assertValidPrices() internal view {
+    //                  old (current V4 feed)                                                  new (V3 SVR oracle)
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_WETH_PRICE_FEED,    AaveV3EthereumAssets.WETH_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_wstETH_PRICE_FEED,  AaveV3EthereumAssets.wstETH_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_weETH_PRICE_FEED,   AaveV3EthereumAssets.weETH_ORACLE);
+    // WBTC: uncapped V4 → capped V3, adds wBTC<>BTC peg cap
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_WBTC_PRICE_FEED,    AaveV3EthereumAssets.WBTC_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_cbBTC_PRICE_FEED,   AaveV3EthereumAssets.cbBTC_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_AAVE_PRICE_FEED,    AaveV3EthereumAssets.AAVE_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_LINK_PRICE_FEED,    AaveV3EthereumAssets.LINK_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.MAIN_USDC_PRICE_FEED,    AaveV3EthereumAssets.USDC_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.KELP_E_rsETH_PRICE_FEED, AaveV3EthereumAssets.rsETH_ORACLE);
+    _assertPriceEqualApproxRel(AaveV4EthereumSpokePriceFeeds.LOMBARD_BTC_LBTC_PRICE_FEED, AaveV3EthereumAssets.LBTC_ORACLE);
+  }
+
+  /// @dev Asserts |newFeed.latestAnswer - oldFeed.latestAnswer| / oldFeed.latestAnswer <= PRICE_TOLERANCE_BPS / 10000.
+  function _assertPriceEqualApproxRel(address oldFeed, address newFeed) internal view {
+    int256 oldAnswer = IPriceFeed(oldFeed).latestAnswer();
+    int256 newAnswer = IPriceFeed(newFeed).latestAnswer();
+
+    require(oldAnswer > 0 && newAnswer > 0, 'NON_POSITIVE_PRICE');
+
+    uint256 oldPrice = uint256(oldAnswer);
+    uint256 newPrice = uint256(newAnswer);
+    uint256 absDiff = oldPrice > newPrice ? oldPrice - newPrice : newPrice - oldPrice;
+    uint256 maxAbsDiff = (oldPrice * PRICE_TOLERANCE_BPS) / PERCENTAGE_FACTOR;
+
+    assertLe(absDiff, maxAbsDiff, 'price deviation > tolerance');
   }
 
   /// @dev Executes the payload via the executor using delegatecall.
