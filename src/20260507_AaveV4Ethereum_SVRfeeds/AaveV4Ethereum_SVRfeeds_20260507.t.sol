@@ -285,56 +285,19 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     assertEq(payload.SVR_LINK_USD(),   AaveV3EthereumAssets.LINK_ORACLE,   'SVR_LINK_USD != V3 LINK_ORACLE');
   }
 
-  function test_capped_wstETH_underlyingIsSVR() public view virtual {
-    assertEq(
-      IPriceCapAdapter(payload.SVR_wstETH_USD()).BASE_TO_USD_AGGREGATOR(),
-      ChainlinkEthereum.AAVE_SVR_ETH__USD,
-      'wstETH adapter base != ETH/USD SVR'
-    );
-  }
+  /// @dev For each capped adapter, assert the wrapped underlying Chainlink aggregator
+  /// is the SVR-enabled feed.
+  // prettier-ignore
+  function test_capped_underlyingIsSVR() public view virtual {
+    // Ratio-based capped adapters -> BASE_TO_USD_AGGREGATOR
+    assertEq(IPriceCapAdapter(payload.SVR_wstETH_USD()).BASE_TO_USD_AGGREGATOR(), ChainlinkEthereum.AAVE_SVR_ETH__USD, 'wstETH adapter base != ETH/USD SVR');
+    assertEq(IPriceCapAdapter(payload.SVR_weETH_USD()).BASE_TO_USD_AGGREGATOR(),  ChainlinkEthereum.AAVE_SVR_ETH__USD, 'weETH adapter base != ETH/USD SVR');
+    assertEq(IPriceCapAdapter(payload.SVR_rsETH_USD()).BASE_TO_USD_AGGREGATOR(),  ChainlinkEthereum.AAVE_SVR_ETH__USD, 'rsETH adapter base != ETH/USD SVR');
+    assertEq(IPriceCapAdapter(payload.SVR_LBTC_USD()).BASE_TO_USD_AGGREGATOR(),   ChainlinkEthereum.AAVE_SVR_BTC__USD, 'LBTC adapter base != BTC/USD SVR');
 
-  function test_capped_weETH_underlyingIsSVR() public view virtual {
-    assertEq(
-      IPriceCapAdapter(payload.SVR_weETH_USD()).BASE_TO_USD_AGGREGATOR(),
-      ChainlinkEthereum.AAVE_SVR_ETH__USD,
-      'weETH adapter base != ETH/USD SVR'
-    );
-  }
-
-  function test_capped_rsETH_underlyingIsSVR() public view virtual {
-    assertEq(
-      IPriceCapAdapter(payload.SVR_rsETH_USD()).BASE_TO_USD_AGGREGATOR(),
-      ChainlinkEthereum.AAVE_SVR_ETH__USD,
-      'rsETH adapter base != ETH/USD SVR'
-    );
-  }
-
-  function test_capped_LBTC_underlyingIsSVR() public view virtual {
-    assertEq(
-      IPriceCapAdapter(payload.SVR_LBTC_USD()).BASE_TO_USD_AGGREGATOR(),
-      ChainlinkEthereum.AAVE_SVR_BTC__USD,
-      'LBTC adapter base != BTC/USD SVR'
-    );
-  }
-
-  function test_capped_USDC_underlyingIsSVR() public view virtual {
-    // USDC adapter exposes ASSET_TO_USD_AGGREGATOR (not BASE_TO_USD_AGGREGATOR)
-    // because it's a stable cap adapter.
-    assertEq(
-      IPriceCapAdapter(payload.SVR_USDC_USD()).ASSET_TO_USD_AGGREGATOR(),
-      ChainlinkEthereum.AAVE_SVR_USDC__USD,
-      'USDC adapter asset != USDC/USD SVR'
-    );
-  }
-
-  function test_capped_USDT_underlyingIsSVR() public view virtual {
-    // USDT adapter is a newly-deployed PriceCapAdapterStable with underlying
-    // USDT/USD SVR feed
-    assertEq(
-      IPriceCapAdapter(payload.SVR_USDT_USD()).ASSET_TO_USD_AGGREGATOR(),
-      ChainlinkEthereum.AAVE_SVR_USDT__USD,
-      'USDT adapter asset != USDT/USD SVR'
-    );
+    // Stable cap adapters -> ASSET_TO_USD_AGGREGATOR
+    assertEq(IPriceCapAdapter(payload.SVR_USDC_USD()).ASSET_TO_USD_AGGREGATOR(), ChainlinkEthereum.AAVE_SVR_USDC__USD, 'USDC adapter asset != USDC/USD SVR');
+    assertEq(IPriceCapAdapter(payload.SVR_USDT_USD()).ASSET_TO_USD_AGGREGATOR(), ChainlinkEthereum.AAVE_SVR_USDT__USD, 'USDT adapter asset != USDT/USD SVR');
   }
 
   function test_valid_latestAnswer_after() public virtual {
@@ -345,7 +308,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   /// @dev Assert post-migration V4 price source latestAnswer approx equals V3 oracle latestAnswer.
   // prettier-ignore
   function _assertValidPrices() internal view {
-    //                          new (V4 post-migration, payload const)  old/V3 reference oracle
+    //                          new (V4 post-migration, payload const)  V3 reference oracle
     _assertPriceEqualApproxRel(payload.SVR_WETH_USD(),    AaveV3EthereumAssets.WETH_ORACLE);
     _assertPriceEqualApproxRel(payload.SVR_wstETH_USD(),  AaveV3EthereumAssets.wstETH_ORACLE);
     _assertPriceEqualApproxRel(payload.SVR_weETH_USD(),   AaveV3EthereumAssets.weETH_ORACLE);
