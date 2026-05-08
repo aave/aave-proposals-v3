@@ -188,7 +188,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.MAIN_SPOKE,             AaveV4EthereumAssets.weETH_UNDERLYING,         payload.SVR_weETH_USD());
     // WBTC: uncapped V4 to capped V3, adds wBTC<>BTC peg cap
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.MAIN_SPOKE,             AaveV4EthereumAssets.WBTC_UNDERLYING,          payload.SVR_WBTC_USD());
-    _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.MAIN_SPOKE,             AaveV4EthereumAssets.cbBTC_UNDERLYING,         payload.SVR_BTC_USD());
+    _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.MAIN_SPOKE,             AaveV4EthereumAssets.cbBTC_UNDERLYING,         payload.SVR_cbBTC_USD());
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.MAIN_SPOKE,             AaveV4EthereumAssets.AAVE_UNDERLYING,          payload.SVR_AAVE_USD());
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.MAIN_SPOKE,             AaveV4EthereumAssets.LINK_UNDERLYING,          payload.SVR_LINK_USD());
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.MAIN_SPOKE,             AaveV4EthereumAssets.USDC_UNDERLYING,          payload.SVR_USDC_USD());
@@ -204,7 +204,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.KELP_E_SPOKE,           AaveV4EthereumAssets.rsETH_UNDERLYING,         payload.SVR_rsETH_USD());
 
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE,      AaveV4EthereumAssets.WBTC_UNDERLYING,          payload.SVR_WBTC_USD());
-    _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE,      AaveV4EthereumAssets.cbBTC_UNDERLYING,         payload.SVR_BTC_USD());
+    _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE,      AaveV4EthereumAssets.cbBTC_UNDERLYING,         payload.SVR_cbBTC_USD());
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE,      AaveV4EthereumAssets.LBTC_UNDERLYING,          payload.SVR_LBTC_USD());
 
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.FOREX_SPOKE,            AaveV4EthereumAssets.USDC_UNDERLYING,          payload.SVR_USDC_USD());
@@ -235,7 +235,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _assertPriceSource(PRIME_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE, AaveV4EthereumAssets.WETH_UNDERLYING,    payload.SVR_WETH_USD());
     _assertPriceSource(PRIME_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE, AaveV4EthereumAssets.wstETH_UNDERLYING,  payload.SVR_wstETH_USD());
     _assertPriceSource(PRIME_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE, AaveV4EthereumAssets.WBTC_UNDERLYING,    payload.SVR_WBTC_USD());
-    _assertPriceSource(PRIME_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE, AaveV4EthereumAssets.cbBTC_UNDERLYING,   payload.SVR_BTC_USD());
+    _assertPriceSource(PRIME_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE, AaveV4EthereumAssets.cbBTC_UNDERLYING,   payload.SVR_cbBTC_USD());
     _assertPriceSource(PRIME_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    payload.SVR_USDC_USD());
     _assertPriceSource(PRIME_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    payload.SVR_USDT_USD());
   }
@@ -279,7 +279,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     assertEq(payload.SVR_rsETH_USD(),  AaveV3EthereumAssets.rsETH_ORACLE,  'SVR_rsETH_USD != V3 rsETH_ORACLE');
     assertEq(payload.SVR_USDC_USD(),   AaveV3EthereumAssets.USDC_ORACLE,   'SVR_USDC_USD != V3 USDC_ORACLE');
     assertEq(payload.SVR_WBTC_USD(),   AaveV3EthereumAssets.WBTC_ORACLE,   'SVR_WBTC_USD != V3 WBTC_ORACLE');
-    assertEq(payload.SVR_BTC_USD(),    AaveV3EthereumAssets.cbBTC_ORACLE,  'SVR_BTC_USD != V3 cbBTC_ORACLE');
+    assertEq(payload.SVR_cbBTC_USD(),    AaveV3EthereumAssets.cbBTC_ORACLE,  'SVR_cbBTC_USD != V3 cbBTC_ORACLE');
     assertEq(payload.SVR_LBTC_USD(),   AaveV3EthereumAssets.LBTC_ORACLE,   'SVR_LBTC_USD != V3 LBTC_ORACLE');
     assertEq(payload.SVR_AAVE_USD(),   AaveV3EthereumAssets.AAVE_ORACLE,   'SVR_AAVE_USD != V3 AAVE_ORACLE');
     assertEq(payload.SVR_LINK_USD(),   AaveV3EthereumAssets.LINK_ORACLE,   'SVR_LINK_USD != V3 LINK_ORACLE');
@@ -314,7 +314,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _assertPriceEqualApproxRel(payload.SVR_weETH_USD(),   AaveV3EthereumAssets.weETH_ORACLE);
     // WBTC: uncapped V4 to capped V3, adds wBTC<>BTC peg cap
     _assertPriceEqualApproxRel(payload.SVR_WBTC_USD(),    AaveV3EthereumAssets.WBTC_ORACLE);
-    _assertPriceEqualApproxRel(payload.SVR_BTC_USD(),     AaveV3EthereumAssets.cbBTC_ORACLE);
+    _assertPriceEqualApproxRel(payload.SVR_cbBTC_USD(),     AaveV3EthereumAssets.cbBTC_ORACLE);
     _assertPriceEqualApproxRel(payload.SVR_AAVE_USD(),    AaveV3EthereumAssets.AAVE_ORACLE);
     _assertPriceEqualApproxRel(payload.SVR_LINK_USD(),    AaveV3EthereumAssets.LINK_ORACLE);
     _assertPriceEqualApproxRel(payload.SVR_USDC_USD(),    AaveV3EthereumAssets.USDC_ORACLE);

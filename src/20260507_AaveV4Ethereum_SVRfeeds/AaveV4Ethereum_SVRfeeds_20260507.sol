@@ -5,51 +5,37 @@ import {AaveV4Payload, IAaveV4ConfigEngine} from 'aave-v4/config-engine/AaveV4Pa
 import {EngineFlags} from 'aave-v4/config-engine/libraries/EngineFlags.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets, ISpoke, IHub} from 'aave-address-book/AaveV4Ethereum.sol';
 import {AaveV3EthereumAssets} from 'aave-address-book/AaveV3Ethereum.sol';
+import {ChainlinkEthereum} from 'aave-address-book/ChainlinkEthereum.sol';
 
 /**
- * @title Migrate Aave V4 Ethereum reserves to SVR (Secure Value Recapture) Chainlink price feeds, matching V3.
+ * @title Migrate Aave V4 Ethereum reserves to SVR (Secure Value Recapture) Chainlink price feeds.
  * @author Aave Labs
  * - Discussion: TODO
  * - To be executed by the Aave Security Council
  */
 contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
   // ----------------------------------------------------------------
-  // uncapped SVR feeds
+  // Uncapped SVR feeds
   // ----------------------------------------------------------------
-  // ETH / USD SVR
-  // https://etherscan.io/address/0x5424384B256154046E9667dDFaaa5e550145215e
-  address public constant SVR_WETH_USD = 0x5424384B256154046E9667dDFaaa5e550145215e;
-  // BTC / USD SVR
-  // https://etherscan.io/address/0xb41E773f507F7a7EA890b1afB7d2b660c30C8B0A
-  address public constant SVR_BTC_USD = 0xb41E773f507F7a7EA890b1afB7d2b660c30C8B0A;
-  // AAVE / USD SVR
-  // https://etherscan.io/address/0xF02C1e2A3B77c1cacC72f72B44f7d0a4c62e4a85
-  address public constant SVR_AAVE_USD = 0xF02C1e2A3B77c1cacC72f72B44f7d0a4c62e4a85;
-  // LINK / USD SVR
-  // https://etherscan.io/address/0xC7e9b623ed51F033b32AE7f1282b1AD62C28C183
-  address public constant SVR_LINK_USD = 0xC7e9b623ed51F033b32AE7f1282b1AD62C28C183;
+  address public constant SVR_WETH_USD = ChainlinkEthereum.AAVE_SVR_ETH__USD;
+  address public constant SVR_cbBTC_USD = ChainlinkEthereum.AAVE_SVR_BTC__USD;
+  address public constant SVR_AAVE_USD = ChainlinkEthereum.AAVE_SVR_AAVE__USD;
+  address public constant SVR_LINK_USD = ChainlinkEthereum.AAVE_SVR_LINK__USD;
 
   // ----------------------------------------------------------------
   // Capped SVR feeds
   // ----------------------------------------------------------------
-
   // Capped wstETH / stETH(ETH) / USD SVR
-  // https://etherscan.io/address/0xe1D97bF61901B075E9626c8A2340a7De385861Ef
   address public constant SVR_wstETH_USD = AaveV3EthereumAssets.wstETH_ORACLE;
   // Capped weETH / eETH(ETH) / USD SVR
-  // https://etherscan.io/address/0x87625393534d5C102cADB66D37201dF24cc26d4C
   address public constant SVR_weETH_USD = AaveV3EthereumAssets.weETH_ORACLE;
   // Capped rsETH / ETH / USD SVR
-  // https://etherscan.io/address/0x7292C95A5f6A501a9c4B34f6393e221F2A0139c3
   address public constant SVR_rsETH_USD = AaveV3EthereumAssets.rsETH_ORACLE;
   // Capped USDC / USD SVR
-  // https://etherscan.io/address/0x3f73F03aa83B2A48ed27E964eD0fDb590332095B
   address public constant SVR_USDC_USD = AaveV3EthereumAssets.USDC_ORACLE;
   // Capped wBTC / BTC / USD SVR
-  // https://etherscan.io/address/0xDaa4B74C6bAc4e25188e64ebc68DB5050b690cAc
   address public constant SVR_WBTC_USD = AaveV3EthereumAssets.WBTC_ORACLE;
   // Capped LBTC / BTC / USD SVR
-  // https://etherscan.io/address/0xf8c04B50499872A5B5137219DEc0F791f7f620D0
   address public constant SVR_LBTC_USD = AaveV3EthereumAssets.LBTC_ORACLE;
   // Capped USDT / USD SVR
   // https://etherscan.io/address/0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6
@@ -76,12 +62,12 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     // ================================================================
     // Core Hub spokes
     // ================================================================
-    //                              hub   spoke                                          asset                                       svr feed
+    //                        hub           spoke                                          asset                                svr feed
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.weETH_UNDERLYING,        SVR_weETH_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_BTC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.AAVE_UNDERLYING,         SVR_AAVE_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.LINK_UNDERLYING,         SVR_LINK_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
@@ -97,7 +83,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.KELP_E_SPOKE,      AaveV4EthereumAssets.rsETH_UNDERLYING,        SVR_rsETH_USD);
 
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_BTC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.LBTC_UNDERLYING,         SVR_LBTC_USD);
 
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.FOREX_SPOKE,       AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
@@ -105,11 +91,9 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
 
-    // BLUECHIP credit-line copies under Core hub.
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
 
-    // ETHENA_ECOSYSTEM credit-line copies under Core hub.
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC_USD);
     updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT_USD);
 
@@ -119,7 +103,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH_USD);
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC_USD);
-    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_BTC_USD);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC_USD);
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
     updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
 
