@@ -40,6 +40,8 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
   // Capped USDT / USD SVR
   // https://etherscan.io/address/0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6
   address public constant SVR_USDT = 0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6;
+  // Capped USDe / USD SVR
+  address public constant SVR_USDe = SVR_USDT;
 
   constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
 
@@ -55,7 +57,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     IHub PLUS = AaveV4EthereumHubs.PLUS_HUB;
 
     IAaveV4ConfigEngine.ReserveConfigUpdate[]
-      memory updates = new IAaveV4ConfigEngine.ReserveConfigUpdate[](34);
+      memory updates = new IAaveV4ConfigEngine.ReserveConfigUpdate[](36);
 
     uint256 i = 0;
 
@@ -110,8 +112,12 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     // ================================================================
     // Plus Hub spokes
     // ================================================================
-    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC);
-    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT);
+    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE,  AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC);
+    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE,  AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT);
+
+    // USDe is priced via the same "Capped USDT/USD" adapter as USDT
+    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_CORRELATED_SPOKE, AaveV4EthereumAssets.USDe_UNDERLYING,    SVR_USDe);
+    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE,  AaveV4EthereumAssets.USDe_UNDERLYING,    SVR_USDe);
 
     require(i == updates.length, 'Invalid number of updates');
     return updates;
