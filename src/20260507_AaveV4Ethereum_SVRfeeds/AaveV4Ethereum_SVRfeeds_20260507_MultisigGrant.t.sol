@@ -24,8 +24,8 @@ contract AaveV4Ethereum_SVRfeeds_20260507_MultisigGrant_Test is Test {
   IAccessManagerEnumerable internal constant ACCESS_MANAGER = AaveV4Ethereum.ACCESS_MANAGER;
   address internal constant SECURITY_COUNCIL = V4Constants.SECURITY_COUNCIL;
   address internal constant EXECUTOR = V4Constants.EXECUTOR;
-  // TODO: update this when multisig tx exists
-  bytes internal constant CALLDATA = '';
+  bytes internal constant CALLDATA =
+    hex'25c471a0000000000000000000000000000000000000000000000000000000000000019000000000000000000000000014339e2178a954d5fb839d5ff31644fe0f25f5170000000000000000000000000000000000000000000000000000000000000000';
   bytes internal txCalldata;
 
   function setUp() public {
@@ -70,8 +70,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_MultisigGrant_Test is Test {
     assertEq(bytes4(txCalldata), bytes4(0x25c471a0), 'unexpected grantRole selector');
   }
 
-  function test_calldata_matches_tx() public {
-    vm.skip(true, 'when multisig tx is updated');
+  function test_calldata_matches_tx() public view {
     assertEq(txCalldata, CALLDATA, 'calldata mismatch');
   }
 
