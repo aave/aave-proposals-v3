@@ -47,9 +47,4 @@ interface IPriceCapAdapter {
    * @notice Returns the address of the base asset to USD Chainlink aggregator
    */
   function BASE_TO_USD_AGGREGATOR() external view returns (address);
-
-  /**
-   * @notice Returns the address of the asset to USD Chainlink aggregator
-   */
-  function ASSET_TO_USD_AGGREGATOR() external view returns (address);
 }

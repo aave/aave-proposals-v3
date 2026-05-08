@@ -17,29 +17,29 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
   // ----------------------------------------------------------------
   // Uncapped SVR feeds
   // ----------------------------------------------------------------
-  address public constant SVR_WETH_USD = ChainlinkEthereum.AAVE_SVR_ETH__USD;
-  address public constant SVR_cbBTC_USD = ChainlinkEthereum.AAVE_SVR_BTC__USD;
-  address public constant SVR_AAVE_USD = ChainlinkEthereum.AAVE_SVR_AAVE__USD;
-  address public constant SVR_LINK_USD = ChainlinkEthereum.AAVE_SVR_LINK__USD;
+  address public constant SVR_WETH = ChainlinkEthereum.AAVE_SVR_ETH__USD;
+  address public constant SVR_cbBTC = ChainlinkEthereum.AAVE_SVR_BTC__USD;
+  address public constant SVR_AAVE = ChainlinkEthereum.AAVE_SVR_AAVE__USD;
+  address public constant SVR_LINK = ChainlinkEthereum.AAVE_SVR_LINK__USD;
 
   // ----------------------------------------------------------------
   // Capped SVR feeds
   // ----------------------------------------------------------------
   // Capped wstETH / stETH(ETH) / USD SVR
-  address public constant SVR_wstETH_USD = AaveV3EthereumAssets.wstETH_ORACLE;
+  address public constant SVR_wstETH = AaveV3EthereumAssets.wstETH_ORACLE;
   // Capped weETH / eETH(ETH) / USD SVR
-  address public constant SVR_weETH_USD = AaveV3EthereumAssets.weETH_ORACLE;
+  address public constant SVR_weETH = AaveV3EthereumAssets.weETH_ORACLE;
   // Capped rsETH / ETH / USD SVR
-  address public constant SVR_rsETH_USD = AaveV3EthereumAssets.rsETH_ORACLE;
-  // Capped USDC / USD SVR
-  address public constant SVR_USDC_USD = AaveV3EthereumAssets.USDC_ORACLE;
+  address public constant SVR_rsETH = AaveV3EthereumAssets.rsETH_ORACLE;
   // Capped wBTC / BTC / USD SVR
-  address public constant SVR_WBTC_USD = AaveV3EthereumAssets.WBTC_ORACLE;
+  address public constant SVR_WBTC = AaveV3EthereumAssets.WBTC_ORACLE;
   // Capped LBTC / BTC / USD SVR
-  address public constant SVR_LBTC_USD = AaveV3EthereumAssets.LBTC_ORACLE;
+  address public constant SVR_LBTC = AaveV3EthereumAssets.LBTC_ORACLE;
+  // Capped USDC / USD SVR
+  address public constant SVR_USDC = AaveV3EthereumAssets.USDC_ORACLE;
   // Capped USDT / USD SVR
   // https://etherscan.io/address/0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6
-  address public constant SVR_USDT_USD = 0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6;
+  address public constant SVR_USDT = 0x29D43dD92684bA0702c0dd22Da97BD97BBD1a1a6;
 
   constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
 
@@ -63,55 +63,55 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
     // Core Hub spokes
     // ================================================================
     //                        hub           spoke                                          asset                                svr feed
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.weETH_UNDERLYING,        SVR_weETH_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.AAVE_UNDERLYING,         SVR_AAVE_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.LINK_UNDERLYING,         SVR_LINK_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.weETH_UNDERLYING,        SVR_weETH);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.AAVE_UNDERLYING,         SVR_AAVE);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.LINK_UNDERLYING,         SVR_LINK);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.MAIN_SPOKE,        AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT);
 
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHERFI_E_SPOKE,   AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHERFI_E_SPOKE,   AaveV4EthereumAssets.weETH_UNDERLYING,        SVR_weETH_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHERFI_E_SPOKE,   AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHERFI_E_SPOKE,   AaveV4EthereumAssets.weETH_UNDERLYING,        SVR_weETH);
 
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LIDO_E_SPOKE,      AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LIDO_E_SPOKE,      AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LIDO_E_SPOKE,      AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LIDO_E_SPOKE,      AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH);
 
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.KELP_E_SPOKE,      AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.KELP_E_SPOKE,      AaveV4EthereumAssets.rsETH_UNDERLYING,        SVR_rsETH_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.KELP_E_SPOKE,      AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.KELP_E_SPOKE,      AaveV4EthereumAssets.rsETH_UNDERLYING,        SVR_rsETH);
 
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.LBTC_UNDERLYING,         SVR_LBTC_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.LOMBARD_BTC_SPOKE, AaveV4EthereumAssets.LBTC_UNDERLYING,         SVR_LBTC);
 
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.FOREX_SPOKE,       AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.FOREX_SPOKE,       AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.FOREX_SPOKE,       AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.FOREX_SPOKE,       AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.GOLD_SPOKE,        AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT);
 
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.BLUECHIP_SPOKE,    AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT);
 
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC_USD);
-    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT_USD);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC);
+    updates[i++] = _priceUpdate(CORE, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT);
 
     // ================================================================
     // Prime Hub spokes
     // ================================================================
-    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH_USD);
-    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH_USD);
-    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC_USD);
-    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC_USD);
-    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC_USD);
-    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT_USD);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.WETH_UNDERLYING,         SVR_WETH);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.wstETH_UNDERLYING,       SVR_wstETH);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.WBTC_UNDERLYING,         SVR_WBTC);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.cbBTC_UNDERLYING,        SVR_cbBTC);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDC_UNDERLYING,         SVR_USDC);
+    updates[i++] = _priceUpdate(PRIME, AaveV4EthereumSpokes.BLUECHIP_SPOKE,   AaveV4EthereumAssets.USDT_UNDERLYING,         SVR_USDT);
 
     // ================================================================
     // Plus Hub spokes
     // ================================================================
-    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC_USD);
-    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT_USD);
+    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,    SVR_USDC);
+    updates[i++] = _priceUpdate(PLUS, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDT_UNDERLYING,    SVR_USDT);
 
     require(i == updates.length, 'Invalid number of updates');
     return updates;
