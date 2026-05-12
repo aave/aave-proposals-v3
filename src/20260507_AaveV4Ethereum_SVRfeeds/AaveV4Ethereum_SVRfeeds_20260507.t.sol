@@ -35,6 +35,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   address internal constant EXECUTOR = V4Constants.EXECUTOR;
   uint256 internal constant PRICE_TOLERANCE_BPS = 50; // 0.50%
   uint256 internal constant PERCENTAGE_FACTOR = 100_00;
+
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 25045775);
 
@@ -46,7 +47,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   }
 
   // ================================================================
-  // Execution & role revocation
+  // Execution & role grant
   // ================================================================
 
   function test_executorHasRoleBeforeExecution() public view virtual {
@@ -88,7 +89,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     );
     assertTrue(
       hasHubRole,
-      'Executor should still have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution'
+      'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution'
     );
   }
 
@@ -173,6 +174,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.GOLD_SPOKE,             AaveV4EthereumAssets.USDC_UNDERLYING,          AaveV4EthereumSpokePriceFeeds.GOLD_USDC_PRICE_FEED);
 
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE,         AaveV4EthereumAssets.USDC_UNDERLYING,          AaveV4EthereumSpokePriceFeeds.BLUECHIP_CORE_USDC_PRICE_FEED);
+
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,          AaveV4EthereumSpokePriceFeeds.ETHENA_ECOSYSTEM_CORE_USDC_PRICE_FEED);
   }
 
@@ -207,6 +209,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.GOLD_SPOKE,             AaveV4EthereumAssets.USDC_UNDERLYING,          payload.SVR_USDC());
 
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.BLUECHIP_SPOKE,         AaveV4EthereumAssets.USDC_UNDERLYING,          payload.SVR_USDC());
+    
     _assertPriceSource(CORE_HUB, AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE, AaveV4EthereumAssets.USDC_UNDERLYING,          payload.SVR_USDC());
   }
 
@@ -296,19 +299,13 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     _assertPriceEqualApproxRel(payload.SVR_LBTC(),    AaveV3EthereumAssets.LBTC_ORACLE);
   }
 
-  /// @dev Asserts |newFeed.latestAnswer - oldFeed.latestAnswer| / oldFeed.latestAnswer <= PRICE_TOLERANCE_BPS / 10000.
+  /// @dev Assert approx eq rel <= PRICE_TOLERANCE_BPS
   function _assertPriceEqualApproxRel(address oldFeed, address newFeed) internal view {
     int256 oldAnswer = IPriceFeed(oldFeed).latestAnswer();
     int256 newAnswer = IPriceFeed(newFeed).latestAnswer();
 
-    require(oldAnswer > 0 && newAnswer > 0, 'NON_POSITIVE_PRICE');
-
-    uint256 oldPrice = uint256(oldAnswer);
-    uint256 newPrice = uint256(newAnswer);
-    uint256 absDiff = stdMath.delta(oldPrice, newPrice);
-    uint256 maxAbsDiff = (oldPrice * PRICE_TOLERANCE_BPS) / PERCENTAGE_FACTOR;
-
-    assertLe(absDiff, maxAbsDiff, 'price deviation > tolerance');
+    // 1e18 -> 100%; 1BPS -> 1e14
+    assertApproxEqRel(newAnswer, oldAnswer, PRICE_TOLERANCE_BPS * 1e14);
   }
 
   /// @dev Executes the payload via the executor using delegatecall.

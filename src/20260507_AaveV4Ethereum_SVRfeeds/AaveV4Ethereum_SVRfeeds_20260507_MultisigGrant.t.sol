@@ -38,7 +38,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_MultisigGrant_Test is Test {
   }
 
   /// @notice Pre-grant check on mainnet: EXECUTOR has the HUB role but
-  /// NOT the SPOKE role (this is what blocks the SVR payload from running).
+  /// NOT the SPOKE role.
   function test_preGrant_executorHasOnlyHubRole() public view {
     (bool hasHub, ) = ACCESS_MANAGER.hasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
     assertTrue(hasHub, 'pre-grant: EXECUTOR should have HUB role');
@@ -67,7 +67,11 @@ contract AaveV4Ethereum_SVRfeeds_20260507_MultisigGrant_Test is Test {
 
   /// @notice The exact AccessManager calldata that the council Safe needs to sign.
   function test_grantCalldata_selector() public view {
-    assertEq(bytes4(txCalldata), bytes4(0x25c471a0), 'unexpected grantRole selector');
+    assertEq(
+      bytes4(txCalldata),
+      IAccessManager.grantRole.selector,
+      'unexpected grantRole selector'
+    );
   }
 
   function test_calldata_matches_tx() public view {
@@ -78,7 +82,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_MultisigGrant_Test is Test {
   // Helpers
   // ================================================================
 
-  /// @dev Build the council Safe payload
+  /// @dev Build the security council Safe tx
   function _executeMultisigGrant() internal {
     V4SafeHelpers.Action memory action = V4SafeHelpers.Action({
       to: address(ACCESS_MANAGER),
