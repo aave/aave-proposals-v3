@@ -347,7 +347,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     }
 
     ISpoke[] memory reserveSpoke = new ISpoke[](total);
-    uint256[] memory reserveId = new uint256[](total);
+    uint256[] memory reserveIds = new uint256[](total);
     address[] memory sourcesBefore = new address[](total);
 
     uint256 idx;
@@ -357,7 +357,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
       uint256 count = spoke.getReserveCount();
       for (uint256 i; i < count; ++i) {
         reserveSpoke[idx] = spoke;
-        reserveId[idx] = i;
+        reserveIds[idx] = i;
         sourcesBefore[idx] = IAaveOracle(oracle).getReserveSource(i);
         ++idx;
       }
@@ -367,7 +367,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
 
     address[] memory sourcesAfter = new address[](total);
     for (uint256 i; i < total; ++i) {
-      sourcesAfter[i] = IAaveOracle(reserveSpoke[i].ORACLE()).getReserveSource(reserveId[i]);
+      sourcesAfter[i] = IAaveOracle(reserveSpoke[i].ORACLE()).getReserveSource(reserveIds[i]);
     }
 
     // Collect feeds that were replaced
@@ -379,6 +379,20 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
       }
     }
 
+    // Exactly the expected reserves should have changed; all other reserves' sources remain.
+    assertEq(
+      replacedCount,
+      EXPECTED_UPDATED_RESERVES,
+      'unexpected number of reserves had their price source changed'
+    );
+
+    _assertNonExpectedReservesUnchanged({
+      reserveSpoke: reserveSpoke,
+      reserveIds: reserveIds,
+      sourcesBefore: sourcesBefore,
+      sourcesAfter: sourcesAfter
+    });
+
     // No reserve should still use any replaced feed.
     for (uint256 i; i < total; ++i) {
       for (uint256 k; k < replacedCount; ++k) {
@@ -389,7 +403,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
             'reserve ',
             vm.toString(address(reserveSpoke[i])),
             '#',
-            vm.toString(reserveId[i]),
+            vm.toString(reserveIds[i]),
             ' still uses replaced feed ',
             vm.toString(replacedFeeds[k])
           )
@@ -434,6 +448,43 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     uint256 reserveId = spoke.getReserveId(address(hub), assetId);
     source = IAaveOracle(spoke.ORACLE()).getReserveSource(reserveId);
     price = IPriceFeed(source).latestAnswer();
+  }
+
+  /// @dev Asserts that every reserve whose (hub, spoke, underlying) which is not
+  /// updated kept the same price source before and after payload exec.
+  function _assertNonExpectedReservesUnchanged(
+    ISpoke[] memory reserveSpoke,
+    uint256[] memory reserveIds,
+    address[] memory sourcesBefore,
+    address[] memory sourcesAfter
+  ) internal view {
+    UpdatedReserve[] memory expected = _getUpdatedReserves();
+    for (uint256 i; i < reserveSpoke.length; ++i) {
+      ISpoke.Reserve memory r = reserveSpoke[i].getReserve(reserveIds[i]);
+      bool isExpectedChanged;
+      for (uint256 j; j < expected.length; ++j) {
+        if (
+          address(expected[j].hub) == address(r.hub) &&
+          address(expected[j].spoke) == address(reserveSpoke[i]) &&
+          expected[j].underlying == r.underlying
+        ) {
+          isExpectedChanged = true;
+          break;
+        }
+      }
+      if (!isExpectedChanged) {
+        assertEq(
+          sourcesAfter[i],
+          sourcesBefore[i],
+          string.concat(
+            'unexpected source change on reserve ',
+            vm.toString(address(reserveSpoke[i])),
+            '#',
+            vm.toString(reserveIds[i])
+          )
+        );
+      }
+    }
   }
 
   /// @dev Every (hub, spoke, asset) reserve whose price source is updated by the payload.
