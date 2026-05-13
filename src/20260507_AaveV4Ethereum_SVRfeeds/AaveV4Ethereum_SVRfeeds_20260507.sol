@@ -17,10 +17,10 @@ contract AaveV4Ethereum_SVRfeeds_20260507 is AaveV4Payload {
   // ----------------------------------------------------------------
   // Uncapped SVR feeds
   // ----------------------------------------------------------------
-  address public constant SVR_WETH = ChainlinkEthereum.AAVE_SVR_ETH__USD;
-  address public constant SVR_cbBTC = ChainlinkEthereum.AAVE_SVR_BTC__USD;
-  address public constant SVR_AAVE = ChainlinkEthereum.AAVE_SVR_AAVE__USD;
-  address public constant SVR_LINK = ChainlinkEthereum.AAVE_SVR_LINK__USD;
+  address public constant SVR_WETH = AaveV3EthereumAssets.WETH_ORACLE;
+  address public constant SVR_cbBTC = AaveV3EthereumAssets.cbBTC_ORACLE;
+  address public constant SVR_AAVE = AaveV3EthereumAssets.AAVE_ORACLE;
+  address public constant SVR_LINK = AaveV3EthereumAssets.LINK_ORACLE;
 
   // ----------------------------------------------------------------
   // Capped SVR feeds

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {stdMath} from 'forge-std/StdMath.sol';
-import {IHub, IHubConfigurator, IAccessManagerEnumerable, IAaveOracle} from 'aave-address-book/AaveV4.sol';
+import {IHub, IHubConfigurator, ISpokeConfigurator, IAccessManagerEnumerable, IAaveOracle} from 'aave-address-book/AaveV4.sol';
 import {IPriceFeed} from 'aave-v4/spoke/interfaces/IPriceFeed.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumSpokePriceFeeds, AaveV4EthereumAssets} from 'aave-address-book/AaveV4Ethereum.sol';
@@ -283,6 +283,15 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     assertEq(AaveV3Ethereum.ORACLE.getSourceOfAsset(AaveV3EthereumAssets.LINK_UNDERLYING),   AaveV3EthereumAssets.LINK_ORACLE,   'onchain V3 LINK source != V3 LINK_ORACLE');
   }
 
+  /// @dev For each uncapped SVR feed, assert it matches the Chainlink SVR feed.
+  // prettier-ignore
+  function test_uncapped_isSVR() public view virtual {
+    assertEq(payload.SVR_WETH(),  ChainlinkEthereum.AAVE_SVR_ETH__USD,  'SVR_WETH != ETH/USD SVR');
+    assertEq(payload.SVR_cbBTC(), ChainlinkEthereum.AAVE_SVR_BTC__USD,  'SVR_cbBTC != BTC/USD SVR');
+    assertEq(payload.SVR_AAVE(),  ChainlinkEthereum.AAVE_SVR_AAVE__USD, 'SVR_AAVE != AAVE/USD SVR');
+    assertEq(payload.SVR_LINK(),  ChainlinkEthereum.AAVE_SVR_LINK__USD, 'SVR_LINK != LINK/USD SVR');
+  }
+
   /// @dev For each capped adapter, assert the wrapped underlying Chainlink aggregator
   /// is the SVR-enabled feed.
   // prettier-ignore
@@ -333,6 +342,19 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
       );
       // 1e18 -> 100%; 1BPS -> 1e14
       assertApproxEqRel(priceAfter, pricesBefore[i], PRICE_TOLERANCE_BPS * 1e14, reserves[i].label);
+    }
+  }
+
+  /// @dev After payload exec, for every updated reserve: forcibly unpause/unfreeze and
+  /// raise the addCap to max, then supply/withdraw 100 units
+  function test_supplyWithdraw_postExec() public virtual {
+    _executePayload();
+
+    address testUser = makeAddr('SVR_TEST_USER');
+    UpdatedReserve[] memory reserves = _getUpdatedReserves();
+
+    for (uint256 i; i < reserves.length; ++i) {
+      _execSupplyWithdraw(reserves[i], testUser);
     }
   }
 
@@ -544,5 +566,68 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
 
     rawDiff = vm.getStateDiffJson();
     logsJson = vm.getRecordedLogsJson();
+  }
+
+  function _execSupplyWithdraw(UpdatedReserve memory r, address testUser) internal {
+    uint256 assetId = r.hub.getAssetId(r.underlying);
+    uint256 reserveId = r.spoke.getReserveId(address(r.hub), assetId);
+
+    // Remove constraints so supply/withdraw can run
+    vm.startPrank(EXECUTOR);
+    AaveV4Ethereum.SPOKE_CONFIGURATOR.updatePaused(address(r.spoke), reserveId, false);
+    AaveV4Ethereum.SPOKE_CONFIGURATOR.updateFrozen(address(r.spoke), reserveId, false);
+    AaveV4Ethereum.HUB_CONFIGURATOR.updateSpokeAddCap(
+      address(r.hub),
+      assetId,
+      address(r.spoke),
+      r.hub.MAX_ALLOWED_SPOKE_CAP()
+    );
+    vm.stopPrank();
+
+    uint256 amount = 100 * (10 ** r.spoke.getReserve(reserveId).decimals);
+    deal2(r.underlying, testUser, amount);
+    assertEq(IERC20(r.underlying).balanceOf(testUser), amount, 'pre-supply underlying balance');
+
+    uint256 userSharesBefore = r.spoke.getUserSuppliedShares(reserveId, testUser);
+
+    // Supply
+    vm.startPrank(testUser);
+    IERC20(r.underlying).approve(address(r.spoke), amount);
+    (uint256 sharesSupplied, uint256 assetsSupplied) = r.spoke.supply({
+      reserveId: reserveId,
+      amount: amount,
+      onBehalfOf: testUser
+    });
+    vm.stopPrank();
+
+    assertEq(assetsSupplied, amount, 'supply: assets mismatch');
+    assertEq(IERC20(r.underlying).balanceOf(testUser), 0, 'post-supply underlying balance');
+    assertEq(
+      r.spoke.getUserSuppliedShares(reserveId, testUser),
+      userSharesBefore + sharesSupplied,
+      'post-supply user shares'
+    );
+
+    // Withdraw all
+    vm.prank(testUser);
+    (uint256 sharesWithdrawn, uint256 assetsWithdrawn) = r.spoke.withdraw({
+      reserveId: reserveId,
+      amount: type(uint256).max,
+      onBehalfOf: testUser
+    });
+
+    assertEq(sharesWithdrawn, sharesSupplied, 'withdraw: shares mismatch');
+    assertApproxEqAbs(assetsWithdrawn, amount, 2, 'withdraw: assets mismatch');
+    assertEq(
+      r.spoke.getUserSuppliedShares(reserveId, testUser),
+      userSharesBefore,
+      'post-withdraw user shares'
+    );
+    assertApproxEqAbs(
+      IERC20(r.underlying).balanceOf(testUser),
+      amount,
+      2,
+      'post-withdraw underlying balance'
+    );
   }
 }
