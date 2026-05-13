@@ -8,7 +8,7 @@ import {AaveV4Ethereum_SVRfeeds_20260507} from './AaveV4Ethereum_SVRfeeds_202605
 
 /**
  * @dev Deploy Ethereum
- * deploy-command: make deploy-account contract=src/20260507_AaveV4Ethereum_SVRfeeds/SVRfeeds_20260507.s.sol chain=mainnet account=<ACCOUNT_NAME>
+ * deploy-command: make deploy-account contract=src/20260507_AaveV4Ethereum_SVRfeeds/SVRfeeds_20260507.s.sol chain=mainnet ACCOUNT_NAME=<accountName>
  */
 contract DeployEthereum is EthereumScript {
   function run() external broadcast returns (address) {
