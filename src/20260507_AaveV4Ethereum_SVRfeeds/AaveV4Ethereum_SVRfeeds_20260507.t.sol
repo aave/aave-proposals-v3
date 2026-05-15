@@ -47,7 +47,7 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
   AaveV4Ethereum_SVRfeeds_20260507 internal payload;
 
   function setUp() public virtual {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 25045775);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 25100758);
 
     payload = new AaveV4Ethereum_SVRfeeds_20260507();
 
