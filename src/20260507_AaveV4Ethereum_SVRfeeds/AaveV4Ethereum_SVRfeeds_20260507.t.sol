@@ -477,7 +477,13 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
       for (uint256 s; s < spokes.length; ++s) {
         uint256 after_ = spokes[s].getUserAccountData(users[u]).healthFactor;
         // Skip users with no debt on this spoke (HF == max uint) both before and after.
-        if (hfBefore[u][s] == type(uint256).max && after_ == type(uint256).max) continue;
+        if (hfBefore[u][s] == type(uint256).max && after_ == type(uint256).max) {
+          continue;
+        }
+        // only show user HF that changed
+        if (after_ == hfBefore[u][s]) {
+          continue;
+        }
         console.log('user  :', users[u]);
         console.log('spoke :', address(spokes[s]));
         console.log('HF before: %e', hfBefore[u][s]);
