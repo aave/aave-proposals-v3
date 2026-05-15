@@ -434,6 +434,62 @@ contract AaveV4Ethereum_SVRfeeds_20260507_Test is ProtocolV4TestBase {
     }
   }
 
+  function test_hfChange_specificUsers_beforeAfter() public virtual {
+    address[] memory users = new address[](24);
+    users[0] = 0x0D3ff01d9a6b4cE46E048e495b9C109b6B5D0933;
+    users[1] = 0xc965b77823e25b34c66A29206b63B6925648dB9D;
+    users[2] = 0x1A557354C5b8d7Df38ea914209e416Dc7065b158;
+    users[3] = 0x40534E513dF8277870B81e97B5107B3f39DE4f15;
+    users[4] = 0x3689c216f8f6ce7e2CE2a27c81a23096A787F532;
+    users[5] = 0x91cfaCeDE08eceB5c809BaF8c8062bd7cc7f0FAa;
+    users[6] = 0x94963B928498bE7f06637C3D57ea1E74D7f73423;
+    users[7] = 0x0c708b6187bB2A453F5f14283ce8D2ebdB82F441;
+    users[8] = 0xaBe5d818D6C4b5939ACF1C5613174785A47Ef276;
+    users[9] = 0x38E38427791A27f5b15424970962087D96B4BD84;
+    users[10] = 0xdCB1F9DFF7860A9F4DF3f3Eb944A9a74C6FB42B6;
+    users[11] = 0xf7462251C14d2fB83c7aB96367A7985423C83010;
+    users[12] = 0x2156f29D64f81701B58877129006E8b1964149B6;
+    users[13] = 0x4CD76521f616Db4d6978A4a80AeB77Ccc9E890EC;
+    users[14] = 0x3CED22823Ad70B1d011007fb1d48D279dc3f1f02;
+    users[15] = 0x99858C5f2668A972419a4C6be3870f988cdc25Ed;
+    users[16] = 0xB9D8070c8e1aEb9bdF60cc3205D31dE69B1dB66E;
+    users[17] = 0xFEEcC87cF35d876C3301c8fE55e1cb88487Db72C;
+    users[18] = 0x56213046E039cc5704618747eEefB56502Eb32E1;
+    users[19] = 0x3002b77Df353a199d61DaaF63933014CB82B28Fd;
+    users[20] = 0x35993b258E3369c8f2755D554ede3bf69BfD72fF;
+    users[21] = 0x7AAd74b7f0d60D5867B59dbD377a71783425af47;
+    users[22] = 0x7C24C4B065F4c94feb8A62A6654BdBCbF1Ff7dC6;
+    users[23] = 0x9768F31bd299fA1cA98EDd7Aa15Fc84d94C33f7C;
+
+    ISpoke[] memory spokes = AaveV4EthereumSpokeHelpers.getUserSpokes();
+
+    uint256[][] memory hfBefore = new uint256[][](users.length);
+    for (uint256 u; u < users.length; ++u) {
+      hfBefore[u] = new uint256[](spokes.length);
+      for (uint256 s; s < spokes.length; ++s) {
+        hfBefore[u][s] = spokes[s].getUserAccountData(users[u]).healthFactor;
+      }
+    }
+
+    _executePayload();
+
+    for (uint256 u; u < users.length; ++u) {
+      for (uint256 s; s < spokes.length; ++s) {
+        uint256 after_ = spokes[s].getUserAccountData(users[u]).healthFactor;
+        // Skip users with no debt on this spoke (HF == max uint) both before and after.
+        if (hfBefore[u][s] == type(uint256).max && after_ == type(uint256).max) continue;
+        console.log('user  :', users[u]);
+        console.log('spoke :', address(spokes[s]));
+        console.log('HF before: %e', hfBefore[u][s]);
+        console.log('HF after : %e', after_);
+        if (after_ < 1e18 && hfBefore[u][s] >= 1e18) {
+          console.log('User became liquidatable!');
+        }
+        console.log('---');
+      }
+    }
+  }
+
   /// @dev Executes the payload via the executor using delegatecall.
   function _executePayload() internal virtual {
     vm.prank(SECURITY_COUNCIL);
