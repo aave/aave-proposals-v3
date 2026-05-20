@@ -16,7 +16,7 @@ This round serves two intersecting demand signals.
 
 1. Incentive programs are launching on frxUSD and USDG. The reward programs are to be rolled out on both stablecoins beginning the week of May 21st. To absorb the expected supply-side inflows without compressing reward APYs into invisibility, the Core/Main caps for both assets are raised in a single tranche to 10,000,000. A single-tranche move gives the rewards program a stable target and avoids mid-incentive cap exhaustion. frxUSD on Core/Main is already at 100% Add Cap utilization independent of the incentive, which directly validates the argument.
 
-2. Collateral capacity to generate borrow demand for the new stable caps. Larger frxUSD/USDG supply only earns yield if there is matched borrow demand. Round 4 also bumps high-utilization collateral on Core/Main (WETH, WBTC, wstETH, weETH, LINK) and on Prime/Bluechip (WBTC, wstETH, WETH, cbBTC) so that depositors of BTC and ETH variants have room to draw frxUSD and USDG against their collateral, including cross-hub via the Bluechip and Gold credit lines.
+2. Collateral capacity to generate borrow demand for the new stable caps. Larger frxUSD/USDG supply only earns yield if there is matched borrow demand. Round 4 also bumps high-utilization collateral on Core/Main (WETH, WBTC, wstETH, weETH, LINK) and on Prime/Bluechip (WBTC, wstETH, WETH, cbBTC) so that depositors of BTC and ETH variants have room to draw frxUSD and/or USDG against their collateral.
 
 The frxUSD and USDG targets are sized against observable DEX liquidity. Approximately $16M of frxUSD can be sold to bluechip stablecoins (USDC, USDT) on Curve and Uniswap V3 with manageable slippage, and approximately $5M of USDG can be sold to bluechip stables on the same venues. Both figures comfortably exceed the proposed 10M caps under nominal flow with the peg stability buffer sitting tight historically for both assets.
 
@@ -63,7 +63,7 @@ This round’s stablecoin sizing is driven primarily by the upcoming incentive p
 - frxUSD (Core Main): raised from 4,500,000 to 10,000,000 to provide capacity for the launching incentive program. The reserve is already at 100% Add Cap utilization without incentives, so the move addresses an immediate organic constraint as well. Sized against approximately $16M of available DEX exit liquidity to bluechip stablecoins (USDC, USDT) on Curve and Uniswap V3, which comfortably covers the new cap under stressed unwind scenarios.
 - USDG (Core Main): raised from 3,500,000 to 10,000,000 on the same incentive basis. Sized against approximately $5M of available DEX exit liquidity to bluechip stablecoins.
 - USDT (Core Main): raised modestly from 7,000,000 to 8,500,000 to maintain headroom alongside the frxUSD/USDG expansion.
-  USDC and USDT (Prime Bluechip): raised to 3,000,000 each to support cross-hub borrow demand from the new stable caps.
+- USDC and USDT (Prime Bluechip): raised to 3,000,000 each to support cross-hub borrow demand from the new stable caps.
 
 The following stablecoins are left unchanged this round:
 
