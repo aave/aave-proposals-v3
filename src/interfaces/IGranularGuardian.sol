@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-import {IAccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
+import {IAccessControlEnumerable} from '@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol';
 
 /**
  * @title IGranularGuardianAccessControl
  * @author BGD Labs
  * @notice interface containing the objects, events and methods definitions of the GranularGuardianAccessControl contract
  */
-interface IGranularGuardianAccessControl is IAccessControl {
+interface IGranularGuardianAccessControl is IAccessControlEnumerable {
   /**
    * @notice method to update the CrossChainController guardian when this contract has been set as guardian
    */

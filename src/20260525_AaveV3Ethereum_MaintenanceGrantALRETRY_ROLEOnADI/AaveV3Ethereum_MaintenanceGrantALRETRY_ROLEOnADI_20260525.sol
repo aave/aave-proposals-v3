@@ -12,7 +12,7 @@ import {IGranularGuardianAccessControl} from 'src/interfaces/IGranularGuardian.s
  * - Discussion: https://governance.aave.com
  */
 contract AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525 is IProposalGenericExecutor {
-  address public constant AAVE_LABS_GUARDIAN = address(0x11);
+  address public constant AAVE_LABS_GUARDIAN = 0x4Ab2Bed1d667260dB34244Ba412817651C2dD52b;
 
   function execute() external {
     IGranularGuardianAccessControl(GovernanceV3Ethereum.GRANULAR_GUARDIAN).grantRole(

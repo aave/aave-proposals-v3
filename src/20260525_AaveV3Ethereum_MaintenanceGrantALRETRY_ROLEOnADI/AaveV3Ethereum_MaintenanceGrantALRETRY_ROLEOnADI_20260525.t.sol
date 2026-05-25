@@ -6,6 +6,8 @@ import {AaveV3Ethereum} from 'aave-address-book/AaveV3Ethereum.sol';
 import 'forge-std/Test.sol';
 import {ProtocolV3TestBase, ReserveConfig} from 'aave-helpers/src/ProtocolV3TestBase.sol';
 import {AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525} from './AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525.sol';
+import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
+import {IGranularGuardianAccessControl} from 'src/interfaces/IGranularGuardian.sol';
 
 /**
  * @dev Test for AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525
@@ -13,6 +15,8 @@ import {AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525} from './AaveV
  */
 contract AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525_Test is ProtocolV3TestBase {
   AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525 internal proposal;
+  IGranularGuardianAccessControl internal GRANULAR_GUARDIAN =
+    IGranularGuardianAccessControl(GovernanceV3Ethereum.GRANULAR_GUARDIAN);
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 25169933);
@@ -27,6 +31,20 @@ contract AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525_Test is Proto
       'AaveV3Ethereum_MaintenanceGrantALRETRY_ROLEOnADI_20260525',
       AaveV3Ethereum.POOL,
       address(proposal)
+    );
+  }
+
+  function test_role_grant() public {
+    assertEq(GRANULAR_GUARDIAN.getRoleMemberCount(GRANULAR_GUARDIAN.RETRY_ROLE()), 1);
+    assertFalse(
+      GRANULAR_GUARDIAN.hasRole(GRANULAR_GUARDIAN.RETRY_ROLE(), proposal.AAVE_LABS_GUARDIAN())
+    );
+
+    executePayload(vm, address(proposal));
+
+    assertEq(GRANULAR_GUARDIAN.getRoleMemberCount(GRANULAR_GUARDIAN.RETRY_ROLE()), 2);
+    assertTrue(
+      GRANULAR_GUARDIAN.hasRole(GRANULAR_GUARDIAN.RETRY_ROLE(), proposal.AAVE_LABS_GUARDIAN())
     );
   }
 }
