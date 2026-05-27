@@ -7,7 +7,7 @@ import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4Ethereum
 
 /**
  * @title Increase add and draw caps on Core Hub
- * @author Aave Labs
+ * @author Llama Risk (implemented by Aave Labs)
  * - Discussion: todo
  * - To be executed by the Aave Security Council
  */

@@ -137,7 +137,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260527_Test is ProtocolV4TestBase {
 
   // prettier-ignore
   function test_caps_coreHub_before() public virtual {
-    //                                                                                              addCap      drawCap
+    //                                                                                                       addCap      drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.EURC_UNDERLYING,   300_000,    312_500);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,   400_000,    135_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,   400_000,    135_000);
@@ -156,7 +156,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260527_Test is ProtocolV4TestBase {
   function test_caps_coreHub() public virtual {
     _executePayload();
 
-    //                                                                                              addCap      drawCap
+    //                                                                                                       addCap      drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.EURC_UNDERLYING,   1_125_000,  1_170_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,   1_500_000,  500_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,   1_500_000,  500_000);
