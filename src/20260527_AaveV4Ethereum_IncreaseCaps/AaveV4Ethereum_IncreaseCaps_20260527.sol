@@ -8,7 +8,7 @@ import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4Ethereum
 /**
  * @title Increase add and draw caps on Core Hub
  * @author Llama Risk (implemented by Aave Labs)
- * - Discussion: todo
+ * - Discussion: https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/25
  * - To be executed by the Aave Security Council
  */
 contract AaveV4Ethereum_IncreaseCaps_20260527 is AaveV4Payload {
