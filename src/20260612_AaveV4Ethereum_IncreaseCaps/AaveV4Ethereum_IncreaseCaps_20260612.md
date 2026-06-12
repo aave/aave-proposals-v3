@@ -1,7 +1,7 @@
 ---
 title: "Aave V4 Caps Increase #7"
 author: "Llama Risk (implemented by Aave Labs)"
-discussions: "todo"
+discussions: "https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/29"
 ---
 
 ## Summary
@@ -73,7 +73,7 @@ Round 7 targets approximately $38M in additional Add Cap capacity (Core +$29M, P
 
 - Implementation: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260612_AaveV4Ethereum_IncreaseCaps/AaveV4Ethereum_IncreaseCaps_20260612.sol)
 - Tests: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260612_AaveV4Ethereum_IncreaseCaps/AaveV4Ethereum_IncreaseCaps_20260612.t.sol)
-- [Discussion](todo)
+- [Discussion](https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/29)
 
 ## Copyright
 
