@@ -25,6 +25,9 @@ contract AaveV4Ethereum_IncreaseCaps_20260617_ForkTest is
   function test_caps_coreHub_before() public override {}
 
   /// @dev Skip, no pre-execution state.
+  function test_caps_primeHub_before() public override {}
+
+  /// @dev Skip, no pre-execution state.
   function test_caps_creditLines_before() public override {}
 
   /// @dev No-op, payload already executed on the fork.

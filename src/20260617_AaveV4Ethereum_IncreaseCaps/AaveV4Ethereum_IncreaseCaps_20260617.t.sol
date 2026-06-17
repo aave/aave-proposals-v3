@@ -24,9 +24,10 @@ contract AaveV4Ethereum_IncreaseCaps_20260617_Test is ProtocolV4TestBase {
   address internal constant EXECUTOR = 0x14339e2178A954d5FB839D5Ff31644fE0F25F517;
 
   IHub internal constant CORE_HUB = AaveV4EthereumHubs.CORE_HUB;
+  IHub internal constant PRIME_HUB = AaveV4EthereumHubs.PRIME_HUB;
 
   function setUp() public virtual {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 25337990);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 25338814);
 
     payload = new AaveV4Ethereum_IncreaseCaps_20260617();
   }
@@ -125,8 +126,19 @@ contract AaveV4Ethereum_IncreaseCaps_20260617_Test is ProtocolV4TestBase {
   // | Forex | frxUSD |           0 |            - |      250,000 |       500,000 |
   // | Main  | AAVE   |      67,000 |      100,000 |            0 |             - |
   // | Main  | USDC   |  10,000,000 |   12,500,000 |   10,000,000 |    12,500,000 |
+  // | Main  | USDG   |  30,000,000 |   40,000,000 |   20,400,000 |    27,200,000 |
+  // | Main  | USDT   |  15,000,000 |   20,000,000 |   15,000,000 |    20,000,000 |
   // | Main  | WBTC   |         450 |          850 |           39 |            74 |
+  // | Main  | cbBTC  |         115 |          160 |            7 |            10 |
+  // | Main  | frxUSD |  30,000,000 |   40,000,000 |   20,400,000 |    27,200,000 |
   // | Main  | wstETH |       6,000 |        8,000 |            0 |             - |
+  //
+  // Prime Hub
+  //
+  // | Spoke    | Asset | Current Add | Proposed Add | Current Draw | Proposed Draw |
+  // |----------|-------|-------------|--------------|--------------|---------------|
+  // | Bluechip | WBTC  |         280 |          400 |            0 |             - |
+  // | Bluechip | cbBTC |          90 |          130 |            0 |             - |
   //
   // Credit Lines (cross-hub frxUSD draws from Core)
   //
@@ -144,7 +156,11 @@ contract AaveV4Ethereum_IncreaseCaps_20260617_Test is ProtocolV4TestBase {
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 0,          250_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.AAVE_UNDERLYING,   67_000,     0);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.USDC_UNDERLYING,   10_000_000, 10_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.USDG_UNDERLYING,   30_000_000, 20_400_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.USDT_UNDERLYING,   15_000_000, 15_000_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.WBTC_UNDERLYING,   450,        39);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.cbBTC_UNDERLYING,  115,        7);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.frxUSD_UNDERLYING, 30_000_000, 20_400_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.wstETH_UNDERLYING, 6_000,      0);
   }
 
@@ -158,8 +174,28 @@ contract AaveV4Ethereum_IncreaseCaps_20260617_Test is ProtocolV4TestBase {
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 0,          500_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.AAVE_UNDERLYING,   100_000,    0);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.USDC_UNDERLYING,   12_500_000, 12_500_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.USDG_UNDERLYING,   40_000_000, 27_200_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.USDT_UNDERLYING,   20_000_000, 20_000_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.WBTC_UNDERLYING,   850,        74);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.cbBTC_UNDERLYING,  160,        10);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.frxUSD_UNDERLYING, 40_000_000, 27_200_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),  AaveV4EthereumAssets.wstETH_UNDERLYING, 8_000,      0);
+  }
+
+  // prettier-ignore
+  function test_caps_primeHub_before() public virtual {
+    //                                                                                                          addCap drawCap
+    _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.WBTC_UNDERLYING,   280,   0);
+    _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.cbBTC_UNDERLYING,  90,    0);
+  }
+
+  // prettier-ignore
+  function test_caps_primeHub() public virtual {
+    _executePayload();
+
+    //                                                                                                          addCap drawCap
+    _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.WBTC_UNDERLYING,   400,   0);
+    _assertCaps(PRIME_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.cbBTC_UNDERLYING,  130,   0);
   }
 
   // prettier-ignore
