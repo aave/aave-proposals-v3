@@ -93,26 +93,9 @@ contract AaveV4Ethereum_IncreaseCaps_20260702_Test is ProtocolV4TestBase {
     _executePayload();
 
     vm.pauseGasMetering();
-    // Position managers / gateways are not exercised: they are not registered on all
-    // spokes at this block (e.g. USDG Pendle's signature gateway reverts with
-    // SpokeNotRegistered), and this payload only adjusts spoke caps.
-    e2eTestAllSpokes({spokes: _getE2eSpokes(), testPositionManagers: false});
+    e2eTestAllSpokes({spokes: AaveV4EthereumGetters.getAllSpokes(), testPositionManagers: true});
     e2eTestAllTokenizationSpokes(AaveV4EthereumGetters.getAllTokenizationSpokes());
     vm.resumeGasMetering();
-  }
-
-  /// @dev Kelp Spoke is excluded from e2e: its reserves currently have
-  ///      `collateralFactor = 0`, leaving no usable collateral for the
-  ///      supply/borrow/liquidation flows. This payload does not touch it.
-  function _getE2eSpokes() internal pure returns (ISpoke[] memory) {
-    ISpoke[] memory all = AaveV4EthereumGetters.getAllSpokes();
-    ISpoke[] memory filtered = new ISpoke[](all.length - 1);
-    uint256 j;
-    for (uint256 i; i < all.length; i++) {
-      if (address(all[i]) == address(AaveV4EthereumSpokes.KELP_ESPOKE)) continue;
-      filtered[j++] = all[i];
-    }
-    return filtered;
   }
 
   // ================================================================
