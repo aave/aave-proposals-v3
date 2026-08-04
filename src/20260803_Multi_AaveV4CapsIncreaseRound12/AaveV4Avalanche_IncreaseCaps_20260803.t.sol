@@ -6,7 +6,8 @@ import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 
-import {AaveV4AvalancheRound12, AaveV4Avalanche_IncreaseCaps_20260803} from './AaveV4Avalanche_IncreaseCaps_20260803.sol';
+import {AaveV4AvalancheRound12} from './AaveV4AvalancheRound12.sol';
+import {AaveV4Avalanche_IncreaseCaps_20260803} from './AaveV4Avalanche_IncreaseCaps_20260803.sol';
 
 import 'aave-helpers/src/ProtocolV4TestBase.sol';
 
