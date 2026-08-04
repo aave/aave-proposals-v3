@@ -5,11 +5,7 @@ import {AaveV4Payload, IAaveV4ConfigEngine} from 'aave-v4/config-engine/AaveV4Pa
 import {EngineFlags} from 'aave-v4/config-engine/libraries/EngineFlags.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumTokenizationSpokes, AaveV4EthereumSpokePriceFeeds, AaveV4EthereumAssets, ISpoke, IHub} from 'aave-address-book/AaveV4Ethereum.sol';
 
-library AaveV4EthereumRound12 {
-  // Not available in the address book version pinned by feat/aave-v4.
-  // https://etherscan.io/address/0x774b9655413c34809c1f1b16b654465A89EBE989
-  ISpoke internal constant USDG_MAPLE_ESPOKE = ISpoke(0x774b9655413c34809c1f1b16b654465A89EBE989);
-}
+import {LocalAaveV4Ethereum} from './LocalV4AddressBook.sol';
 
 /**
  * @title Increase add and draw caps on Ethereum
@@ -29,14 +25,14 @@ contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
   {
     IHub CORE = AaveV4EthereumHubs.CORE_HUB;
     IHub GLOBAL_DOLLAR = AaveV4EthereumHubs.PAXOS_HUB;
-    ISpoke MAPLE = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE;
+    ISpoke MAPLE = LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE;
 
     IAaveV4ConfigEngine.SpokeToAssetsAddition[]
       memory additions = new IAaveV4ConfigEngine.SpokeToAssetsAddition[](2);
 
     uint256 i = 0;
 
-    //                                 hub            spoke   asset                                    addCap     drawCap
+    //                                   hub            spoke   asset                                     addCap     drawCap
     additions[i++] = _newCreditLine(GLOBAL_DOLLAR, MAPLE, AaveV4EthereumAssets.USDC_UNDERLYING,      1_000_000, 1_000_000);
     additions[i++] = _newCreditLine(CORE,          MAPLE, AaveV4EthereumAssets.USDG_UNDERLYING,      0,         5_000_000);
 
@@ -101,7 +97,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
   {
     IHub CORE = AaveV4EthereumHubs.CORE_HUB;
     IHub GLOBAL_DOLLAR = AaveV4EthereumHubs.PAXOS_HUB;
-    ISpoke MAPLE = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE;
+    ISpoke MAPLE = LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE;
 
     IAaveV4ConfigEngine.ReserveListing[] memory listings = new IAaveV4ConfigEngine.ReserveListing[](2);
 

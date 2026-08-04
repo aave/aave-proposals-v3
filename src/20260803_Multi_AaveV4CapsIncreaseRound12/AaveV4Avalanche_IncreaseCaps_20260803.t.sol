@@ -6,7 +6,7 @@ import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 
-import {AaveV4AvalancheRound12} from './AaveV4AvalancheRound12.sol';
+import {LocalAaveV4Avalanche} from './LocalV4AddressBook.sol';
 import {AaveV4Avalanche_IncreaseCaps_20260803} from './AaveV4Avalanche_IncreaseCaps_20260803.sol';
 
 import 'aave-helpers/src/ProtocolV4TestBase.sol';
@@ -54,11 +54,11 @@ contract AaveV4Avalanche_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
     string memory reportName = 'AaveV4Avalanche_IncreaseCaps_20260803';
 
     IHub[] memory hubs = new IHub[](1);
-    hubs[0] = AaveV4AvalancheRound12.CORE_HUB;
+    hubs[0] = LocalAaveV4Avalanche.CORE_HUB;
 
     ISpoke[] memory spokes = new ISpoke[](3);
     spokes[0] = MAIN_SPOKE;
-    spokes[1] = AaveV4AvalancheRound12.FOREX_SPOKE;
+    spokes[1] = LocalAaveV4Avalanche.FOREX_SPOKE;
     spokes[2] = AVAX_CORRELATED_SPOKE;
 
     string memory beforeName = string.concat(reportName, '_before');
@@ -82,9 +82,9 @@ contract AaveV4Avalanche_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
   // prettier-ignore
   function test_caps_before() public view virtual {
     //                                                                                         addCap   drawCap
-    _assertCaps(AaveV4AvalancheRound12.EURC,                                                    300_000, 400_000);
-    _assertCaps(AaveV4AvalancheRound12.USDC,                                                    400_000, 350_000);
-    _assertCaps(AaveV4AvalancheRound12.USDt,                                                    400_000, 350_000);
+    _assertCaps(LocalAaveV4Avalanche.EURC,                                                       300_000, 400_000);
+    _assertCaps(LocalAaveV4Avalanche.USDC,                                                       400_000, 350_000);
+    _assertCaps(LocalAaveV4Avalanche.USDt,                                                       400_000, 350_000);
   }
 
   // prettier-ignore
@@ -92,9 +92,9 @@ contract AaveV4Avalanche_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
     _executePayload();
 
     //                                                                                         addCap     drawCap
-    _assertCaps(AaveV4AvalancheRound12.EURC,                                                    1_600_000, 1_600_000);
-    _assertCaps(AaveV4AvalancheRound12.USDC,                                                    1_000_000, 950_000);
-    _assertCaps(AaveV4AvalancheRound12.USDt,                                                    1_000_000, 950_000);
+    _assertCaps(LocalAaveV4Avalanche.EURC,                                                       1_600_000, 1_600_000);
+    _assertCaps(LocalAaveV4Avalanche.USDC,                                                       1_000_000, 950_000);
+    _assertCaps(LocalAaveV4Avalanche.USDt,                                                       1_000_000, 950_000);
   }
 
   function _executePayload() internal virtual {
@@ -107,10 +107,10 @@ contract AaveV4Avalanche_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
     uint256 expectedAddCap,
     uint256 expectedDrawCap
   ) internal view {
-    IHub hub = AaveV4AvalancheRound12.CORE_HUB;
+    IHub hub = LocalAaveV4Avalanche.CORE_HUB;
     IHub.SpokeConfig memory config = hub.getSpokeConfig(
       hub.getAssetId(underlying),
-      address(AaveV4AvalancheRound12.FOREX_SPOKE)
+      address(LocalAaveV4Avalanche.FOREX_SPOKE)
     );
     assertEq(config.addCap, expectedAddCap, 'addCap mismatch');
     assertEq(config.drawCap, expectedDrawCap, 'drawCap mismatch');

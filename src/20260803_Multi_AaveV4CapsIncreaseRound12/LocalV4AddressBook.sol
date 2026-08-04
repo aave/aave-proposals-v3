@@ -4,7 +4,13 @@ pragma solidity ^0.8.0;
 import {IAaveV4ConfigEngine} from 'aave-v4/config-engine/interfaces/IAaveV4ConfigEngine.sol';
 import {IHubConfigurator, ISpoke, IHub} from 'aave-address-book/AaveV4.sol';
 
-library AaveV4AvalancheRound12 {
+library LocalAaveV4Ethereum {
+  // Not available in the address book version pinned by feat/aave-v4.
+  // https://etherscan.io/address/0x774b9655413c34809c1f1b16b654465A89EBE989
+  ISpoke internal constant USDG_MAPLE_ESPOKE = ISpoke(0x774b9655413c34809c1f1b16b654465A89EBE989);
+}
+
+library LocalAaveV4Avalanche {
   // https://snowscan.xyz/address/0x1F0C67Fde7FcaF7eCEA43b76A23461803972c45c
   IAaveV4ConfigEngine internal constant CONFIG_ENGINE =
     IAaveV4ConfigEngine(0x1F0C67Fde7FcaF7eCEA43b76A23461803972c45c);

@@ -8,7 +8,8 @@ import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 
-import {AaveV4EthereumRound12, AaveV4Ethereum_IncreaseCaps_20260803} from './AaveV4Ethereum_IncreaseCaps_20260803.sol';
+import {LocalAaveV4Ethereum} from './LocalV4AddressBook.sol';
+import {AaveV4Ethereum_IncreaseCaps_20260803} from './AaveV4Ethereum_IncreaseCaps_20260803.sol';
 
 import 'aave-helpers/src/ProtocolV4TestBase.sol';
 
@@ -36,7 +37,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
     // this Security Council payload is executed.
     vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
     ACCESS_MANAGER.setTargetFunctionRole(
-      address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE),
+      address(LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE),
       Roles.getSpokeConfiguratorRoleSelectors(),
       Roles.SPOKE_CONFIGURATOR_ROLE
     );
@@ -184,16 +185,13 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
   function test_mapleListings_before() public view virtual {
     uint256 usdcAssetId = GLOBAL_DOLLAR_HUB.getAssetId(AaveV4EthereumAssets.USDC_UNDERLYING);
     assertFalse(
-      GLOBAL_DOLLAR_HUB.isSpokeListed(
-        usdcAssetId,
-        address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE)
-      ),
+      GLOBAL_DOLLAR_HUB.isSpokeListed(usdcAssetId, address(LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE)),
       'Maple Spoke should not have Global Dollar USDC before execution'
     );
 
     uint256 usdgAssetId = CORE_HUB.getAssetId(AaveV4EthereumAssets.USDG_UNDERLYING);
     assertFalse(
-      CORE_HUB.isSpokeListed(usdgAssetId, address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE)),
+      CORE_HUB.isSpokeListed(usdgAssetId, address(LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE)),
       'Maple Spoke should not have Core USDG before execution'
     );
   }
@@ -201,7 +199,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
   function test_mapleListings() public virtual {
     _executePayload();
 
-    address mapleSpoke = address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE);
+    address mapleSpoke = address(LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE);
     uint256 usdcAssetId = GLOBAL_DOLLAR_HUB.getAssetId(AaveV4EthereumAssets.USDC_UNDERLYING);
     assertTrue(
       GLOBAL_DOLLAR_HUB.isSpokeListed(usdcAssetId, mapleSpoke),
@@ -227,12 +225,12 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
 
   function _assertMapleReserve(IHub hub, address underlying) internal view {
     uint256 assetId = hub.getAssetId(underlying);
-    uint256 reserveId = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE.getReserveId(address(hub), assetId);
-    ISpoke.Reserve memory reserve = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE.getReserve(reserveId);
-    ISpoke.ReserveConfig memory config = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE.getReserveConfig(
+    uint256 reserveId = LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE.getReserveId(address(hub), assetId);
+    ISpoke.Reserve memory reserve = LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE.getReserve(reserveId);
+    ISpoke.ReserveConfig memory config = LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE.getReserveConfig(
       reserveId
     );
-    ISpoke.DynamicReserveConfig memory dynamicConfig = AaveV4EthereumRound12
+    ISpoke.DynamicReserveConfig memory dynamicConfig = LocalAaveV4Ethereum
       .USDG_MAPLE_ESPOKE
       .getDynamicReserveConfig(reserveId, reserve.dynamicConfigKey);
     assertEq(reserve.underlying, underlying, 'underlying mismatch');
@@ -276,7 +274,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
     for (uint256 i; i < currentSpokes.length; ++i) {
       spokes[i] = currentSpokes[i];
     }
-    spokes[currentSpokes.length] = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE;
+    spokes[currentSpokes.length] = LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE;
     return spokes;
   }
 
