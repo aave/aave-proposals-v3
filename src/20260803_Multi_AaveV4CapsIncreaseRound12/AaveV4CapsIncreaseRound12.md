@@ -69,11 +69,9 @@ USDC is listed as borrowable with collateral disabled (0% collateral factor).
 
 ## References
 
-- Ethereum implementation: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Ethereum_IncreaseCaps_20260803.sol)
-- Ethereum tests: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Ethereum_IncreaseCaps_20260803.t.sol)
-- Avalanche implementation: [AaveV4Avalanche](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Avalanche_IncreaseCaps_20260803.sol)
-- Avalanche tests: [AaveV4Avalanche](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Avalanche_IncreaseCaps_20260803.t.sol)
-- [Official governance discussion](https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/40)
+- Implementation: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Ethereum_IncreaseCaps_20260803.sol), [AaveV4Avalanche](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Avalanche_IncreaseCaps_20260803.sol)
+- Tests: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Ethereum_IncreaseCaps_20260803.t.sol), [AaveV4Avalanche](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Avalanche_IncreaseCaps_20260803.t.sol)
+- [Discussion](https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/40)
 
 ## Copyright
 
