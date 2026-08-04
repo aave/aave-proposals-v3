@@ -27,6 +27,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
   IHub internal constant CORE_HUB = AaveV4EthereumHubs.CORE_HUB;
   IHub internal constant PRIME_HUB = AaveV4EthereumHubs.PRIME_HUB;
   IHub internal constant PLUS_HUB = AaveV4EthereumHubs.PLUS_HUB;
+  IHub internal constant GLOBAL_DOLLAR_HUB = AaveV4EthereumHubs.PAXOS_HUB;
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 25673317);
@@ -125,9 +126,9 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
   function test_caps_coreHub_before() public view virtual {
     //                  hub       spoke                                                                 asset                                       addCap      drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_ESPOKE),                           AaveV4EthereumAssets.WETH_UNDERLYING,       0,          20_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_ESPOKE),                           AaveV4EthereumAssets.weETH_UNDERLYING,      28_000,     0);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE),                              AaveV4EthereumAssets.USDG_UNDERLYING,       0,          500_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.GOLD_SPOKE),                               AaveV4EthereumAssets.USDT_UNDERLYING,       0,          2_000_000);
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),                               AaveV4EthereumAssets.USDG_UNDERLYING,       65_000_000, 35_000_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),                               AaveV4EthereumAssets.USDT_UNDERLYING,       20_000_000, 20_000_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),                               AaveV4EthereumAssets.wstETH_UNDERLYING,     10_000,     0);
     _assertCaps(CORE_HUB, address(AaveV4EthereumTokenizationSpokes.CORE_EURC_TOKENIZATION_SPOKE), AaveV4EthereumAssets.EURC_UNDERLYING,       112_500,    0);
@@ -144,9 +145,9 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
 
     //                  hub       spoke                                                                 asset                                       addCap      drawCap
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_ESPOKE),                           AaveV4EthereumAssets.WETH_UNDERLYING,       0,          30_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHERFI_ESPOKE),                           AaveV4EthereumAssets.weETH_UNDERLYING,      37_000,     0);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.FOREX_SPOKE),                              AaveV4EthereumAssets.USDG_UNDERLYING,       0,          1_000_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.GOLD_SPOKE),                               AaveV4EthereumAssets.USDT_UNDERLYING,       0,          2_500_000);
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),                               AaveV4EthereumAssets.USDG_UNDERLYING,       75_000_000, 45_000_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),                               AaveV4EthereumAssets.USDT_UNDERLYING,       24_000_000, 20_000_000);
     _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),                               AaveV4EthereumAssets.wstETH_UNDERLYING,     15_000,     0);
     _assertCaps(CORE_HUB, address(AaveV4EthereumTokenizationSpokes.CORE_EURC_TOKENIZATION_SPOKE), AaveV4EthereumAssets.EURC_UNDERLYING,       1_000_000,  0);
@@ -172,52 +173,79 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
   }
 
   // prettier-ignore
-  function test_caps_plusHub_before() public view virtual {
-    //                  hub       spoke                                                       asset                                       addCap     drawCap
-    _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.sUSDe_UNDERLYING, 8_000_000, 0);
-  }
-
-  // prettier-ignore
-  function test_caps_plusHub() public virtual {
+  function test_omittedCapsRemainUnchanged() public virtual {
     _executePayload();
 
     //                  hub       spoke                                                       asset                                       addCap      drawCap
-    _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.sUSDe_UNDERLYING, 10_000_000, 0);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),              AaveV4EthereumAssets.USDG_UNDERLYING,  65_000_000, 35_000_000);
+    _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE),   AaveV4EthereumAssets.sUSDe_UNDERLYING, 8_000_000,  0);
   }
 
-  function test_mapleCreditLine_before() public view virtual {
-    uint256 assetId = CORE_HUB.getAssetId(AaveV4EthereumAssets.USDG_UNDERLYING);
+  function test_mapleListings_before() public view virtual {
+    uint256 usdcAssetId = GLOBAL_DOLLAR_HUB.getAssetId(AaveV4EthereumAssets.USDC_UNDERLYING);
     assertFalse(
-      CORE_HUB.isSpokeListed(assetId, address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE)),
+      GLOBAL_DOLLAR_HUB.isSpokeListed(
+        usdcAssetId,
+        address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE)
+      ),
+      'Maple Spoke should not have Global Dollar USDC before execution'
+    );
+
+    uint256 usdgAssetId = CORE_HUB.getAssetId(AaveV4EthereumAssets.USDG_UNDERLYING);
+    assertFalse(
+      CORE_HUB.isSpokeListed(usdgAssetId, address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE)),
       'Maple Spoke should not have Core USDG before execution'
     );
   }
 
-  function test_mapleCreditLine() public virtual {
+  function test_mapleListings() public virtual {
     _executePayload();
 
-    uint256 assetId = CORE_HUB.getAssetId(AaveV4EthereumAssets.USDG_UNDERLYING);
     address mapleSpoke = address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE);
-    assertTrue(CORE_HUB.isSpokeListed(assetId, mapleSpoke), 'Maple Spoke should be listed');
-
-    _assertCaps(CORE_HUB, mapleSpoke, AaveV4EthereumAssets.USDG_UNDERLYING, 0, 5_000_000);
-
-    uint256 reserveId = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE.getReserveId(
-      address(CORE_HUB),
-      assetId
+    uint256 usdcAssetId = GLOBAL_DOLLAR_HUB.getAssetId(AaveV4EthereumAssets.USDC_UNDERLYING);
+    assertTrue(
+      GLOBAL_DOLLAR_HUB.isSpokeListed(usdcAssetId, mapleSpoke),
+      'Maple Spoke should have Global Dollar USDC'
     );
+    _assertCaps(
+      GLOBAL_DOLLAR_HUB,
+      mapleSpoke,
+      AaveV4EthereumAssets.USDC_UNDERLYING,
+      1_000_000,
+      1_000_000
+    );
+    _assertMapleReserve(GLOBAL_DOLLAR_HUB, AaveV4EthereumAssets.USDC_UNDERLYING);
+
+    uint256 usdgAssetId = CORE_HUB.getAssetId(AaveV4EthereumAssets.USDG_UNDERLYING);
+    assertTrue(
+      CORE_HUB.isSpokeListed(usdgAssetId, mapleSpoke),
+      'Maple Spoke should have Core USDG'
+    );
+    _assertCaps(CORE_HUB, mapleSpoke, AaveV4EthereumAssets.USDG_UNDERLYING, 0, 5_000_000);
+    _assertMapleReserve(CORE_HUB, AaveV4EthereumAssets.USDG_UNDERLYING);
+  }
+
+  function _assertMapleReserve(IHub hub, address underlying) internal view {
+    uint256 assetId = hub.getAssetId(underlying);
+    uint256 reserveId = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE.getReserveId(address(hub), assetId);
     ISpoke.Reserve memory reserve = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE.getReserve(reserveId);
     ISpoke.ReserveConfig memory config = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE.getReserveConfig(
       reserveId
     );
-    assertEq(reserve.underlying, AaveV4EthereumAssets.USDG_UNDERLYING, 'underlying mismatch');
-    assertEq(address(reserve.hub), address(CORE_HUB), 'hub mismatch');
+    ISpoke.DynamicReserveConfig memory dynamicConfig = AaveV4EthereumRound12
+      .USDG_MAPLE_ESPOKE
+      .getDynamicReserveConfig(reserveId, reserve.dynamicConfigKey);
+    assertEq(reserve.underlying, underlying, 'underlying mismatch');
+    assertEq(address(reserve.hub), address(hub), 'hub mismatch');
     assertEq(uint256(reserve.assetId), assetId, 'assetId mismatch');
     assertEq(uint256(config.collateralRisk), 0, 'collateralRisk mismatch');
     assertFalse(config.paused, 'reserve should not be paused');
     assertFalse(config.frozen, 'reserve should not be frozen');
     assertTrue(config.borrowable, 'reserve should be borrowable');
     assertTrue(config.receiveSharesEnabled, 'receiveShares should be enabled');
+    assertEq(uint256(dynamicConfig.collateralFactor), 0, 'collateralFactor mismatch');
+    assertEq(uint256(dynamicConfig.maxLiquidationBonus), 100_00, 'liquidationBonus mismatch');
+    assertEq(uint256(dynamicConfig.liquidationFee), 0, 'liquidationFee mismatch');
   }
 
   // ================================================================

@@ -18,8 +18,8 @@
 
 | description | value before | value after |
 | --- | --- | --- |
-| addCap | 300,000 (3e5) EURC | 1,500,000 (1.5e6) EURC |
-| drawCap | 400,000 (4e5) EURC | 1,500,000 (1.5e6) EURC |
+| addCap | 300,000 (3e5) EURC | 1,600,000 (1.6e6) EURC |
+| drawCap | 400,000 (4e5) EURC | 1,600,000 (1.6e6) EURC |
 
 ## Event logs
 
@@ -27,7 +27,7 @@
 
 | index | event |
 | --- | --- |
-| 0 | UpdateSpokeConfig(assetId: 5, spoke: 0x6a37776B5E026dBdF043b4F933c323C84DD1B514, config: {addCap: 1500000, drawCap: 1500000, riskPremiumThreshold: 0, active: true, halted: false}) |
+| 0 | UpdateSpokeConfig(assetId: 5, spoke: 0x6a37776B5E026dBdF043b4F933c323C84DD1B514, config: {addCap: 1600000, drawCap: 1600000, riskPremiumThreshold: 0, active: true, halted: false}) |
 | 1 | UpdateSpokeConfig(assetId: 2, spoke: 0x6a37776B5E026dBdF043b4F933c323C84DD1B514, config: {addCap: 1000000, drawCap: 950000, riskPremiumThreshold: 0, active: true, halted: false}) |
 | 2 | UpdateSpokeConfig(assetId: 3, spoke: 0x6a37776B5E026dBdF043b4F933c323C84DD1B514, config: {addCap: 1000000, drawCap: 950000, riskPremiumThreshold: 0, active: true, halted: false}) |
 
@@ -45,7 +45,7 @@
 | --- | --- | --- |
 | 0x91cc139c3ecf77fff04c15491bcef0b4b96d035fe67e78778222cc1c13cf88ff | 0x0000000100000000000557300000061a800000000000000000000003eaffe643 | 0x0000000100000000000e7ef000000f42400000000000000000000003eaffe643 |
 | 0xb6910ad7f9cb00bfac48ebaffad7429821f847eb31ea6142257707b03d7c6fdc | 0x0000000100000000000557300000061a800000000000000000000046dc58b1fb | 0x0000000100000000000e7ef000000f42400000000000000000000046dc58b1fb |
-| 0xdbb38d951ecc9fc8aa9742c14ccb40601a7cc2768ae153b5f7a0a5a7bf79f4e5 | 0x000000010000000000061a8000000493e000000000000000000000000f041547 | 0x00000001000000000016e360000016e36000000000000000000000000f041547 |
+| 0xdbb38d951ecc9fc8aa9742c14ccb40601a7cc2768ae153b5f7a0a5a7bf79f4e5 | 0x000000010000000000061a8000000493e000000000000000000000000f041547 | 0x000000010000000000186a000000186a0000000000000000000000000f041547 |
 
 
 ## Raw diff
@@ -76,11 +76,11 @@
     "0xd07369fAE4A5BB13c9Ce446B052c7867B1AbDf6e_5_0x6a37776B5E026dBdF043b4F933c323C84DD1B514": {
       "addCap": {
         "from": 300000,
-        "to": 1500000
+        "to": 1600000
       },
       "drawCap": {
         "from": 400000,
-        "to": 1500000
+        "to": 1600000
       }
     }
   }

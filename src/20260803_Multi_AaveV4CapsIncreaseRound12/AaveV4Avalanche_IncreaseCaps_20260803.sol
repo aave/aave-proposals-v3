@@ -28,7 +28,7 @@ library AaveV4AvalancheRound12 {
 /**
  * @title Increase add and draw caps on Avalanche
  * @author Llama Risk (implemented by Aave Labs)
- * - Discussion: https://outline.llamarisk.com/s/a3e1d391-6199-4123-b6f5-62b687235c6c
+ * - Discussion: https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/40
  * - To be executed by the Aave Security Council
  */
 contract AaveV4Avalanche_IncreaseCaps_20260803 is AaveV4Payload {
@@ -47,7 +47,7 @@ contract AaveV4Avalanche_IncreaseCaps_20260803 is AaveV4Payload {
     uint256 i = 0;
 
     //                             hub                                  spoke                                    asset                        addCap     drawCap
-    updates[i++] = _capUpdate(AaveV4AvalancheRound12.CORE_HUB,     AaveV4AvalancheRound12.FOREX_SPOKE,      AaveV4AvalancheRound12.EURC, 1_500_000, 1_500_000);
+    updates[i++] = _capUpdate(AaveV4AvalancheRound12.CORE_HUB,     AaveV4AvalancheRound12.FOREX_SPOKE,      AaveV4AvalancheRound12.EURC, 1_600_000, 1_600_000);
     updates[i++] = _capUpdate(AaveV4AvalancheRound12.CORE_HUB,     AaveV4AvalancheRound12.FOREX_SPOKE,      AaveV4AvalancheRound12.USDC, 1_000_000, 950_000);
     updates[i++] = _capUpdate(AaveV4AvalancheRound12.CORE_HUB,     AaveV4AvalancheRound12.FOREX_SPOKE,      AaveV4AvalancheRound12.USDt, 1_000_000, 950_000);
 

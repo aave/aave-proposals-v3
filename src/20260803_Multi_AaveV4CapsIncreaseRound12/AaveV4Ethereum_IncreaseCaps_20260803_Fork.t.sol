@@ -24,9 +24,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_ForkTest is
 
   function test_caps_primeHub_before() public view override {}
 
-  function test_caps_plusHub_before() public view override {}
-
-  function test_mapleCreditLine_before() public view override {}
+  function test_mapleListings_before() public view override {}
 
   function _executePayload() internal override {}
 }

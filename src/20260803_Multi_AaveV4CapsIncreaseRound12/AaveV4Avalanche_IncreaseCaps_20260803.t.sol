@@ -91,7 +91,7 @@ contract AaveV4Avalanche_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
     _executePayload();
 
     //                                                                                         addCap     drawCap
-    _assertCaps(AaveV4AvalancheRound12.EURC,                                                    1_500_000, 1_500_000);
+    _assertCaps(AaveV4AvalancheRound12.EURC,                                                    1_600_000, 1_600_000);
     _assertCaps(AaveV4AvalancheRound12.USDC,                                                    1_000_000, 950_000);
     _assertCaps(AaveV4AvalancheRound12.USDt,                                                    1_000_000, 950_000);
   }
