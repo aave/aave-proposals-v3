@@ -198,14 +198,14 @@
 | 11 | UpdateSpokeConfig(assetId: 5, spoke: 0x531E90a2376902DE8915789Fcc1075e3B0c153E7, config: {addCap: 1000000, drawCap: 0, riskPremiumThreshold: 0, active: true, halted: false}) |
 | 12 | UpdateSpokeConfig(assetId: 8, spoke: 0xAC2435E3C25e8246870D33ce0a26988A46d5DB68, config: {addCap: 1000000, drawCap: 0, riskPremiumThreshold: 0, active: true, halted: false}) |
 | 13 | UpdateSpokeConfig(assetId: 4, spoke: 0x5eC44a70F309854fe04d495cFE1B5dA63DD1cc73, config: {addCap: 1000000, drawCap: 0, riskPremiumThreshold: 0, active: true, halted: false}) |
-| 14 | UpdateSpokeConfig(assetId: 4, spoke: 0x973a023A77420ba610f06b3858aD991Df6d85A08, config: {addCap: 0, drawCap: 4000000, riskPremiumThreshold: 0, active: true, halted: false}) |
-| 15 | UpdateSpokeConfig(assetId: 9, spoke: 0xba1B3D55D249692b669A164024A838309B7508AF, config: {addCap: 0, drawCap: 1000000, riskPremiumThreshold: 0, active: true, halted: false}) |
+| 15 | UpdateSpokeConfig(assetId: 4, spoke: 0x973a023A77420ba610f06b3858aD991Df6d85A08, config: {addCap: 0, drawCap: 4000000, riskPremiumThreshold: 0, active: true, halted: false}) |
+| 16 | UpdateSpokeConfig(assetId: 9, spoke: 0xba1B3D55D249692b669A164024A838309B7508AF, config: {addCap: 0, drawCap: 1000000, riskPremiumThreshold: 0, active: true, halted: false}) |
 
 #### 0x943827DCA022D0F354a8a8c332dA1e5Eb9f9F931 (AaveV4Ethereum.ALL_HUBS[2], AaveV4Ethereum.HUBS.PRIME_HUB)
 
 | index | event |
 | --- | --- |
-| 16 | UpdateSpokeConfig(assetId: 4, spoke: 0x973a023A77420ba610f06b3858aD991Df6d85A08, config: {addCap: 20000000, drawCap: 20000000, riskPremiumThreshold: 0, active: true, halted: false}) |
+| 14 | UpdateSpokeConfig(assetId: 4, spoke: 0x973a023A77420ba610f06b3858aD991Df6d85A08, config: {addCap: 20000000, drawCap: 20000000, riskPremiumThreshold: 0, active: true, halted: false}) |
 
 #### 0x47a7cC7Fd47aCed15087a8b6e0ACFddCD63C811A
 
