@@ -20,52 +20,27 @@ library AaveV4EthereumRound12 {
 contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
   constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
 
+  // prettier-ignore
   function hubSpokeToAssetsAdditions()
     public
     pure
     override
     returns (IAaveV4ConfigEngine.SpokeToAssetsAddition[] memory)
   {
-    IAaveV4ConfigEngine.SpokeAssetConfig[]
-      memory usdcAssets = new IAaveV4ConfigEngine.SpokeAssetConfig[](1);
-    usdcAssets[0] = IAaveV4ConfigEngine.SpokeAssetConfig({
-      underlying: AaveV4EthereumAssets.USDC_UNDERLYING,
-      config: IHub.SpokeConfig({
-        addCap: 1_000_000,
-        drawCap: 1_000_000,
-        riskPremiumThreshold: 0,
-        active: true,
-        halted: false
-      })
-    });
-
-    IAaveV4ConfigEngine.SpokeAssetConfig[]
-      memory usdgAssets = new IAaveV4ConfigEngine.SpokeAssetConfig[](1);
-    usdgAssets[0] = IAaveV4ConfigEngine.SpokeAssetConfig({
-      underlying: AaveV4EthereumAssets.USDG_UNDERLYING,
-      config: IHub.SpokeConfig({
-        addCap: 0,
-        drawCap: 5_000_000,
-        riskPremiumThreshold: 0,
-        active: true,
-        halted: false
-      })
-    });
+    IHub CORE = AaveV4EthereumHubs.CORE_HUB;
+    IHub GLOBAL_DOLLAR = AaveV4EthereumHubs.PAXOS_HUB;
+    ISpoke MAPLE = AaveV4EthereumRound12.USDG_MAPLE_ESPOKE;
 
     IAaveV4ConfigEngine.SpokeToAssetsAddition[]
       memory additions = new IAaveV4ConfigEngine.SpokeToAssetsAddition[](2);
-    additions[0] = IAaveV4ConfigEngine.SpokeToAssetsAddition({
-      hubConfigurator: AaveV4Ethereum.HUB_CONFIGURATOR,
-      hub: address(AaveV4EthereumHubs.PAXOS_HUB),
-      spoke: address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE),
-      assets: usdcAssets
-    });
-    additions[1] = IAaveV4ConfigEngine.SpokeToAssetsAddition({
-      hubConfigurator: AaveV4Ethereum.HUB_CONFIGURATOR,
-      hub: address(AaveV4EthereumHubs.CORE_HUB),
-      spoke: address(AaveV4EthereumRound12.USDG_MAPLE_ESPOKE),
-      assets: usdgAssets
-    });
+
+    uint256 i = 0;
+
+    //                                 hub            spoke   asset                                    addCap     drawCap
+    additions[i++] = _creditLine(GLOBAL_DOLLAR, MAPLE, AaveV4EthereumAssets.USDC_UNDERLYING,      1_000_000, 1_000_000);
+    additions[i++] = _creditLine(CORE,          MAPLE, AaveV4EthereumAssets.USDG_UNDERLYING,      0,         5_000_000);
+
+    require(i == additions.length, 'Invalid number of additions');
     return additions;
   }
 
@@ -181,6 +156,35 @@ contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
         riskPremiumThreshold: EngineFlags.KEEP_CURRENT,
         active: EngineFlags.KEEP_CURRENT,
         halted: EngineFlags.KEEP_CURRENT
+      });
+  }
+
+  function _creditLine(
+    IHub hub,
+    ISpoke spoke,
+    address underlying,
+    uint40 addCap,
+    uint40 drawCap
+  ) internal pure returns (IAaveV4ConfigEngine.SpokeToAssetsAddition memory) {
+    IAaveV4ConfigEngine.SpokeAssetConfig[]
+      memory assets = new IAaveV4ConfigEngine.SpokeAssetConfig[](1);
+    assets[0] = IAaveV4ConfigEngine.SpokeAssetConfig({
+      underlying: underlying,
+      config: IHub.SpokeConfig({
+        addCap: addCap,
+        drawCap: drawCap,
+        riskPremiumThreshold: 0,
+        active: true,
+        halted: false
+      })
+    });
+
+    return
+      IAaveV4ConfigEngine.SpokeToAssetsAddition({
+        hubConfigurator: AaveV4Ethereum.HUB_CONFIGURATOR,
+        hub: address(hub),
+        spoke: address(spoke),
+        assets: assets
       });
   }
 }
