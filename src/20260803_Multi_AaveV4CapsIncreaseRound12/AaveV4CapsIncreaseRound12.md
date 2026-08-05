@@ -1,0 +1,94 @@
+---
+title: "Aave V4 Caps Increase #12"
+author: "Llama Risk (implemented by Aave Labs)"
+discussions: "https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/40"
+---
+
+## Summary
+
+LlamaRisk recommends a twelfth round of Add Cap and Draw Cap increases for Aave V4.
+This proposal covers the Ethereum and Avalanche deployments, lists USDC on the Maple Spoke
+against the Ethereum Global Dollar Hub, and adds a USDG credit line from the Core Hub.
+
+## Motivation
+
+Utilization and recent growth across the affected Ethereum spokes support additional headroom.
+The Avalanche changes expand the Forex Spoke following continued demand. The Maple Spoke changes
+add a borrowable, non-collateral USDC reserve with 1 million of Add and Draw capacity and provide
+an initial 5 million USDG Core Hub credit line while leaving its Add Cap at zero. All configuration
+parameters other than those specified remain unchanged.
+
+## Specification
+
+### Ethereum
+
+#### Core Hub
+
+| Spoke             | Asset  | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
+| ----------------- | ------ | --------------- | ---------------- | ---------------- | ----------------- |
+| EtherFi           | WETH   | 0               | -                | 20,000           | 30,000            |
+| EtherFi           | weETH  | 28,000          | 37,000           | 0                | -                 |
+| Forex             | USDG   | 0               | -                | 500,000          | 1,000,000         |
+| Gold              | USDT   | 0               | -                | 2,000,000        | 2,500,000         |
+| Main              | USDT   | 20,000,000      | 24,000,000       | 20,000,000       | -                 |
+| Main              | wstETH | 10,000          | 15,000           | 0                | -                 |
+| Tokenization EURC | EURC   | 112,500         | 1,000,000        | 0                | -                 |
+| Tokenization USDC | USDC   | 312,500         | 1,000,000        | 0                | -                 |
+| Tokenization USDG | USDG   | 125,000         | 1,000,000        | 0                | -                 |
+| Tokenization USDT | USDT   | 312,500         | 1,000,000        | 0                | -                 |
+
+#### Prime Hub
+
+| Spoke    | Asset | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
+| -------- | ----- | --------------- | ---------------- | ---------------- | ----------------- |
+| Bluechip | USDC  | 12,590,000      | 20,000,000       | 14,590,000       | 20,000,000        |
+
+#### Global Dollar Hub
+
+| Spoke           | Asset | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
+| --------------- | ----- | --------------- | ---------------- | ---------------- | ----------------- |
+| Maple syrupUSDG | USDC  | -               | 1,000,000        | -                | 1,000,000         |
+
+USDC is listed as borrowable with collateral disabled (0% collateral factor).
+
+#### Credit Lines
+
+The proposal increases the USDT credit line to the Prime Hub and the frxUSD credit line to the
+Plus Hub, as both existing draw caps have reached near-100% utilization.
+
+| Spoke            | Asset  | Current Draw Cap | Current Draw Util | Proposed Draw Cap |
+| ---------------- | ------ | ---------------- | ----------------- | ----------------- |
+| Bluechip         | USDT   | 2,500,000        | 95%               | 4,000,000         |
+| Ethena Ecosystem | frxUSD | 500,000          | 100%              | 1,000,000         |
+
+Additionally, the proposal establishes a USDG credit line from the Core Hub to the Global Dollar
+Hub, allowing syrupUSDG depositors to access the existing USDG liquidity on the Core Hub.
+
+| Chain    | Direction            | Spoke           | Asset | Proposed Draw Cap |
+| -------- | -------------------- | --------------- | ----- | ----------------- |
+| Ethereum | Core → Global Dollar | Maple syrupUSDG | USDG  | 5,000,000         |
+
+The Maple Spoke is already deployed and listed on the Global Dollar Hub with USDG Add and Draw
+Caps of 10,000,000 and 9,500,000, respectively, and syrupUSDG Add and Draw Caps of 10,000,000 and
+zero. All seven Spoke Configurator selectors are assigned to role 301, so the deployment and
+access-control prerequisites for Security Council execution are satisfied.
+
+### Avalanche
+
+#### Core Hub
+
+| Spoke | Asset | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
+| ----- | ----- | --------------- | ---------------- | ---------------- | ----------------- |
+| Forex | EURC  | 300,000         | 1,600,000        | 400,000          | 1,600,000         |
+| Forex | USDC  | 400,000         | 1,000,000        | 350,000          | 950,000           |
+| Forex | USDt  | 400,000         | 1,000,000        | 350,000          | 950,000           |
+
+## References
+
+- Implementation: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Ethereum_IncreaseCaps_20260803.sol), [AaveV4Avalanche](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Avalanche_IncreaseCaps_20260803.sol)
+- Tests: [AaveV4Ethereum](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Ethereum_IncreaseCaps_20260803.t.sol), [AaveV4Avalanche](https://github.com/aave/aave-proposals-v3/blob/main/src/20260803_Multi_AaveV4CapsIncreaseRound12/AaveV4Avalanche_IncreaseCaps_20260803.t.sol)
+- [Discussion](https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/40)
+
+## Copyright
+
+Copyright and related rights waived via [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
