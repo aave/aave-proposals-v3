@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import {IHub, IAccessManagerEnumerable, ISpoke} from 'aave-address-book/AaveV4.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumTokenizationSpokes, AaveV4EthereumAssets, AaveV4EthereumGetters} from 'aave-address-book/AaveV4Ethereum.sol';
-import {GovernanceV3Ethereum} from 'aave-address-book/GovernanceV3Ethereum.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 
@@ -32,15 +31,6 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 25673317);
-
-    // The Maple listing proposal performs this AccessManager setup through Governance before
-    // this Security Council payload is executed.
-    vm.prank(GovernanceV3Ethereum.EXECUTOR_LVL_1);
-    ACCESS_MANAGER.setTargetFunctionRole(
-      address(LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE),
-      Roles.getSpokeConfiguratorRoleSelectors(),
-      Roles.SPOKE_CONFIGURATOR_ROLE
-    );
 
     payload = new AaveV4Ethereum_IncreaseCaps_20260803();
   }
