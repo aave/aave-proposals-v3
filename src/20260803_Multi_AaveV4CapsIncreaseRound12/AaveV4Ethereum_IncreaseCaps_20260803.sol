@@ -8,7 +8,7 @@ import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4Ethereum
 import {LocalAaveV4Ethereum} from './LocalV4AddressBook.sol';
 
 /**
- * @title Increase add and draw caps on Ethereum
+ * @title Increase add and draw caps on Core and Prime Hubs, add a credit line and list reserves
  * @author Llama Risk (implemented by Aave Labs)
  * - Discussion: https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/40
  * - To be executed by the Aave Security Council
