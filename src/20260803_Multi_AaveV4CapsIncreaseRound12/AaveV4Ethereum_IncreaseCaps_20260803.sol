@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {AaveV4Payload, IAaveV4ConfigEngine} from 'aave-v4/config-engine/AaveV4Payload.sol';
 import {EngineFlags} from 'aave-v4/config-engine/libraries/EngineFlags.sol';
+import {SafeCast} from 'aave-v4/dependencies/openzeppelin/SafeCast.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumTokenizationSpokes, AaveV4EthereumSpokePriceFeeds, AaveV4EthereumAssets, ISpoke, IHub} from 'aave-address-book/AaveV4Ethereum.sol';
 
 import {LocalAaveV4Ethereum} from './LocalV4AddressBook.sol';
@@ -14,6 +15,8 @@ import {LocalAaveV4Ethereum} from './LocalV4AddressBook.sol';
  * - To be executed by the Aave Security Council
  */
 contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
+  using SafeCast for uint256;
+
   constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
 
   // prettier-ignore
@@ -33,8 +36,9 @@ contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
     uint256 i = 0;
 
     //                                   hub            spoke   asset                                     addCap     drawCap
-    additions[i++] = _newCreditLine(GLOBAL_DOLLAR, MAPLE, AaveV4EthereumAssets.USDC_UNDERLYING,      1_000_000, 1_000_000);
-    additions[i++] = _newCreditLine(CORE,          MAPLE, AaveV4EthereumAssets.USDG_UNDERLYING,      0,         5_000_000);
+    additions[i++] = _newSpokeAsset(GLOBAL_DOLLAR, MAPLE, AaveV4EthereumAssets.USDC_UNDERLYING,      1_000_000, 1_000_000);
+    // New cross-hub credit line from Core
+    additions[i++] = _newSpokeAsset(CORE,          MAPLE, AaveV4EthereumAssets.USDG_UNDERLYING,      0,         5_000_000);
 
     require(i == additions.length, 'Invalid number of additions');
     return additions;
@@ -132,20 +136,20 @@ contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
       });
   }
 
-  function _newCreditLine(
+  function _newSpokeAsset(
     IHub hub,
     ISpoke spoke,
     address underlying,
-    uint40 addCap,
-    uint40 drawCap
+    uint256 addCap,
+    uint256 drawCap
   ) internal pure returns (IAaveV4ConfigEngine.SpokeToAssetsAddition memory) {
     IAaveV4ConfigEngine.SpokeAssetConfig[]
       memory assets = new IAaveV4ConfigEngine.SpokeAssetConfig[](1);
     assets[0] = IAaveV4ConfigEngine.SpokeAssetConfig({
       underlying: underlying,
       config: IHub.SpokeConfig({
-        addCap: addCap,
-        drawCap: drawCap,
+        addCap: addCap.toUint40(),
+        drawCap: drawCap.toUint40(),
         riskPremiumThreshold: 0,
         active: true,
         halted: false

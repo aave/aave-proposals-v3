@@ -36,12 +36,6 @@ parameters other than those specified remain unchanged.
 | Tokenization USDC | USDC   | 312,500         | 1,000,000        | 0                | -                 |
 | Tokenization USDG | USDG   | 125,000         | 1,000,000        | 0                | -                 |
 | Tokenization USDT | USDT   | 312,500         | 1,000,000        | 0                | -                 |
-| Bluechip          | USDT   | 0               | -                | 2,500,000        | 4,000,000         |
-| Ethena Ecosystem  | frxUSD | 0               | -                | 500,000          | 1,000,000         |
-
-The proposal also registers USDG from the Core Hub on the Maple Spoke with an Add Cap of zero
-and an initial Draw Cap of 5,000,000. The Maple Spoke must already be deployed and its
-AccessManager roles configured before this Security Council payload is executed.
 
 #### Prime Hub
 
@@ -56,6 +50,28 @@ AccessManager roles configured before this Security Council payload is executed.
 | Maple syrupUSDG | USDC  | -               | 1,000,000        | -                | 1,000,000         |
 
 USDC is listed as borrowable with collateral disabled (0% collateral factor).
+
+#### Credit Lines
+
+The proposal increases the USDT credit line to the Prime Hub and the frxUSD credit line to the
+Plus Hub, as both existing draw caps have reached near-100% utilization.
+
+| Spoke            | Asset  | Current Draw Cap | Current Draw Util | Proposed Draw Cap |
+| ---------------- | ------ | ---------------- | ----------------- | ----------------- |
+| Bluechip         | USDT   | 2,500,000        | 95%               | 4,000,000         |
+| Ethena Ecosystem | frxUSD | 500,000          | 100%              | 1,000,000         |
+
+Additionally, the proposal establishes a USDG credit line from the Core Hub to the Global Dollar
+Hub, allowing syrupUSDG depositors to access the existing USDG liquidity on the Core Hub.
+
+| Chain    | Direction            | Spoke           | Asset | Proposed Draw Cap |
+| -------- | -------------------- | --------------- | ----- | ----------------- |
+| Ethereum | Core → Global Dollar | Maple syrupUSDG | USDG  | 5,000,000         |
+
+The Maple Spoke is already deployed and listed on the Global Dollar Hub with USDG Add and Draw
+Caps of 10,000,000 and 9,500,000, respectively, and syrupUSDG Add and Draw Caps of 10,000,000 and
+zero. All seven Spoke Configurator selectors are assigned to role 301, so the deployment and
+access-control prerequisites for Security Council execution are satisfied.
 
 ### Avalanche
 
