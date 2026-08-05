@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IHub, IAccessManagerEnumerable, ISpoke} from 'aave-address-book/AaveV4.sol';
+import {IHub, IAccessManagerEnumerable, ISpoke, ITokenizationSpoke} from 'aave-address-book/AaveV4.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumTokenizationSpokes, AaveV4EthereumAssets, AaveV4EthereumGetters} from 'aave-address-book/AaveV4Ethereum.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
@@ -104,8 +104,8 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
     _executePayload();
 
     vm.pauseGasMetering();
-    e2eTestAllSpokes({spokes: AaveV4EthereumGetters.getAllSpokes(), testPositionManagers: true});
-    e2eTestAllTokenizationSpokes(AaveV4EthereumGetters.getAllTokenizationSpokes());
+    e2eTestAllSpokes({spokes: _allSpokesWithMaple(), testPositionManagers: true});
+    e2eTestAllTokenizationSpokes(_allTokenizationSpokesWithGlobalDollarUsdg());
     vm.resumeGasMetering();
   }
 
@@ -265,6 +265,20 @@ contract AaveV4Ethereum_IncreaseCaps_20260803_Test is ProtocolV4TestBase {
       spokes[i] = currentSpokes[i];
     }
     spokes[currentSpokes.length] = LocalAaveV4Ethereum.USDG_MAPLE_ESPOKE;
+    return spokes;
+  }
+
+  function _allTokenizationSpokesWithGlobalDollarUsdg()
+    internal
+    pure
+    returns (ITokenizationSpoke[] memory)
+  {
+    ITokenizationSpoke[] memory currentSpokes = AaveV4EthereumGetters.getAllTokenizationSpokes();
+    ITokenizationSpoke[] memory spokes = new ITokenizationSpoke[](currentSpokes.length + 1);
+    for (uint256 i; i < currentSpokes.length; ++i) {
+      spokes[i] = currentSpokes[i];
+    }
+    spokes[currentSpokes.length] = LocalAaveV4Ethereum.GLOBAL_DOLLAR_USDG_TOKENIZATION_SPOKE;
     return spokes;
   }
 

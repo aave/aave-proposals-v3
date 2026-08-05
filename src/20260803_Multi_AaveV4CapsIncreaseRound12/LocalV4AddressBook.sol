@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IAaveV4ConfigEngine} from 'aave-v4/config-engine/interfaces/IAaveV4ConfigEngine.sol';
-import {IHubConfigurator, ISpoke, IHub} from 'aave-address-book/AaveV4.sol';
+import {IHubConfigurator, ITokenizationSpoke, ISpoke, IHub} from 'aave-address-book/AaveV4.sol';
 
 library LocalAaveV4Ethereum {
   // https://etherscan.io/address/0xa1673fbD457747A05e91D9ef904Cb12827916B1E
@@ -12,6 +12,10 @@ library LocalAaveV4Ethereum {
   // Not available in the address book version pinned by feat/aave-v4.
   // https://etherscan.io/address/0x774b9655413c34809c1f1b16b654465A89EBE989
   ISpoke internal constant USDG_MAPLE_ESPOKE = ISpoke(0x774b9655413c34809c1f1b16b654465A89EBE989);
+
+  // https://etherscan.io/address/0x378B4a7c394E22bd562F66eB612165893533c124
+  ITokenizationSpoke internal constant GLOBAL_DOLLAR_USDG_TOKENIZATION_SPOKE =
+    ITokenizationSpoke(0x378B4a7c394E22bd562F66eB612165893533c124);
 }
 
 library LocalAaveV4Avalanche {
