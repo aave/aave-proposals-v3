@@ -5,6 +5,10 @@ import {IAaveV4ConfigEngine} from 'aave-v4/config-engine/interfaces/IAaveV4Confi
 import {IHubConfigurator, ISpoke, IHub} from 'aave-address-book/AaveV4.sol';
 
 library LocalAaveV4Ethereum {
+  // https://etherscan.io/address/0xa1673fbD457747A05e91D9ef904Cb12827916B1E
+  IAaveV4ConfigEngine internal constant CONFIG_ENGINE =
+    IAaveV4ConfigEngine(0xa1673fbD457747A05e91D9ef904Cb12827916B1E);
+
   // Not available in the address book version pinned by feat/aave-v4.
   // https://etherscan.io/address/0x774b9655413c34809c1f1b16b654465A89EBE989
   ISpoke internal constant USDG_MAPLE_ESPOKE = ISpoke(0x774b9655413c34809c1f1b16b654465A89EBE989);

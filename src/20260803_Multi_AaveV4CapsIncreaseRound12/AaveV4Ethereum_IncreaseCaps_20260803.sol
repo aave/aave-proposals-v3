@@ -17,7 +17,7 @@ import {LocalAaveV4Ethereum} from './LocalV4AddressBook.sol';
 contract AaveV4Ethereum_IncreaseCaps_20260803 is AaveV4Payload {
   using SafeCast for uint256;
 
-  constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
+  constructor() AaveV4Payload(LocalAaveV4Ethereum.CONFIG_ENGINE) {}
 
   // prettier-ignore
   function hubSpokeToAssetsAdditions()
