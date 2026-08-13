@@ -14,50 +14,64 @@ import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4Ethereum
 contract AaveV4Ethereum_IncreaseCaps_20260811 is AaveV4Payload {
   constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
 
-  // prettier-ignore
-  function hubSpokeConfigUpdates() public pure override returns (IAaveV4ConfigEngine.SpokeConfigUpdate[] memory) {
-        uint256 KC = EngineFlags.KEEP_CURRENT;
+  function hubSpokeConfigUpdates()
+    public
+    pure
+    override
+    returns (IAaveV4ConfigEngine.SpokeConfigUpdate[] memory)
+  {
+    uint256 KC = EngineFlags.KEEP_CURRENT;
 
-        IHub CORE = AaveV4EthereumHubs.CORE_HUB;
-        IHub PLUS = AaveV4EthereumHubs.PLUS_HUB;
-        IHub GLOBAL_DOLLAR = AaveV4EthereumHubs.GLOBAL_DOLLAR_HUB;
+    IHub CORE = AaveV4EthereumHubs.CORE_HUB;
+    IHub PLUS = AaveV4EthereumHubs.PLUS_HUB;
+    IHub GLOBAL_DOLLAR = AaveV4EthereumHubs.GLOBAL_DOLLAR_HUB;
 
-        IAaveV4ConfigEngine.SpokeConfigUpdate[] memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](9);
+    IAaveV4ConfigEngine.SpokeConfigUpdate[]
+      memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](9);
 
-        uint256 i = 0;
+    uint256 i = 0;
 
-        // ========================
-        // Core Hub
-        // ========================
-        //                        hub            spoke                                                 asset                                      addCap      drawCap
-        updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.GOLD_SPOKE),             AaveV4EthereumAssets.EURC_UNDERLYING,      KC,         200_000);
-        updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.GOLD_SPOKE),             AaveV4EthereumAssets.XAUt_UNDERLYING,      4_500,      KC);
-        updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDT_UNDERLYING,      28_000_000, KC);
-        updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.WETH_UNDERLYING,      50_000,     KC);
-        updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.wstETH_UNDERLYING,    30_000,     KC);
+    // ========================
+    // Core Hub
+    // ========================
+    //                        hub            spoke                                                 asset                                      addCap      drawCap
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.GOLD_SPOKE),             AaveV4EthereumAssets.EURC_UNDERLYING,      KC,         200_000);
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.GOLD_SPOKE),             AaveV4EthereumAssets.XAUt_UNDERLYING,      4_500,      KC);
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDT_UNDERLYING,      28_000_000, KC);
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.WETH_UNDERLYING,      50_000,     KC);
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.wstETH_UNDERLYING,    30_000,     KC);
 
-        // ========================
-        // Plus Hub
-        // ========================
-        //                        hub            spoke                                                 asset                                      addCap      drawCap
-        updates[i++] = _capUpdate(PLUS,          address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.sUSDe_UNDERLYING,     10_000_000, KC);
+    // ========================
+    // Plus Hub
+    // ========================
+    //                        hub            spoke                                                 asset                                      addCap      drawCap
+    // prettier-ignore
+    updates[i++] = _capUpdate(PLUS,          address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.sUSDe_UNDERLYING,     10_000_000, KC);
 
-        // ========================
-        // Global Dollar Hub
-        // ========================
-        //                        hub            spoke                                                 asset                                      addCap      drawCap
-        updates[i++] = _capUpdate(GLOBAL_DOLLAR, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,      20_000_000, 19_000_000);
-        updates[i++] = _capUpdate(GLOBAL_DOLLAR, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),      AaveV4EthereumAssets.syrupUSDG_UNDERLYING, 20_000_000, KC);
+    // ========================
+    // Global Dollar Hub
+    // ========================
+    //                        hub            spoke                                                 asset                                      addCap      drawCap
+    // prettier-ignore
+    updates[i++] = _capUpdate(GLOBAL_DOLLAR, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,      20_000_000, 19_000_000);
+    // prettier-ignore
+    updates[i++] = _capUpdate(GLOBAL_DOLLAR, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),      AaveV4EthereumAssets.syrupUSDG_UNDERLYING, 20_000_000, KC);
 
-        // ========================
-        // Credit Lines
-        // ========================
-        //                        hub            spoke                                                 asset                                      addCap      drawCap
-        updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING,    KC,         2_000_000);
+    // ========================
+    // Credit Lines
+    // ========================
+    //                        hub            spoke                                                 asset                                      addCap      drawCap
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE,          address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING,    KC,         2_000_000);
 
-        require(i == updates.length, "Invalid number of updates");
-        return updates;
-    }
+    require(i == updates.length, 'Invalid number of updates');
+    return updates;
+  }
 
   function _capUpdate(
     IHub hub,

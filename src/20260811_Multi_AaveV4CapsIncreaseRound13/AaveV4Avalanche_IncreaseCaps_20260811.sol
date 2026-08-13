@@ -15,24 +15,31 @@ import {AaveV4Avalanche, AaveV4AvalancheHubs, AaveV4AvalancheSpokes, AaveV4Avala
 contract AaveV4Avalanche_IncreaseCaps_20260811 is AaveV4Payload {
   constructor() AaveV4Payload(AaveV4Avalanche.CONFIG_ENGINE) {}
 
-  // prettier-ignore
-  function hubSpokeConfigUpdates() public pure override returns (IAaveV4ConfigEngine.SpokeConfigUpdate[] memory) {
-        uint256 KC = EngineFlags.KEEP_CURRENT;
+  function hubSpokeConfigUpdates()
+    public
+    pure
+    override
+    returns (IAaveV4ConfigEngine.SpokeConfigUpdate[] memory)
+  {
+    uint256 KC = EngineFlags.KEEP_CURRENT;
 
-        IHub CORE = AaveV4AvalancheHubs.CORE_HUB;
-        ISpoke AVAX_CORRELATED = AaveV4AvalancheSpokes.AVAX_CORRELATED_SPOKE;
+    IHub CORE = AaveV4AvalancheHubs.CORE_HUB;
+    ISpoke AVAX_CORRELATED = AaveV4AvalancheSpokes.AVAX_CORRELATED_SPOKE;
 
-        IAaveV4ConfigEngine.SpokeConfigUpdate[] memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](2);
+    IAaveV4ConfigEngine.SpokeConfigUpdate[]
+      memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](2);
 
-        uint256 i = 0;
+    uint256 i = 0;
 
-        //                        hub   spoke            asset                                   addCap     drawCap
-        updates[i++] = _capUpdate(CORE, AVAX_CORRELATED, AaveV4AvalancheAssets.WAVAX_UNDERLYING, 1_000_000, 1_250_000);
-        updates[i++] = _capUpdate(CORE, AVAX_CORRELATED, AaveV4AvalancheAssets.sAVAX_UNDERLYING, 1_000_000, KC);
+    //                        hub   spoke            asset                                   addCap     drawCap
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE, AVAX_CORRELATED, AaveV4AvalancheAssets.WAVAX_UNDERLYING, 1_000_000, 1_250_000);
+    // prettier-ignore
+    updates[i++] = _capUpdate(CORE, AVAX_CORRELATED, AaveV4AvalancheAssets.sAVAX_UNDERLYING, 1_000_000, KC);
 
-        require(i == updates.length, "Invalid number of updates");
-        return updates;
-    }
+    require(i == updates.length, 'Invalid number of updates');
+    return updates;
+  }
 
   function _capUpdate(
     IHub hub,
