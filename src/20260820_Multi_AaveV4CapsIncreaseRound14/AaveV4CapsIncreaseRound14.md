@@ -22,17 +22,11 @@ On the Avalanche Core Hub, USDC capacity is increased to support sustained deman
 
 Deposits have continued to grow, from $396,079,984 to $419,787,129 (+6%).
 
-![image|2000x1285](upload://rmSGWNXzPIKgH4UuSNZuIO9L1wV.png)
-_Source: LlamaRisk, August 19, 2026_
-
 The most notable inflows include syrupUSDG on the Global Dollar Maple SyrupUSDG Spoke (+$10,084,013), weETH on the Core Etherfi Spoke (+$4,391,710), WETH on the Core Main Spoke (+$3,599,542), WBTC on the Prime Bluechip Spoke (+$3,006,725), and wstETH on the Core Main Spoke (+$1,446,630).
 
 ## Cap Utilization
 
 Total deposits across all 5 hubs stand at $419,787,129. The Core Hub holds $296,862,200 (47% of Add Cap), the Prime Hub holds $45,585,552 (29% of Add Cap), the Plus Hub holds $11,994,951 (28% of Add Cap), the Global Dollar Hub holds $52,975,535 (55% of Add Cap), and the Avalanche Core Hub holds $12,368,891 (28% of Add Cap).
-
-![image|2000x1714](upload://s8NuZSWyz5BV5YITckn27lGTztJ.png)
-_Source: LlamaRisk, August 19, 2026_
 
 5 reserves across the protocol have exceeded 80% Add Cap utilization:
 
@@ -41,9 +35,6 @@ _Source: LlamaRisk, August 19, 2026_
 - **USDG** (Core Hub, Main): 100% Add Cap filled (64,854,277/65,000,000, $64,854,934)
 - **USDC** (Avalanche Core Hub, Forex): 99% Add Cap filled (994,002/1,000,000, $993,778)
 - **WAVAX** (Avalanche Core Hub, Main): 98% Add Cap filled (488,798/500,000, $3,119,328)
-
-![image|2000x990](upload://ijhoeGXfqvzIWowBECbbf28aHhY.png)
-_Source: LlamaRisk, August 19, 2026_
 
 A further 4 reserves sit in the 50 to 80% range:
 
@@ -55,9 +46,6 @@ A further 4 reserves sit in the 50 to 80% range:
 ## Recommendations
 
 Round 14 targets approximately $46M in additional Add Cap capacity (Ethereum Core $19M, Global Dollar $22M, Avalanche Core $5M), together with draw-side relief on the most utilized borrow lines.
-
-![image|2000x857](upload://AgQkDPo257eXRrZKeuH7bNICZs2.png)
-_Source: LlamaRisk, August 19, 2026_
 
 ### Core Hub
 
