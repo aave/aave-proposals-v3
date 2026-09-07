@@ -7,6 +7,7 @@ import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4Ethereum
 import {IAssetInterestRateStrategy} from 'aave-v4/hub/interfaces/IAssetInterestRateStrategy.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
+import {AaveV4EthereumSpokePriceFeeds} from 'aave-address-book/AaveV4Ethereum.sol';
 
 import {AaveV4Ethereum_IncreaseCaps_20260903} from './AaveV4Ethereum_IncreaseCaps_20260903.sol';
 
@@ -36,6 +37,11 @@ contract AaveV4Ethereum_IncreaseCaps_20260903_Test is ProtocolV4TestBase {
   function test_executorHasRoleBeforeExecution() public view virtual {
     (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
     assertTrue(hasRole, 'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE before execution');
+    (hasRole, ) = ACCESS_MANAGER.hasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
+    assertTrue(
+      hasRole,
+      'Executor should have SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE before execution'
+    );
   }
 
   function test_roleActiveAfterExecution() public virtual {
@@ -43,6 +49,11 @@ contract AaveV4Ethereum_IncreaseCaps_20260903_Test is ProtocolV4TestBase {
 
     (bool hasRole, ) = ACCESS_MANAGER.hasRole(Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
     assertTrue(hasRole, 'Executor should have HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution');
+    (hasRole, ) = ACCESS_MANAGER.hasRole(Roles.SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE, EXECUTOR);
+    assertTrue(
+      hasRole,
+      'Executor should have SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE after execution'
+    );
   }
 
   function test_executeWithRecording() public virtual {
@@ -114,8 +125,8 @@ contract AaveV4Ethereum_IncreaseCaps_20260903_Test is ProtocolV4TestBase {
         _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),        AaveV4EthereumAssets.frxUSD_UNDERLYING,    0,          7_000_000);
         _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING,   0,          12_000_000);
         _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,     0,          750_000);
-        _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE),     AaveV4EthereumAssets.USDG_UNDERLYING,      0,          15_000_000);
-        _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),     AaveV4EthereumAssets.USDG_UNDERLYING,      0,          10_000_000);
+        _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE),     AaveV4EthereumAssets.USDG_UNDERLYING,      0,          20_000_000);
+        _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),     AaveV4EthereumAssets.USDG_UNDERLYING,      0,          5_000_000);
     }
 
   // prettier-ignore
@@ -144,6 +155,50 @@ contract AaveV4Ethereum_IncreaseCaps_20260903_Test is ProtocolV4TestBase {
     _assertInterestRateData(CORE_HUB, AaveV4EthereumAssets.USDC_UNDERLYING, 92_00, 0, 5_00, 20_00);
     _assertInterestRateData(PRIME_HUB, AaveV4EthereumAssets.USDC_UNDERLYING, 92_00, 0, 5_00, 20_00);
     _assertInterestRateData(PLUS_HUB, AaveV4EthereumAssets.USDe_UNDERLYING, 90_00, 5_25, 25, 30_00);
+  }
+
+  function test_bluechipUSDG_before() public view virtual {
+    uint256 assetId = CORE_HUB.getAssetId(AaveV4EthereumAssets.USDG_UNDERLYING);
+    ISpoke spoke = AaveV4EthereumSpokes.BLUECHIP_SPOKE;
+    assertFalse(CORE_HUB.isSpokeListed(assetId, address(spoke)));
+    assertEq(spoke.getReserveCount(), 11);
+    for (uint256 i; i < spoke.getReserveCount(); ++i) {
+      ISpoke.Reserve memory reserve = spoke.getReserve(i);
+      assertTrue(address(reserve.hub) != address(CORE_HUB) || reserve.assetId != assetId);
+    }
+  }
+
+  function test_bluechipUSDG() public virtual {
+    _executePayload();
+    uint256 assetId = CORE_HUB.getAssetId(AaveV4EthereumAssets.USDG_UNDERLYING);
+    ISpoke spoke = AaveV4EthereumSpokes.BLUECHIP_SPOKE;
+    assertTrue(CORE_HUB.isSpokeListed(assetId, address(spoke)));
+    _assertCaps(CORE_HUB, address(spoke), AaveV4EthereumAssets.USDG_UNDERLYING, 0, 5_000_000);
+    IHub.SpokeConfig memory credit = CORE_HUB.getSpokeConfig(assetId, address(spoke));
+    assertEq(credit.riskPremiumThreshold, 0);
+    assertTrue(credit.active);
+    assertFalse(credit.halted);
+    assertEq(spoke.getReserveCount(), 12);
+    uint256 reserveId = spoke.getReserveId(address(CORE_HUB), assetId);
+    assertEq(reserveId, 11);
+    ISpoke.Reserve memory reserve = spoke.getReserve(reserveId);
+    assertEq(address(reserve.hub), address(CORE_HUB));
+    assertEq(reserve.assetId, assetId);
+    assertEq(reserve.underlying, AaveV4EthereumAssets.USDG_UNDERLYING);
+    ISpoke.ReserveConfig memory config = spoke.getReserveConfig(reserveId);
+    assertEq(config.collateralRisk, 0);
+    assertFalse(config.paused);
+    assertFalse(config.frozen);
+    assertTrue(config.borrowable);
+    assertTrue(config.receiveSharesEnabled);
+    ISpoke.DynamicReserveConfig memory dynamicConfig = spoke.getDynamicReserveConfig(reserveId, 0);
+    assertEq(dynamicConfig.collateralFactor, 0);
+    assertEq(dynamicConfig.maxLiquidationBonus, 100_00);
+    assertEq(dynamicConfig.liquidationFee, 0);
+    assertEq(
+      AaveV4EthereumSpokes.BLUECHIP_SPOKE_ORACLE.getReserveSource(reserveId),
+      AaveV4EthereumSpokePriceFeeds.MAIN_SPOKE_USDG_PRICE_FEED
+    );
   }
 
   function _executePayload() internal virtual {

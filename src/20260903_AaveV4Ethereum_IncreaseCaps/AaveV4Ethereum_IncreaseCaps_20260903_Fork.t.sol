@@ -26,5 +26,7 @@ contract AaveV4Ethereum_IncreaseCaps_20260903_ForkTest is
 
   function test_interestRates_before() public view override {}
 
+  function test_bluechipUSDG_before() public view override {}
+
   function _executePayload() internal override {}
 }
