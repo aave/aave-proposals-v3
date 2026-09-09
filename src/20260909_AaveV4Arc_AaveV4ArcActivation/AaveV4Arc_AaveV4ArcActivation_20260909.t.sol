@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import 'forge-std/Test.sol';
+import {Ownable} from 'openzeppelin-contracts/contracts/access/Ownable.sol';
 import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
@@ -38,14 +39,15 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   // V3-style ACLManager deployed on Arc only for the price cap adapters' RISK_ADMIN / POOL_ADMIN checks.
   IACLManager internal constant ACL_MANAGER =
     IACLManager(0x4d4B307857eFff79E786923F2A277ea298E88aEA);
-  bytes4 internal constant CALLER_IS_NOT_RISK_OR_POOL_ADMIN = 0x4a71931a;
-
-  AaveV4Arc_AaveV4ArcActivation_20260909 internal proposal;
 
   // Arc's native USDC checks every transfer against a blocklist system contract whose code is the
   // single byte 0xef, executed natively by the Arc client. Foundry cannot run it in a fork, so the
   // e2e transfers would revert; it is replaced with a stub that answers `false` for any address.
   address internal constant ARC_BLOCKLIST_PRECOMPILE = 0x1800000000000000000000000000000000000001;
+  bytes32 internal constant SAFE_GUARD_SLOT =
+    0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
+
+  AaveV4Arc_AaveV4ArcActivation_20260909 internal proposal;
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('arc'), 19967937);
@@ -59,41 +61,15 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   }
 
   /// @dev executes the generic test suite including e2e and config snapshots.
-  /// USDC is left out of the e2e flows (see _getReserveInfo); its tokenization spoke likewise.
+  /// USDC and its tokenization spoke are left out of the e2e flows, see _getReserveInfo.
   /// forge-config: default.isolate = true
   function test_defaultProposalExecution() public {
-    ITokenizationSpoke[] memory tokenizationSpokes = new ITokenizationSpoke[](3);
-    tokenizationSpokes[0] = AaveV4ArcTokenizationSpokes.CORE_EURC_TOKENIZATION_SPOKE;
-    tokenizationSpokes[1] = AaveV4ArcTokenizationSpokes.CORE_cirBTC_TOKENIZATION_SPOKE;
-    tokenizationSpokes[2] = AaveV4ArcTokenizationSpokes.CORE_WETH_TOKENIZATION_SPOKE;
     defaultTest({
       reportName: 'AaveV4Arc_AaveV4ArcActivation_20260909',
-      spokes: AaveV4ArcGetters.getAllSpokes(),
-      tokenizationSpokes: tokenizationSpokes,
       payload: address(proposal),
       runE2E: true,
       testPositionManagers: true
     });
-  }
-
-  /// @dev Arc USDC (NativeFiatTokenV2_2) is a view over the chain's native coin: balances are native
-  /// balances and every transfer goes through the native coin authority system contract at
-  /// 0x1800…0000, whose code is a single 0xef byte executed by the client. Foundry cannot run it, so
-  /// USDC cannot be dealt or moved in a fork and is excluded from the e2e flows. Its configuration is
-  /// still asserted explicitly in test_mainSpoke / test_forexSpoke / test_tokenizationSpokes.
-  function _getReserveInfo(
-    ISpoke spoke
-  ) internal view override returns (Types.ReserveInfo[] memory filtered) {
-    Types.ReserveInfo[] memory all = super._getReserveInfo(spoke);
-    uint256 n;
-    for (uint256 i; i < all.length; ++i) {
-      if (all[i].underlying != AaveV4ArcAssets.USDC_UNDERLYING) ++n;
-    }
-    filtered = new Types.ReserveInfo[](n);
-    uint256 j;
-    for (uint256 i; i < all.length; ++i) {
-      if (all[i].underlying != AaveV4ArcAssets.USDC_UNDERLYING) filtered[j++] = all[i];
-    }
   }
 
   function test_everySpokeRegistrationIsHaltedBefore() public view {
@@ -105,10 +81,15 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   }
 
   function test_onlySecurityCouncilCanExecuteThroughExecutor() public {
-    bytes memory data = abi.encodeWithSelector(IProposalGenericExecutor.execute.selector);
     vm.prank(DEPLOYER);
-    vm.expectRevert();
-    IExecutor(SECURITY_COUNCIL_EXECUTOR).executeTransaction(address(proposal), 0, '', data, true);
+    vm.expectPartialRevert(Ownable.OwnableUnauthorizedAccount.selector, SECURITY_COUNCIL_EXECUTOR);
+    IExecutor(SECURITY_COUNCIL_EXECUTOR).executeTransaction(
+      address(proposal),
+      0,
+      '',
+      abi.encodeCall(IProposalGenericExecutor.execute, ()),
+      true
+    );
     _assertHaltedEverywhere(true);
   }
 
@@ -201,36 +182,15 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   }
 
   function test_priceSources() public view {
-    _assertPriceSource(
-      AaveV4ArcSpokes.MAIN_SPOKE,
-      AaveV4ArcAssets.USDC_UNDERLYING,
-      AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_USDC_PRICE_FEED
-    );
-    _assertPriceSource(
-      AaveV4ArcSpokes.MAIN_SPOKE,
-      AaveV4ArcAssets.EURC_UNDERLYING,
-      AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_EURC_PRICE_FEED
-    );
-    _assertPriceSource(
-      AaveV4ArcSpokes.MAIN_SPOKE,
-      AaveV4ArcAssets.cirBTC_UNDERLYING,
-      AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_cirBTC_PRICE_FEED
-    );
-    _assertPriceSource(
-      AaveV4ArcSpokes.MAIN_SPOKE,
-      AaveV4ArcAssets.WETH_UNDERLYING,
-      AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_WETH_PRICE_FEED
-    );
-    _assertPriceSource(
-      AaveV4ArcSpokes.FOREX_SPOKE,
-      AaveV4ArcAssets.USDC_UNDERLYING,
-      AaveV4ArcSpokePriceFeeds.FOREX_SPOKE_USDC_PRICE_FEED
-    );
-    _assertPriceSource(
-      AaveV4ArcSpokes.FOREX_SPOKE,
-      AaveV4ArcAssets.EURC_UNDERLYING,
-      AaveV4ArcSpokePriceFeeds.FOREX_SPOKE_EURC_PRICE_FEED
-    );
+    // prettier-ignore
+    {
+      _assertPriceSource(AaveV4ArcSpokes.MAIN_SPOKE,  AaveV4ArcAssets.USDC_UNDERLYING,   AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_USDC_PRICE_FEED);
+      _assertPriceSource(AaveV4ArcSpokes.MAIN_SPOKE,  AaveV4ArcAssets.EURC_UNDERLYING,   AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_EURC_PRICE_FEED);
+      _assertPriceSource(AaveV4ArcSpokes.MAIN_SPOKE,  AaveV4ArcAssets.cirBTC_UNDERLYING, AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_cirBTC_PRICE_FEED);
+      _assertPriceSource(AaveV4ArcSpokes.MAIN_SPOKE,  AaveV4ArcAssets.WETH_UNDERLYING,   AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_WETH_PRICE_FEED);
+      _assertPriceSource(AaveV4ArcSpokes.FOREX_SPOKE, AaveV4ArcAssets.USDC_UNDERLYING,   AaveV4ArcSpokePriceFeeds.FOREX_SPOKE_USDC_PRICE_FEED);
+      _assertPriceSource(AaveV4ArcSpokes.FOREX_SPOKE, AaveV4ArcAssets.EURC_UNDERLYING,   AaveV4ArcSpokePriceFeeds.FOREX_SPOKE_EURC_PRICE_FEED);
+    }
   }
 
   function test_accessManagerIsAuthorityOfCoreContracts() public activated {
@@ -276,7 +236,6 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     assertEq(ACCESS_MANAGER.getRoleMemberCount(Roles.HUB_DOMAIN_ADMIN_ROLE), 0);
     assertEq(ACCESS_MANAGER.getRoleMemberCount(Roles.SPOKE_DOMAIN_ADMIN_ROLE), 0);
 
-    // the deployer keeps nothing
     uint64[10] memory all = [uint64(0), 100, 101, 102, 103, 200, 300, 301, 302, 400];
     for (uint256 i; i < all.length; ++i) {
       (bool isMember, ) = ACCESS_MANAGER.hasRole(all[i], DEPLOYER);
@@ -332,9 +291,24 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     }
   }
 
-  function test_securityCouncilSafeIsFiveOfEight() public view {
-    assertEq(ISafe(V4_SECURITY_COUNCIL).getThreshold(), 5);
-    assertEq(ISafe(V4_SECURITY_COUNCIL).getOwners().length, 8);
+  /// @dev The Security Council Safe lives at the same address on Ethereum, Avalanche and Arc. Its
+  /// configuration on Arc must equal the two production markets: same signer set, same threshold,
+  /// no modules, no guard.
+  function test_securityCouncilSafeMatchesEthereumAndAvalanche() public {
+    (address[] memory arcOwners, uint256 arcThreshold) = _safeConfig();
+
+    vm.createSelectFork(vm.rpcUrl('mainnet'));
+    (address[] memory ethOwners, uint256 ethThreshold) = _safeConfig();
+
+    vm.createSelectFork(vm.rpcUrl('avalanche'));
+    (address[] memory avaxOwners, uint256 avaxThreshold) = _safeConfig();
+
+    assertEq(arcThreshold, 5, 'threshold');
+    assertEq(arcThreshold, ethThreshold, 'threshold vs ethereum');
+    assertEq(arcThreshold, avaxThreshold, 'threshold vs avalanche');
+    assertEq(arcOwners.length, 8, 'owner count');
+    _assertSameAddressSet(arcOwners, ethOwners, 'owners vs ethereum');
+    _assertSameAddressSet(arcOwners, avaxOwners, 'owners vs avalanche');
   }
 
   /// @dev The adapters gate cap updates on ACLManager RISK_ADMIN / POOL_ADMIN. The Security Council is
@@ -352,16 +326,18 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
 
     if (!ACL_MANAGER.isRiskAdmin(V4_SECURITY_COUNCIL)) {
       vm.prank(V4_SECURITY_COUNCIL);
-      vm.expectRevert(CALLER_IS_NOT_RISK_OR_POOL_ADMIN);
+      vm.expectRevert(
+        IPriceCapAdapterStable.CallerIsNotRiskOrPoolAdmin.selector,
+        address(usdcAdapter)
+      );
       usdcAdapter.setPriceCap(1.05e8);
 
       assertTrue(
         ACL_MANAGER.hasRole(ACL_MANAGER.DEFAULT_ADMIN_ROLE(), V4_SECURITY_COUNCIL),
         'not ACL default admin'
       );
-      bytes32 riskAdminRole = ACL_MANAGER.RISK_ADMIN_ROLE();
       vm.prank(V4_SECURITY_COUNCIL);
-      ACL_MANAGER.grantRole(riskAdminRole, V4_SECURITY_COUNCIL);
+      ACL_MANAGER.addRiskAdmin(V4_SECURITY_COUNCIL);
       assertTrue(ACL_MANAGER.isRiskAdmin(V4_SECURITY_COUNCIL));
     }
 
@@ -372,19 +348,55 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     assertEq(usdcAdapter.getPriceCap(), 1.05e8);
     assertEq(eurcAdapter.getPriceCapRatio(), 1.05e8);
 
-    // nobody else can
     address[2] memory others = [DEPLOYER, SECURITY_COUNCIL_EXECUTOR];
     for (uint256 i; i < others.length; ++i) {
       vm.prank(others[i]);
-      vm.expectRevert(CALLER_IS_NOT_RISK_OR_POOL_ADMIN);
+      vm.expectRevert(
+        IPriceCapAdapterStable.CallerIsNotRiskOrPoolAdmin.selector,
+        address(usdcAdapter)
+      );
       usdcAdapter.setPriceCap(1.06e8);
       vm.prank(others[i]);
-      vm.expectRevert(CALLER_IS_NOT_RISK_OR_POOL_ADMIN);
+      vm.expectRevert(
+        IEURPriceCapAdapterStable.CallerIsNotRiskOrPoolAdmin.selector,
+        address(eurcAdapter)
+      );
       eurcAdapter.setPriceCapRatio(1.06e8);
     }
   }
 
-  // ── payload execution without a PayloadsController ──────────────────────────
+  /// @dev Arc USDC (NativeFiatTokenV2_2) is a view over the chain's native coin: balances are native
+  /// balances and every transfer goes through the native coin authority system contract at
+  /// 0x1800…0000, whose code is a single 0xef byte executed by the client. Foundry cannot run it, so
+  /// USDC cannot be dealt or moved in a fork and is excluded from the e2e flows. Its configuration is
+  /// still asserted explicitly in test_mainSpoke / test_forexSpoke / test_tokenizationSpokes.
+  function _getReserveInfo(
+    ISpoke spoke
+  ) internal view override returns (Types.ReserveInfo[] memory filtered) {
+    Types.ReserveInfo[] memory all = super._getReserveInfo(spoke);
+    uint256 n;
+    for (uint256 i; i < all.length; ++i) {
+      if (all[i].underlying != AaveV4ArcAssets.USDC_UNDERLYING) ++n;
+    }
+    filtered = new Types.ReserveInfo[](n);
+    uint256 j;
+    for (uint256 i; i < all.length; ++i) {
+      if (all[i].underlying != AaveV4ArcAssets.USDC_UNDERLYING) filtered[j++] = all[i];
+    }
+  }
+
+  /// @dev Same USDC exclusion for the tokenization spoke e2e.
+  function _getTokenizationSpokes()
+    internal
+    view
+    override
+    returns (ITokenizationSpoke[] memory tokenizationSpokes)
+  {
+    tokenizationSpokes = new ITokenizationSpoke[](3);
+    tokenizationSpokes[0] = AaveV4ArcTokenizationSpokes.CORE_EURC_TOKENIZATION_SPOKE;
+    tokenizationSpokes[1] = AaveV4ArcTokenizationSpokes.CORE_cirBTC_TOKENIZATION_SPOKE;
+    tokenizationSpokes[2] = AaveV4ArcTokenizationSpokes.CORE_WETH_TOKENIZATION_SPOKE;
+  }
 
   function _executeThroughSecurityCouncil(address payload) internal {
     vm.prank(V4_SECURITY_COUNCIL);
@@ -392,7 +404,7 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
       payload,
       0,
       '',
-      abi.encodeWithSelector(IProposalGenericExecutor.execute.selector),
+      abi.encodeCall(IProposalGenericExecutor.execute, ()),
       true
     );
   }
@@ -446,8 +458,6 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     diffV4Snapshots(reportName);
   }
 
-  // ── helpers ─────────────────────────────────────────────────────────────────
-
   function _assertHaltedEverywhere(bool halted) internal view {
     uint256 assetCount = CORE_HUB.getAssetCount();
     assertEq(assetCount, 4, 'asset count');
@@ -463,6 +473,28 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
       }
     }
     assertEq(pairs, 14, 'registration count');
+  }
+
+  function _safeConfig() internal view returns (address[] memory owners, uint256 threshold) {
+    ISafe safe = ISafe(V4_SECURITY_COUNCIL);
+    owners = safe.getOwners();
+    threshold = safe.getThreshold();
+    (address[] memory modules, ) = safe.getModulesPaginated(address(1), 10);
+    assertEq(modules.length, 0, 'safe has modules');
+    assertEq(vm.load(V4_SECURITY_COUNCIL, SAFE_GUARD_SLOT), bytes32(0), 'safe has a guard');
+  }
+
+  function _assertSameAddressSet(
+    address[] memory a,
+    address[] memory b,
+    string memory err
+  ) internal pure {
+    assertEq(a.length, b.length, err);
+    for (uint256 i; i < a.length; ++i) {
+      bool found;
+      for (uint256 j; j < b.length && !found; ++j) found = a[i] == b[j];
+      assertTrue(found, err);
+    }
   }
 
   function _assertPriceSource(ISpoke spoke, address underlying, address expected) internal view {

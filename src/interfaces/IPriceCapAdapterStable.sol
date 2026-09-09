@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface IPriceCapAdapterStable {
+  error CallerIsNotRiskOrPoolAdmin();
+
   function isCapped() external view returns (bool);
   function getPriceCap() external view returns (int256);
   function setPriceCap(int256 priceCap) external;
