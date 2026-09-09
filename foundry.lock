@@ -1,8 +1,8 @@
 {
   "lib/aave-helpers": {
     "branch": {
-      "name": "main",
-      "rev": "918ca3040f47a1856bebe242a709ca3a2ffc46e3"
+      "name": "feat/native-coin-token-deal",
+      "rev": "ff6a9b3eb91fa76cdd3740af1aa6611a26fd23dc"
     }
   },
   "lib/aave-umbrella": {

@@ -6,7 +6,7 @@ import {Ownable} from 'openzeppelin-contracts/contracts/access/Ownable.sol';
 import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
-import {ISpoke, IHub, IAaveOracle, ITokenizationSpoke} from 'aave-address-book/AaveV4.sol';
+import {ISpoke, IHub, IAaveOracle} from 'aave-address-book/AaveV4.sol';
 import {IACLManager} from 'aave-address-book/AaveV3.sol';
 import {IAccessManagerEnumerable} from 'aave-v4/access/interfaces/IAccessManagerEnumerable.sol';
 import {IAccessManaged} from 'aave-v4/dependencies/openzeppelin/IAccessManaged.sol';
@@ -40,9 +40,7 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   IACLManager internal constant ACL_MANAGER =
     IACLManager(0x4d4B307857eFff79E786923F2A277ea298E88aEA);
 
-  // Arc's native USDC checks every transfer against a blocklist system contract whose code is the
-  // single byte 0xef, executed natively by the Arc client. Foundry cannot run it in a fork, so the
-  // e2e transfers would revert; it is replaced with a stub that answers `false` for any address.
+  // Arc system contract (blocklist) whose code is the single byte 0xef, executed natively by the client.
   address internal constant ARC_BLOCKLIST_PRECOMPILE = 0x1800000000000000000000000000000000000001;
   bytes32 internal constant SAFE_GUARD_SLOT =
     0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
@@ -51,7 +49,7 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('arc'), 19967937);
-    vm.etch(ARC_BLOCKLIST_PRECOMPILE, hex'60005f5260205ff3');
+    _requireArcSemantics();
     proposal = new AaveV4Arc_AaveV4ArcActivation_20260909();
   }
 
@@ -60,8 +58,7 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     _;
   }
 
-  /// @dev executes the generic test suite including e2e and config snapshots.
-  /// USDC and its tokenization spoke are left out of the e2e flows, see _getReserveInfo.
+  /// @dev executes the generic test suite including e2e and config snapshots
   /// forge-config: default.isolate = true
   function test_defaultProposalExecution() public {
     defaultTest({
@@ -365,37 +362,16 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     }
   }
 
-  /// @dev Arc USDC (NativeFiatTokenV2_2) is a view over the chain's native coin: balances are native
-  /// balances and every transfer goes through the native coin authority system contract at
-  /// 0x1800…0000, whose code is a single 0xef byte executed by the client. Foundry cannot run it, so
-  /// USDC cannot be dealt or moved in a fork and is excluded from the e2e flows. Its configuration is
-  /// still asserted explicitly in test_mainSpoke / test_forexSpoke / test_tokenizationSpokes.
-  function _getReserveInfo(
-    ISpoke spoke
-  ) internal view override returns (Types.ReserveInfo[] memory filtered) {
-    Types.ReserveInfo[] memory all = super._getReserveInfo(spoke);
-    uint256 n;
-    for (uint256 i; i < all.length; ++i) {
-      if (all[i].underlying != AaveV4ArcAssets.USDC_UNDERLYING) ++n;
-    }
-    filtered = new Types.ReserveInfo[](n);
-    uint256 j;
-    for (uint256 i; i < all.length; ++i) {
-      if (all[i].underlying != AaveV4ArcAssets.USDC_UNDERLYING) filtered[j++] = all[i];
-    }
-  }
-
-  /// @dev Same USDC exclusion for the tokenization spoke e2e.
-  function _getTokenizationSpokes()
-    internal
-    view
-    override
-    returns (ITokenizationSpoke[] memory tokenizationSpokes)
-  {
-    tokenizationSpokes = new ITokenizationSpoke[](3);
-    tokenizationSpokes[0] = AaveV4ArcTokenizationSpokes.CORE_EURC_TOKENIZATION_SPOKE;
-    tokenizationSpokes[1] = AaveV4ArcTokenizationSpokes.CORE_cirBTC_TOKENIZATION_SPOKE;
-    tokenizationSpokes[2] = AaveV4ArcTokenizationSpokes.CORE_WETH_TOKENIZATION_SPOKE;
+  /// @dev Arc USDC is the chain's native coin: `balanceOf` is `account.balance / 1e12` and every
+  /// transfer runs through system contracts (0x1800…0000, 0x1800…0001) whose code is the single byte
+  /// 0xef, executed natively by the Arc client. Upstream Foundry cannot run them, so this suite is only
+  /// meaningful under arc-foundry (circlefin/arc-foundry) with `FOUNDRY_NETWORK=arc`; anywhere else it
+  /// is skipped rather than passing under Ethereum rules.
+  function _requireArcSemantics() internal {
+    (bool ok, ) = ARC_BLOCKLIST_PRECOMPILE.staticcall(
+      abi.encodeWithSignature('isBlocklisted(address)', address(this))
+    );
+    vm.skip(!ok, 'requires arc-foundry with FOUNDRY_NETWORK=arc');
   }
 
   function _executeThroughSecurityCouncil(address payload) internal {
