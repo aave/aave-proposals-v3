@@ -297,10 +297,10 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   function test_securityCouncilSafeMatchesEthereumAndAvalanche() public {
     (address[] memory arcOwners, uint256 arcThreshold) = _safeConfig();
 
-    vm.createSelectFork(vm.rpcUrl('mainnet'));
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 25941680);
     (address[] memory ethOwners, uint256 ethThreshold) = _safeConfig();
 
-    vm.createSelectFork(vm.rpcUrl('avalanche'));
+    vm.createSelectFork(vm.rpcUrl('avalanche'), 94876401);
     (address[] memory avaxOwners, uint256 avaxThreshold) = _safeConfig();
 
     assertEq(arcThreshold, 5, 'threshold');
