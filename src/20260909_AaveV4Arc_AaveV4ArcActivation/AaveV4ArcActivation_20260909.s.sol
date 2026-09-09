@@ -36,8 +36,12 @@ contract DeployArc is ArcScript {
     );
 
     console.log('payload', payload);
-    console.log('safe tx to', SECURITY_COUNCIL_EXECUTOR);
-    console.log('safe tx value 0, operation call, data:');
+    console.log('Safe tx: to Executor', SECURITY_COUNCIL_EXECUTOR);
+    console.log('Safe tx: value 0, Safe operation = Call (0), NOT DelegateCall');
+    console.log(
+      'Safe tx: data = executeTransaction(payload, 0, "", execute(), withDelegatecall = true);'
+    );
+    console.log('the Executor delegatecalls the payload, the Safe itself only calls the Executor');
     console.logBytes(safeTxData);
   }
 }
