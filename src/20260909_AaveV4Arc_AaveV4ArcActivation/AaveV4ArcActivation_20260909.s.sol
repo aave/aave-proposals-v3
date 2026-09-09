@@ -5,14 +5,9 @@ import 'forge-std/console.sol';
 import {GovV3Helpers} from 'aave-helpers/src/GovV3Helpers.sol';
 import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
-import {WithChainIdValidation} from 'solidity-utils/contracts/utils/ScriptUtils.sol';
-import {ChainIds} from 'solidity-utils/contracts/utils/ChainHelpers.sol';
+import {ArcScript} from 'solidity-utils/contracts/utils/ScriptUtils.sol';
 
 import {AaveV4Arc_AaveV4ArcActivation_20260909} from './AaveV4Arc_AaveV4ArcActivation_20260909.sol';
-
-abstract contract ArcScript is WithChainIdValidation {
-  constructor() WithChainIdValidation(ChainIds.ARC) {}
-}
 
 /**
  * @dev Deploy Arc
