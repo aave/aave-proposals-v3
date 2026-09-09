@@ -620,6 +620,7 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   }
 
   function _assertMembers(uint64 roleId, address a, address b) internal view {
+    assertNotEq(a, b, 'same member twice');
     _assertHasRole(roleId, a);
     _assertHasRole(roleId, b);
     assertEq(ACCESS_MANAGER.getRoleMemberCount(roleId), 2);
