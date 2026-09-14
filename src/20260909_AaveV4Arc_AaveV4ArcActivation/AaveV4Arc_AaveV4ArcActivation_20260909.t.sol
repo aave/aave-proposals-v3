@@ -48,7 +48,7 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   AaveV4Arc_AaveV4ArcActivation_20260909 internal proposal;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('arc'), 19967937);
+    vm.createSelectFork(vm.rpcUrl('arc'), 20800000);
     _requireArcSemantics();
     proposal = new AaveV4Arc_AaveV4ArcActivation_20260909();
   }
@@ -294,10 +294,10 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   function test_securityCouncilSafeMatchesEthereumAndAvalanche() public {
     (address[] memory arcOwners, uint256 arcThreshold) = _safeConfig();
 
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 25941680);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 25974000);
     (address[] memory ethOwners, uint256 ethThreshold) = _safeConfig();
 
-    vm.createSelectFork(vm.rpcUrl('avalanche'), 94876401);
+    vm.createSelectFork(vm.rpcUrl('avalanche'), 95250000);
     (address[] memory avaxOwners, uint256 avaxThreshold) = _safeConfig();
 
     assertEq(arcThreshold, 5, 'threshold');
@@ -309,9 +309,8 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   }
 
   /// @dev The adapters gate cap updates on ACLManager RISK_ADMIN / POOL_ADMIN. The Security Council is
-  /// DEFAULT_ADMIN there but holds neither role yet; until the on-chain grant lands the test performs
-  /// the grant itself.
-  function test_securityCouncilCanUpdatePriceCapsOnceRiskAdmin() public activated {
+  /// DEFAULT_ADMIN there and granted itself RISK_ADMIN on chain, so it can operate the caps directly.
+  function test_securityCouncilCanUpdatePriceCaps() public activated {
     IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(
       AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_USDC_PRICE_FEED
     );
@@ -321,22 +320,11 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     assertEq(usdcAdapter.getPriceCap(), 1.04e8);
     assertEq(eurcAdapter.getPriceCapRatio(), 1.04e8);
 
-    if (!ACL_MANAGER.isRiskAdmin(V4_SECURITY_COUNCIL)) {
-      vm.prank(V4_SECURITY_COUNCIL);
-      vm.expectRevert(
-        IPriceCapAdapterStable.CallerIsNotRiskOrPoolAdmin.selector,
-        address(usdcAdapter)
-      );
-      usdcAdapter.setPriceCap(1.05e8);
-
-      assertTrue(
-        ACL_MANAGER.hasRole(ACL_MANAGER.DEFAULT_ADMIN_ROLE(), V4_SECURITY_COUNCIL),
-        'not ACL default admin'
-      );
-      vm.prank(V4_SECURITY_COUNCIL);
-      ACL_MANAGER.addRiskAdmin(V4_SECURITY_COUNCIL);
-      assertTrue(ACL_MANAGER.isRiskAdmin(V4_SECURITY_COUNCIL));
-    }
+    assertTrue(
+      ACL_MANAGER.hasRole(ACL_MANAGER.DEFAULT_ADMIN_ROLE(), V4_SECURITY_COUNCIL),
+      'not ACL default admin'
+    );
+    assertTrue(ACL_MANAGER.isRiskAdmin(V4_SECURITY_COUNCIL), 'not ACL risk admin');
 
     vm.startPrank(V4_SECURITY_COUNCIL);
     usdcAdapter.setPriceCap(1.05e8);
