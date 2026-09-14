@@ -27,7 +27,9 @@ import {AaveV4Arc_AaveV4ArcActivation_20260909} from './AaveV4Arc_AaveV4ArcActiv
  *      and the Security Council's ability to operate the price cap adapters.
  *      Arc has no PayloadsController, so the payload is executed the way it will be on chain: the
  *      Security Council Safe calls its Executor, which delegatecalls the payload.
- * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260909_AaveV4Arc_AaveV4ArcActivation/AaveV4Arc_AaveV4ArcActivation_20260909.t.sol -vv
+ *      `forge` below must be circlefin/arc-foundry; see `_requireArcSemantics` for why, and note
+ *      that upstream forge skips the suite instead of failing it.
+ * command: FOUNDRY_PROFILE=test FOUNDRY_NETWORK=arc forge test --match-path=src/20260909_AaveV4Arc_AaveV4ArcActivation/AaveV4Arc_AaveV4ArcActivation_20260909.t.sol -vv
  */
 contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
   IHub internal constant CORE_HUB = AaveV4ArcHubs.CORE_HUB;
