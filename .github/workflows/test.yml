@@ -56,6 +56,40 @@ jobs:
           echo "tests failed"
           exit 1
 
+  test-arc:
+    name: Foundry build n test (arc-foundry)
+    runs-on: ubuntu-latest
+    env:
+      ARC_FOUNDRY_VERSION: v0.8.0-1
+      ARC_FOUNDRY_SHA256: e12feade22e9c276c4e10b3a9e2573e75ef9dcd652f237f9eb6408b7eb52c5f0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: aave-dao/action-rpc-env@main
+        with:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+
+      # Arc USDC is the native coin and its transfers run through Arc-only system contracts, so the Arc
+      # proposal tests only execute under circlefin/arc-foundry with FOUNDRY_NETWORK=arc. Under upstream
+      # forge (the job above) they self-skip. Bump the version and checksum together.
+      - name: Install arc-foundry
+        run: |
+          set -euo pipefail
+          f=arc-foundry-$ARC_FOUNDRY_VERSION-x86_64-unknown-linux-gnu.tar.gz
+          curl -sSfLO "https://github.com/circlefin/arc-foundry/releases/download/$ARC_FOUNDRY_VERSION/$f"
+          echo "$ARC_FOUNDRY_SHA256  $f" | sha256sum -c -
+          mkdir -p "$HOME/.arc-foundry" && tar -xzf "$f" -C "$HOME/.arc-foundry"
+          echo "$HOME/.arc-foundry" >> "$GITHUB_PATH"
+          "$HOME/.arc-foundry/forge" --version
+
+      - name: Run Arc tests
+        run: forge test --match-path 'src/*Arc*/**/*.t.sol' -vv
+        env:
+          FOUNDRY_PROFILE: test
+          FOUNDRY_NETWORK: arc
+
   test-codegen:
     name: Generated payloads build
     runs-on: ubuntu-latest

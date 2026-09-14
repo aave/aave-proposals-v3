@@ -62,6 +62,7 @@ lint_on_build = false
 mainnet = "${RPC_MAINNET}"
 optimism = "${RPC_OPTIMISM}"
 avalanche = "${RPC_AVALANCHE}"
+arc = "${RPC_ARC}"
 polygon = "${RPC_POLYGON}"
 arbitrum = "${RPC_ARBITRUM}"
 fantom = "${RPC_FANTOM}"
