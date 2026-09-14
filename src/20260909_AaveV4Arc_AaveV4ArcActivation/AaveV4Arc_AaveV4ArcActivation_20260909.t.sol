@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import 'forge-std/Test.sol';
 import {Ownable} from 'openzeppelin-contracts/contracts/access/Ownable.sol';
-import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {ISpoke, IHub, IAaveOracle} from 'aave-address-book/AaveV4.sol';
@@ -85,8 +84,8 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
     IExecutor(SECURITY_COUNCIL_EXECUTOR).executeTransaction(
       address(proposal),
       0,
+      'execute()',
       '',
-      abi.encodeCall(IProposalGenericExecutor.execute, ()),
       true
     );
     _assertHaltedEverywhere(true);
@@ -366,13 +365,7 @@ contract AaveV4Arc_AaveV4ArcActivation_20260909_Test is ProtocolV4TestBaseArc {
 
   function _executeThroughSecurityCouncil(address payload) internal {
     vm.prank(V4_SECURITY_COUNCIL);
-    IExecutor(SECURITY_COUNCIL_EXECUTOR).executeTransaction(
-      payload,
-      0,
-      '',
-      abi.encodeCall(IProposalGenericExecutor.execute, ()),
-      true
-    );
+    IExecutor(SECURITY_COUNCIL_EXECUTOR).executeTransaction(payload, 0, 'execute()', '', true);
   }
 
   function _executePayloadWithRecording(

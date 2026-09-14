@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import 'forge-std/console.sol';
 import {GovV3Helpers} from 'aave-helpers/src/GovV3Helpers.sol';
-import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {ArcScript} from 'solidity-utils/contracts/utils/ScriptUtils.sol';
 
@@ -27,14 +26,14 @@ contract DeployArc is ArcScript {
 
     bytes memory safeTxData = abi.encodeCall(
       IExecutor.executeTransaction,
-      (payload, 0, '', abi.encodeWithSelector(IProposalGenericExecutor.execute.selector), true)
+      (payload, 0, 'execute()', '', true)
     );
 
     console.log('payload', payload);
     console.log('Safe tx: to Executor', SECURITY_COUNCIL_EXECUTOR);
     console.log('Safe tx: value 0, Safe operation = Call (0), NOT DelegateCall');
     console.log(
-      'Safe tx: data = executeTransaction(payload, 0, "", execute(), withDelegatecall = true);'
+      'Safe tx: data = executeTransaction(payload, 0, "execute()", "", withDelegatecall = true);'
     );
     console.log('the Executor delegatecalls the payload, the Safe itself only calls the Executor');
     console.logBytes(safeTxData);

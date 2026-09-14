@@ -93,10 +93,10 @@ For every asset on the Core Hub and every spoke registered for it (14 pairs: tre
 There is no governance on Arc. The Security Council Safe submits one transaction to its Executor:
 
 ```
-Executor.executeTransaction(payload, 0, "", 0x61461954, true)
+Executor.executeTransaction(payload, 0, "execute()", "", true)
 ```
 
-`0x61461954` is `execute()`; `true` selects delegatecall, so the payload runs with the Executor's `HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE`.
+The Executor derives the selector from the signature string, so the call reaching the payload is `0x61461954`. `true` selects delegatecall, so the payload runs with the Executor's `HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE`. This is the same signature/callData split `GovV3Helpers.buildAction` produces for PayloadsController chains.
 
 ## References
 
