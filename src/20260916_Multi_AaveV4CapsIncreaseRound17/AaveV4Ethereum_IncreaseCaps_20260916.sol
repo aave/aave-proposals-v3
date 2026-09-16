@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {AaveV4Payload, IAaveV4ConfigEngine} from 'aave-v4/config-engine/AaveV4Payload.sol';
+import {AaveV4PayloadEthereum} from 'aave-helpers/src/v4-config-engine/AaveV4PayloadEthereum.sol';
+import {IAaveV4ConfigEngine} from 'aave-v4/config-engine/interfaces/IAaveV4ConfigEngine.sol';
 import {EngineFlags} from 'aave-v4/config-engine/libraries/EngineFlags.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets, IHub} from 'aave-address-book/AaveV4Ethereum.sol';
 
@@ -11,9 +12,7 @@ import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4Ethereum
  * - Discussion: https://outline.llamarisk.com/s/802cf577-2b51-4a16-87d8-7c8b60f1c42d
  * - To be executed by the Aave Security Council
  */
-contract AaveV4Ethereum_IncreaseCaps_20260916 is AaveV4Payload {
-  constructor() AaveV4Payload(AaveV4Ethereum.CONFIG_ENGINE) {}
-
+contract AaveV4Ethereum_IncreaseCaps_20260916 is AaveV4PayloadEthereum {
   function hubSpokeConfigUpdates()
     public
     pure
