@@ -89,12 +89,14 @@ contract AaveV4Arc_IncreaseCaps_20260916_Test is ProtocolV4TestBase {
   }
 
   function test_caps_before() public view virtual {
+    //          hub       spoke                                asset                            addCap      drawCap
     // prettier-ignore
     _assertCaps(CORE_HUB, address(AaveV4ArcSpokes.MAIN_SPOKE), AaveV4ArcAssets.USDC_UNDERLYING, 56_000_000, 51_000_000);
   }
 
   function test_caps() public virtual {
     _executePayload();
+    //          hub       spoke                                asset                            addCap       drawCap
     // prettier-ignore
     _assertCaps(CORE_HUB, address(AaveV4ArcSpokes.MAIN_SPOKE), AaveV4ArcAssets.USDC_UNDERLYING, 150_000_000, 51_000_000);
   }

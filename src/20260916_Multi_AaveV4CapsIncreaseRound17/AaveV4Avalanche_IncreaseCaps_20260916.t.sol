@@ -88,22 +88,24 @@ contract AaveV4Avalanche_IncreaseCaps_20260916_Test is ProtocolV4TestBase {
   }
 
   function test_caps_before() public view virtual {
+    //          hub       spoke                                      asset                                   addCap     drawCap
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.BTCb_UNDERLYING, 100, 10);
+    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.BTCb_UNDERLYING,  100,       10);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.USDt_UNDERLYING, 5_000_000, 5_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.USDt_UNDERLYING,  5_000_000, 5_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.WAVAX_UNDERLYING, 500_000, 50_000);
+    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.WAVAX_UNDERLYING, 500_000,   50_000);
   }
 
   function test_caps() public virtual {
     _executePayload();
+    //          hub       spoke                                      asset                                   addCap      drawCap
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.BTCb_UNDERLYING, 200, 0);
+    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.BTCb_UNDERLYING,  200,        0);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.USDt_UNDERLYING, 10_000_000, 5_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.USDt_UNDERLYING,  10_000_000, 5_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.WAVAX_UNDERLYING, 1_000_000, 50_000);
+    _assertCaps(CORE_HUB, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.WAVAX_UNDERLYING, 1_000_000,  50_000);
   }
 
   function _executePayload() internal virtual {

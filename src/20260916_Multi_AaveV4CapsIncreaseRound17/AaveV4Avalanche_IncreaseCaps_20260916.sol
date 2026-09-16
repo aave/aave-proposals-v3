@@ -27,12 +27,13 @@ contract AaveV4Avalanche_IncreaseCaps_20260916 is AaveV4PayloadAvalanche {
       memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](3);
     uint256 i = 0;
 
+    //                        hub   spoke                                      asset                                   addCap      drawCap
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.BTCb_UNDERLYING, 200, 0);
+    updates[i++] = _capUpdate(CORE, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.BTCb_UNDERLYING,  200,        0);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.USDt_UNDERLYING, 10_000_000, KC);
+    updates[i++] = _capUpdate(CORE, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.USDt_UNDERLYING,  10_000_000, KC);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.WAVAX_UNDERLYING, 1_000_000, KC);
+    updates[i++] = _capUpdate(CORE, address(AaveV4AvalancheSpokes.MAIN_SPOKE), AaveV4AvalancheAssets.WAVAX_UNDERLYING, 1_000_000,  KC);
 
     require(i == updates.length, 'Invalid number of updates');
     return updates;

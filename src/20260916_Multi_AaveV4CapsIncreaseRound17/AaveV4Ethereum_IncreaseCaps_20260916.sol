@@ -28,30 +28,35 @@ contract AaveV4Ethereum_IncreaseCaps_20260916 is AaveV4PayloadEthereum {
       memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](12);
     uint256 i = 0;
 
+    // Core Hub
+    //                        hub   spoke                                                 asset                                   addCap      drawCap
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.GOLD_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, KC, 1_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.GOLD_SPOKE),             AaveV4EthereumAssets.USDC_UNDERLYING,   KC,         1_000_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 40_000_000, 36_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDC_UNDERLYING,   40_000_000, 36_000_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, 80_000_000, 45_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDG_UNDERLYING,   80_000_000, 45_000_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, KC, 20_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.frxUSD_UNDERLYING, KC,         20_000_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.weETH_UNDERLYING, 12_000, KC);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.weETH_UNDERLYING,  12_000,     KC);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, KC, 6_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDC_UNDERLYING,   KC,         6_000_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, KC, 15_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, KC,         15_000_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, KC, 1_500_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,   KC,         1_500_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING, KC, 750_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,   KC,         750_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, KC, 15_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,   KC,         15_000_000);
     // prettier-ignore
-    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, KC, 10_000_000);
+    updates[i++] = _capUpdate(CORE, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,   KC,         10_000_000);
+
+    // Plus Hub
+    //                        hub   spoke                                                 asset                                   addCap      drawCap
     // prettier-ignore
-    updates[i++] = _capUpdate(PLUS, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING, 15_000_000, KC);
+    updates[i++] = _capUpdate(PLUS, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING,   15_000_000, KC);
 
     require(i == updates.length, 'Invalid number of updates');
     return updates;

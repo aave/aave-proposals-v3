@@ -90,58 +90,68 @@ contract AaveV4Ethereum_IncreaseCaps_20260916_Test is ProtocolV4TestBase {
   }
 
   function test_caps_before() public view virtual {
+    // Core Hub
+    //          hub       spoke                                                 asset                                   addCap      drawCap
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.GOLD_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 0, 500_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.GOLD_SPOKE),             AaveV4EthereumAssets.USDC_UNDERLYING,   0,          500_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 18_000_000, 15_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDC_UNDERLYING,   18_000_000, 15_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, 70_000_000, 35_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDG_UNDERLYING,   70_000_000, 35_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 50_000_000, 25_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.frxUSD_UNDERLYING, 50_000_000, 25_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.weETH_UNDERLYING, 8_000, 0);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.weETH_UNDERLYING,  8_000,      0);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 0, 4_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDC_UNDERLYING,   0,          4_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 0, 12_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 0,          12_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 0, 750_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,   0,          750_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING, 0, 375_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,   0,          375_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, 0, 20_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,   0,          20_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, 0, 5_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,   0,          5_000_000);
+
+    // Plus Hub
+    //          hub       spoke                                                 asset                                   addCap      drawCap
     // prettier-ignore
-    _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING, 5_000_000, 4_800_000);
+    _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING,   5_000_000,  4_800_000);
   }
 
   function test_caps() public virtual {
     _executePayload();
+    // Core Hub
+    //          hub       spoke                                                 asset                                   addCap      drawCap
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.GOLD_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 0, 1_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.GOLD_SPOKE),             AaveV4EthereumAssets.USDC_UNDERLYING,   0,          1_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 40_000_000, 36_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDC_UNDERLYING,   40_000_000, 36_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, 80_000_000, 45_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.USDG_UNDERLYING,   80_000_000, 45_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 50_000_000, 20_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.frxUSD_UNDERLYING, 50_000_000, 20_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE), AaveV4EthereumAssets.weETH_UNDERLYING, 12_000, 0);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.MAIN_SPOKE),             AaveV4EthereumAssets.weETH_UNDERLYING,  12_000,     0);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 0, 6_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.BLUECHIP_SPOKE),         AaveV4EthereumAssets.USDC_UNDERLYING,   0,          6_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 0, 15_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.frxUSD_UNDERLYING, 0,          15_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING, 0, 1_500_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDC_UNDERLYING,   0,          1_500_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING, 0, 750_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDT_UNDERLYING,   0,          750_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, 0, 15_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_PENDLE_SPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,   0,          15_000_000);
     // prettier-ignore
-    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE), AaveV4EthereumAssets.USDG_UNDERLYING, 0, 10_000_000);
+    _assertCaps(CORE_HUB, address(AaveV4EthereumSpokes.USDG_MAPLE_ESPOKE),      AaveV4EthereumAssets.USDG_UNDERLYING,   0,          10_000_000);
+
+    // Plus Hub
+    //          hub       spoke                                                 asset                                   addCap      drawCap
     // prettier-ignore
-    _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING, 15_000_000, 4_800_000);
+    _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING,   15_000_000, 4_800_000);
   }
 
   function _executePayload() internal virtual {

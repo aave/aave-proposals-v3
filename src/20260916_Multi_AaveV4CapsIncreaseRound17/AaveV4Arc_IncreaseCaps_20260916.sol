@@ -27,6 +27,7 @@ contract AaveV4Arc_IncreaseCaps_20260916 is AaveV4PayloadArc {
       memory updates = new IAaveV4ConfigEngine.SpokeConfigUpdate[](1);
     uint256 i = 0;
 
+    //                        hub   spoke                                asset                            addCap       drawCap
     // prettier-ignore
     updates[i++] = _capUpdate(CORE, address(AaveV4ArcSpokes.MAIN_SPOKE), AaveV4ArcAssets.USDC_UNDERLYING, 150_000_000, KC);
 
