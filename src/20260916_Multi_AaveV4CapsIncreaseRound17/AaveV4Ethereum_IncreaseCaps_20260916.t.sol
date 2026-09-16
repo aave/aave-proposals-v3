@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {IHub, IAccessManagerEnumerable, ISpoke, ISpokeConfigurator, ITokenizationSpoke, PositionManagers} from 'aave-address-book/AaveV4.sol';
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Ethereum, AaveV4EthereumHubs, AaveV4EthereumSpokes, AaveV4EthereumAssets, AaveV4EthereumGetters} from 'aave-address-book/AaveV4Ethereum.sol';
+import {IAssetInterestRateStrategy} from 'aave-v4/hub/interfaces/IAssetInterestRateStrategy.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 
@@ -26,6 +27,8 @@ contract AaveV4Ethereum_IncreaseCaps_20260916_Test is ProtocolV4TestBase {
   IHub internal constant CORE_HUB = AaveV4EthereumHubs.CORE_HUB;
 
   IHub internal constant PLUS_HUB = AaveV4EthereumHubs.PLUS_HUB;
+
+  IHub internal constant GLOBAL_DOLLAR_HUB = AaveV4EthereumHubs.GLOBAL_DOLLAR_HUB;
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'), 25990244);
@@ -154,6 +157,28 @@ contract AaveV4Ethereum_IncreaseCaps_20260916_Test is ProtocolV4TestBase {
     _assertCaps(PLUS_HUB, address(AaveV4EthereumSpokes.ETHENA_ECOSYSTEM_SPOKE), AaveV4EthereumAssets.USDe_UNDERLYING,   15_000_000, 4_800_000);
   }
 
+  function test_interestRates_before() public view virtual {
+    //                      hub                asset                                  optimalUsageRatio  baseDrawnRate  rateGrowthBeforeOptimal  rateGrowthAfterOptimal
+    // prettier-ignore
+    _assertInterestRateData(PLUS_HUB,           AaveV4EthereumAssets.USDe_UNDERLYING,   90_00,             5_25,          25,                      30_00);
+    // prettier-ignore
+    _assertInterestRateData(CORE_HUB,           AaveV4EthereumAssets.USDG_UNDERLYING,   90_00,             0,             4_00,                    35_00);
+    // prettier-ignore
+    _assertInterestRateData(GLOBAL_DOLLAR_HUB,  AaveV4EthereumAssets.USDG_UNDERLYING,   90_00,             0,             4_00,                    35_00);
+  }
+
+  function test_interestRates() public virtual {
+    _executePayload();
+
+    //                      hub                asset                                  optimalUsageRatio  baseDrawnRate  rateGrowthBeforeOptimal  rateGrowthAfterOptimal
+    // prettier-ignore
+    _assertInterestRateData(PLUS_HUB,           AaveV4EthereumAssets.USDe_UNDERLYING,   90_00,             6_30,          25,                      30_00);
+    // prettier-ignore
+    _assertInterestRateData(CORE_HUB,           AaveV4EthereumAssets.USDG_UNDERLYING,   90_00,             0,             4_00,                    20_00);
+    // prettier-ignore
+    _assertInterestRateData(GLOBAL_DOLLAR_HUB,  AaveV4EthereumAssets.USDG_UNDERLYING,   90_00,             0,             4_00,                    20_00);
+  }
+
   function _executePayload() internal virtual {
     vm.prank(SECURITY_COUNCIL);
     IExecutor(EXECUTOR).executeTransaction(address(payload), 0, 'execute()', bytes(''), true);
@@ -171,6 +196,34 @@ contract AaveV4Ethereum_IncreaseCaps_20260916_Test is ProtocolV4TestBase {
     IHub.SpokeConfig memory config = hub.getSpokeConfig(assetId, spoke);
     assertEq(config.addCap, expectedAddCap, 'addCap mismatch');
     assertEq(config.drawCap, expectedDrawCap, 'drawCap mismatch');
+  }
+
+  function _assertInterestRateData(
+    IHub hub,
+    address underlying,
+    uint256 expectedOptimalUsageRatio,
+    uint256 expectedBaseDrawnRate,
+    uint256 expectedRateGrowthBeforeOptimal,
+    uint256 expectedRateGrowthAfterOptimal
+  ) internal view {
+    uint256 assetId = hub.getAssetId(underlying);
+    IHub.AssetConfig memory assetConfig = hub.getAssetConfig(assetId);
+    IAssetInterestRateStrategy.InterestRateData memory irData = IAssetInterestRateStrategy(
+      assetConfig.irStrategy
+    ).getInterestRateData(assetId);
+
+    assertEq(irData.optimalUsageRatio, expectedOptimalUsageRatio, 'optimalUsageRatio mismatch');
+    assertEq(irData.baseDrawnRate, expectedBaseDrawnRate, 'baseDrawnRate mismatch');
+    assertEq(
+      irData.rateGrowthBeforeOptimal,
+      expectedRateGrowthBeforeOptimal,
+      'rateGrowthBeforeOptimal mismatch'
+    );
+    assertEq(
+      irData.rateGrowthAfterOptimal,
+      expectedRateGrowthAfterOptimal,
+      'rateGrowthAfterOptimal mismatch'
+    );
   }
 
   function _accessManager() internal pure override returns (address) {

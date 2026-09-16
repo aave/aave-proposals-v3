@@ -1,7 +1,7 @@
 ---
 title: "Aave V4 Caps Increase #17"
 author: "Llama Risk (implemented by Aave Labs)"
-discussions: "https://outline.llamarisk.com/s/802cf577-2b51-4a16-87d8-7c8b60f1c42d"
+discussions: "https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/51"
 ---
 
 ## Summary
@@ -20,9 +20,15 @@ USDC Core credit lines to the Prime Hub are proposed to be increased as utilizat
 
 On the Plus Hub, the USDe supply incentives campaign went live last week, and the supply caps are already full. Accordingly, the USDe caps are proposed for an increase this round.
 
-On the Avalanche Hub, the WAVAX Main Spoke supply cap is proposed to be doubled following improvements in on-chain liquidity. Users can currently swap approximately 450K WAVAX for ~$3.1M USDC within 10% price impact. BTC.b caps on the Main Spoke are also proposed to be doubled, while its borrow cap is proposed to be set to zero, making BTC.b non-borrowable and consistent with other Aave V3 markets. Finally, USDt caps are also proposed to be doubled to accommodate anticipated demand for stablecoin borrowing.
+On the Avalanche Hub, the WAVAX Main Spoke supply cap is proposed to be doubled following improvements in on-chain liquidity. Users can currently swap approximately 450K WAVAX for \~$3.1M USDC within 10% price impact. BTC.b caps on the Main Spoke are also proposed to be doubled, while its borrow cap is proposed to be set to zero, making BTC.b non-borrowable and consistent with other Aave V3 markets. Finally, USDt caps are also proposed to be doubled to accommodate anticipated demand for stablecoin borrowing.
 
 On the newly launched V4 Arc instance, the USDC add cap on the Core Hub / Main Spoke is proposed to be increased, following the initial cap reaching capacity within hours of launch.
+
+### IRM Alignment
+
+**USDe:** We recommend aligning the USDe borrow rate on V4 with the proposed 6.30% Base Drawn Rate outlined in last week’s [Risk Stewards proposal](https://governance.aave.com/t/risk-stewards-irm-changes-on-aave-v3-2026-09-11/25627) for Aave V3.
+
+**USDG:** We also recommend lowering the Slope2 for USDG across V4 to 20.00%, given the reserve has grown sufficiently to absorb potential outflows. With a larger liquidity buffer now available, the current Slope2 appears unnecessarily conservative and could result in disproportionately high borrowing costs as utilization increases.
 
 ## Changes Since Round 16 (September 15, 2026)
 
@@ -67,38 +73,49 @@ Round 17 targets approximately $163M in additional Add Cap capacity (Ethereum Co
 ### Core Hub
 
 | Spoke            | Asset  | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
-| ---------------- | ------ | --------------- | ---------------- | ---------------- | ----------------- |
-| Gold             | USDC   | 0               | -                | 500,000          | 1,000,000         |
-| Main             | USDC   | 18,000,000      | 40,000,000       | 15,000,000       | 36,000,000        |
-| Main             | USDG   | 70,000,000      | 80,000,000       | 35,000,000       | 45,000,000        |
-| Main             | frxUSD | 50,000,000      | -                | 25,000,000       | 20,000,000        |
-| Main             | weETH  | 8,000           | 12,000           | 0                | -                 |
-| Bluechip         | USDC   | 0               | -                | 4,000,000        | 6,000,000         |
-| Ethena Ecosystem | frxUSD | 0               | -                | 12,000,000       | 15,000,000        |
-| Ethena Ecosystem | USDC   | 0               | -                | 750,000          | 1,500,000         |
-| Ethena Ecosystem | USDT   | 0               | -                | 375,000          | 750,000           |
-| USDG Pendle      | USDG   | 0               | -                | 20,000,000       | 15,000,000        |
-| Maple syrupUSDG  | USDG   | 0               | -                | 5,000,000        | 10,000,000        |
+| ---------------- | ------ | --------------: | ---------------: | ---------------: | ----------------: |
+| Gold             | USDC   |               0 |               \- |          500,000 |         1,000,000 |
+| Main             | USDC   |      18,000,000 |       40,000,000 |       15,000,000 |        36,000,000 |
+| Main             | USDG   |      70,000,000 |       80,000,000 |       35,000,000 |        45,000,000 |
+| Main             | frxUSD |      50,000,000 |               \- |       25,000,000 |        20,000,000 |
+| Main             | weETH  |           8,000 |           12,000 |                0 |                \- |
+| Bluechip         | USDC   |               0 |               \- |        4,000,000 |         6,000,000 |
+| Ethena Ecosystem | frxUSD |               0 |               \- |       12,000,000 |        15,000,000 |
+| Ethena Ecosystem | USDC   |               0 |               \- |          750,000 |         1,500,000 |
+| Ethena Ecosystem | USDT   |               0 |               \- |          375,000 |           750,000 |
+| USDG Pendle      | USDG   |               0 |               \- |       20,000,000 |        15,000,000 |
+| Maple syrupUSDG  | USDG   |               0 |               \- |        5,000,000 |        10,000,000 |
 
 ### Plus Hub
 
 | Spoke            | Asset | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
-| ---------------- | ----- | --------------- | ---------------- | ---------------- | ----------------- |
-| Ethena Ecosystem | USDe  | 5,000,000       | 15,000,000       | 4,800,000        | -                 |
+| ---------------- | ----- | --------------: | ---------------: | ---------------: | ----------------: |
+| Ethena Ecosystem | USDe  |       5,000,000 |       15,000,000 |        4,800,000 |                \- |
 
 ### Avalanche Core Hub
 
 | Spoke | Asset | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
-| ----- | ----- | --------------- | ---------------- | ---------------- | ----------------- |
-| Main  | BTC.b | 100             | 200              | 10               | 0                 |
-| Main  | USDt  | 5,000,000       | 10,000,000       | 5,000,000        | -                 |
-| Main  | WAVAX | 500,000         | 1,000,000        | 50,000           | -                 |
+| ----- | ----- | --------------: | ---------------: | ---------------: | ----------------: |
+| Main  | BTC.b |             100 |              200 |               10 |                 0 |
+| Main  | USDt  |       5,000,000 |       10,000,000 |        5,000,000 |                \- |
+| Main  | WAVAX |         500,000 |        1,000,000 |           50,000 |                \- |
 
 ### **Arc Core Hub**
 
 | Spoke | Asset | Current Add Cap | Proposed Add Cap | Current Draw Cap | Proposed Draw Cap |
-| ----- | ----- | --------------- | ---------------- | ---------------- | ----------------- |
-| Main  | USDC  | 56,000,000      | 150,000,000      | 51,000,000       | -                 |
+| ----- | ----- | --------------: | ---------------: | ---------------: | ----------------: |
+| Main  | USDC  |      56,000,000 |      150,000,000 |       51,000,000 |                \- |
+
+### IRM
+
+| Hub  | Asset | Current Base Drawn Rate | Recommended Base Drawn Rate |
+| ---- | ----- | ----------------------- | --------------------------- |
+| Plus | USDe  | 5\.25%                  | 6\.30%                      |
+
+| Hub           | Asset | Current Rate Growth After Optimal | Recommended Rate Growth After Optimal |
+| ------------- | ----- | --------------------------------- | ------------------------------------- |
+| Core          | USDG  | 35\.00%                           | 20\.00%                               |
+| Global Dollar | USDG  | 35\.00%                           | 20\.00%                               |
 
 ## Next Steps
 
@@ -112,7 +129,7 @@ This review was independently prepared by LlamaRisk, a community risk service pr
 
 - Implementation: [Ethereum](https://github.com/aave/aave-proposals-v3/blob/feat/aave-v4-caps-increase-round-17/src/20260916_Multi_AaveV4CapsIncreaseRound17/AaveV4Ethereum_IncreaseCaps_20260916.sol), [Avalanche](https://github.com/aave/aave-proposals-v3/blob/feat/aave-v4-caps-increase-round-17/src/20260916_Multi_AaveV4CapsIncreaseRound17/AaveV4Avalanche_IncreaseCaps_20260916.sol), [Arc](https://github.com/aave/aave-proposals-v3/blob/feat/aave-v4-caps-increase-round-17/src/20260916_Multi_AaveV4CapsIncreaseRound17/AaveV4Arc_IncreaseCaps_20260916.sol)
 - Tests: [Ethereum](https://github.com/aave/aave-proposals-v3/blob/feat/aave-v4-caps-increase-round-17/src/20260916_Multi_AaveV4CapsIncreaseRound17/AaveV4Ethereum_IncreaseCaps_20260916.t.sol), [Avalanche](https://github.com/aave/aave-proposals-v3/blob/feat/aave-v4-caps-increase-round-17/src/20260916_Multi_AaveV4CapsIncreaseRound17/AaveV4Avalanche_IncreaseCaps_20260916.t.sol), [Arc](https://github.com/aave/aave-proposals-v3/blob/feat/aave-v4-caps-increase-round-17/src/20260916_Multi_AaveV4CapsIncreaseRound17/AaveV4Arc_IncreaseCaps_20260916.t.sol)
-- [Discussion](https://outline.llamarisk.com/s/802cf577-2b51-4a16-87d8-7c8b60f1c42d)
+- [Discussion](https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/51)
 
 ## Copyright
 

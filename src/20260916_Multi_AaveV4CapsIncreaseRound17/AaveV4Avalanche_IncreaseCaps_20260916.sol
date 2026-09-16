@@ -9,7 +9,7 @@ import {AaveV4Avalanche, AaveV4AvalancheHubs, AaveV4AvalancheSpokes, AaveV4Avala
 /**
  * @title Increase add and draw caps on Avalanche
  * @author Llama Risk (implemented by Aave Labs)
- * - Discussion: https://outline.llamarisk.com/s/802cf577-2b51-4a16-87d8-7c8b60f1c42d
+ * - Discussion: https://governance.aave.com/t/arfc-aave-v4-activation-on-ethereum-mainnet/24293/51
  * - To be executed by the Aave Security Council
  */
 contract AaveV4Avalanche_IncreaseCaps_20260916 is AaveV4PayloadAvalanche {
