@@ -46,6 +46,7 @@ evm_version = 'shanghai'
 cache_path = 'cache/shanghai'
 
 [rpc_endpoints]
+arc = "${RPC_ARC}"
 mainnet = "${RPC_MAINNET}"
 optimism = "${RPC_OPTIMISM}"
 avalanche = "${RPC_AVALANCHE}"
