@@ -159,8 +159,16 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   function test_interestRateCurves() public activated {
     // prettier-ignore
     {
-      //         asset                            liqFee uOpt  base slope1 slope2
-      _assertIrm(AaveV4BaseAssets.USDC_UNDERLYING, 1000,  9000, 0,   400,   2000);
+      //         asset                              liqFee uOpt  base slope1 slope2
+      _assertIrm(AaveV4BaseAssets.USDC_UNDERLYING,   1000,  9000, 0,   400,   2000);
+      // Collateral-only equities: never drawn, so the curve is the engine default and no fee accrues.
+      _assertIrm(AaveV4BaseAssets.AAPLc_UNDERLYING,  0,     100,  0,   0,     0);
+      _assertIrm(AaveV4BaseAssets.AMZNc_UNDERLYING,  0,     100,  0,   0,     0);
+      _assertIrm(AaveV4BaseAssets.GOOGLc_UNDERLYING, 0,     100,  0,   0,     0);
+      _assertIrm(AaveV4BaseAssets.METAc_UNDERLYING,  0,     100,  0,   0,     0);
+      _assertIrm(AaveV4BaseAssets.MSFTc_UNDERLYING,  0,     100,  0,   0,     0);
+      _assertIrm(AaveV4BaseAssets.NVDAc_UNDERLYING,  0,     100,  0,   0,     0);
+      _assertIrm(AaveV4BaseAssets.TSLAc_UNDERLYING,  0,     100,  0,   0,     0);
     }
     for (uint256 assetId; assetId < ASSET_COUNT; ++assetId) {
       assertEq(
@@ -333,9 +341,12 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
     assertEq(IOwnable2Step(SECURITY_COUNCIL_EXECUTOR).owner(), V4_SECURITY_COUNCIL);
   }
 
-  /// @dev Ownership transfer to the Security Council is started but not accepted yet; the
-  /// acceptOwnership batch is Safe tx nonce 2 (0xdd18cc9623ee3417e98018ac582058d946533ce4b1372c1ba811584b2a55bb0b).
-  function test_positionManagersPendingOwnerIsSecurityCouncil() public activated {
+  /// @dev Intended end state: the Security Council owns every position manager with no transfer
+  /// pending. As of the pinned block the deployer still owns them with the Safe as pendingOwner; the
+  /// acceptOwnership batch is Safe tx nonce 2
+  /// (0xdd18cc9623ee3417e98018ac582058d946533ce4b1372c1ba811584b2a55bb0b) and this test is red until
+  /// it lands.
+  function test_positionManagersOwnedBySecurityCouncil() public activated {
     address[5] memory owned = [
       address(AaveV4BasePositionManagers.GIVER_POSITION_MANAGER),
       address(AaveV4BasePositionManagers.TAKER_POSITION_MANAGER),
@@ -344,7 +355,8 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
       address(AaveV4BasePositionManagers.SIGNATURE_GATEWAY)
     ];
     for (uint256 i; i < owned.length; ++i) {
-      assertEq(IOwnable2Step(owned[i]).pendingOwner(), V4_SECURITY_COUNCIL, 'pendingOwner');
+      assertEq(IOwnable2Step(owned[i]).owner(), V4_SECURITY_COUNCIL, 'owner');
+      assertEq(IOwnable2Step(owned[i]).pendingOwner(), address(0), 'pendingOwner');
     }
   }
 
