@@ -12,7 +12,6 @@ import {AaveV4Base, AaveV4BaseHubs} from 'aave-address-book/AaveV4Base.sol';
  * @author Aave Labs
  * - Snapshot: TODO
  * - Discussion: https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427
- * @dev To be executed through Aave Governance V3 (Base Executor level 1).
  */
 contract AaveV4Base_AaveV4BaseActivation_20260919 is IProposalGenericExecutor {
   function execute() external override {

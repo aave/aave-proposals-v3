@@ -7,7 +7,7 @@ import {GovV3Helpers} from 'aave-helpers/src/GovV3Helpers.sol';
 import {GovernanceV3Base} from 'aave-address-book/GovernanceV3Base.sol';
 import {AaveV3Base} from 'aave-address-book/AaveV3Base.sol';
 import {MiscBase} from 'aave-address-book/MiscBase.sol';
-import {ISpoke, IHub, IAaveOracle} from 'aave-address-book/AaveV4.sol';
+import {ISpoke, IHub, IAaveOracle, ITokenizationSpoke} from 'aave-address-book/AaveV4.sol';
 import {IACLManager} from 'aave-address-book/AaveV3.sol';
 import {AggregatorInterface} from 'aave-v3-origin/contracts/dependencies/chainlink/AggregatorInterface.sol';
 import {IAccessManagerEnumerable} from 'aave-v4/access/interfaces/IAccessManagerEnumerable.sol';
@@ -15,10 +15,11 @@ import {IAccessManaged} from 'aave-v4/dependencies/openzeppelin/IAccessManaged.s
 import {IAssetInterestRateStrategy} from 'aave-v4/hub/interfaces/IAssetInterestRateStrategy.sol';
 import {IHubConfigurator} from 'aave-v4/hub/interfaces/IHubConfigurator.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
+import {DeployConstants} from 'aave-v4/deployments/utils/libraries/DeployConstants.sol';
 import {IOwnable2Step} from 'src/interfaces/IOwnable2Step.sol';
 import {ISafe} from 'src/interfaces/ISafe.sol';
 import {IPriceCapAdapterStable} from 'src/interfaces/IPriceCapAdapterStable.sol';
-import {AaveV4Base, AaveV4BaseHubs, AaveV4BaseSpokes, AaveV4BaseSpokePriceFeeds, AaveV4BaseTokenizationSpokes, AaveV4BaseAssets, AaveV4BaseGetters, AaveV4BasePositionManagers} from 'aave-address-book/AaveV4Base.sol';
+import {AaveV4Base, AaveV4BaseHubs, AaveV4BaseSpokes, AaveV4BaseSpokePriceFeeds, AaveV4BaseTokenizationSpokes, AaveV4BaseAssets, AaveV4BaseGetters, AaveV4BasePositionManagers, AaveV4BaseIRStrategies, AaveV4BaseExternalLibraries} from 'aave-address-book/AaveV4Base.sol';
 import {ProtocolV4TestBaseBase} from 'aave-helpers/src/v4-protocol-test/ProtocolV4TestBaseBase.sol';
 import {AaveV4Base_AaveV4BaseActivation_20260919} from './AaveV4Base_AaveV4BaseActivation_20260919.sol';
 
@@ -246,6 +247,41 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
         address(usdcAdapter)
       );
       usdcAdapter.setPriceCap(1.06e8);
+    }
+  }
+
+  function test_mag7SpokeImmutables() public view {
+    ISpoke spoke = AaveV4BaseSpokes.MAG7_SPOKE;
+    IAaveOracle oracle = AaveV4BaseSpokes.MAG7_SPOKE_ORACLE;
+    assertEq(spoke.ORACLE(), address(oracle));
+    assertEq(spoke.getLiquidationLogic(), AaveV4BaseExternalLibraries.LIQUIDATION_LOGIC);
+    assertEq(spoke.authority(), address(ACCESS_MANAGER));
+    assertEq(spoke.MAX_USER_RESERVES_LIMIT(), DeployConstants.MAX_ALLOWED_USER_RESERVES_LIMIT);
+    assertEq(oracle.spoke(), address(spoke));
+    assertEq(oracle.decimals(), DeployConstants.ORACLE_DECIMALS);
+  }
+
+  function test_tokenizationSpokeImmutables() public view {
+    ITokenizationSpoke spoke = AaveV4BaseTokenizationSpokes.EQUITIES_USDC_TOKENIZATION_SPOKE;
+    assertEq(spoke.hub(), address(EQUITIES_HUB));
+    assertEq(spoke.asset(), AaveV4BaseAssets.USDC_UNDERLYING);
+    assertEq(spoke.assetId(), EQUITIES_HUB.getAssetId(AaveV4BaseAssets.USDC_UNDERLYING));
+    assertEq(spoke.assetId(), 7);
+    assertEq(spoke.decimals(), AaveV4BaseAssets.USDC_DECIMALS);
+    assertEq(spoke.MAX_ALLOWED_SPOKE_CAP(), EQUITIES_HUB.MAX_ALLOWED_SPOKE_CAP());
+    assertEq(spoke.name(), 'Wrapped Aave Equities USDC');
+    assertEq(spoke.symbol(), 'waEquitiesUSDC');
+  }
+
+  /// @dev TreasurySpoke has no constructor-wired state: hub and asset are call parameters and the
+  /// only stored configuration is Ownable2Step ownership, asserted in
+  /// test_treasuryAndExecutorOwnedBySecurityCouncil.
+  function test_hubAndInterestRateStrategyImmutables() public view {
+    assertEq(EQUITIES_HUB.MAX_ALLOWED_SPOKE_CAP(), type(uint40).max);
+    address strategy = address(AaveV4BaseIRStrategies.EQUITIES_USDC_IR_STRATEGY);
+    assertEq(IAssetInterestRateStrategy(strategy).HUB(), address(EQUITIES_HUB));
+    for (uint256 assetId; assetId < ASSET_COUNT; ++assetId) {
+      assertEq(EQUITIES_HUB.getAssetConfig(assetId).irStrategy, strategy, 'irStrategy');
     }
   }
 
