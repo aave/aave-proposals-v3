@@ -56,6 +56,41 @@ jobs:
           echo "tests failed"
           exit 1
 
+  test-base:
+    name: Foundry build n test (base-anvil)
+    runs-on: ubuntu-latest
+    env:
+      BASE_FOUNDRY_VERSION: v1.1.0
+      BASE_FOUNDRY_SHA256: b87ce712be86a3a41791a8efced71f0cb8d7b3aa735ce274dc75a7a63550a9fc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: aave-dao/action-rpc-env@main
+        with:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+
+      # The Base V4 equities are B20 tokens: node-native precompiles whose account code is the single
+      # byte 0xef. Upstream forge (the job above) cannot execute them, so the Base e2e test self-skips
+      # there and only runs under base/base-anvil's forge with FOUNDRY_BASE=true. Bump the version and
+      # checksum together.
+      - name: Install base-anvil
+        run: |
+          set -euo pipefail
+          f=foundry_${BASE_FOUNDRY_VERSION}_linux_amd64.tar.gz
+          curl -sSfLO "https://github.com/base/base-anvil/releases/download/$BASE_FOUNDRY_VERSION/$f"
+          echo "$BASE_FOUNDRY_SHA256  $f" | sha256sum -c -
+          mkdir -p "$HOME/.base-foundry" && tar -xzf "$f" -C "$HOME/.base-foundry"
+          echo "$HOME/.base-foundry" >> "$GITHUB_PATH"
+          "$HOME/.base-foundry/forge" --version
+
+      - name: Run Base tests
+        run: forge test --match-path 'src/*AaveV4Base*/**/*.t.sol' -vv
+        env:
+          FOUNDRY_PROFILE: test
+          FOUNDRY_BASE: "true"
+
   test-codegen:
     name: Generated payloads build
     runs-on: ubuntu-latest
