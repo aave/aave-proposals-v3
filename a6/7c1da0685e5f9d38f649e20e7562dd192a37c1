@@ -1,0 +1,38 @@
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.sol
+  s_5cb454b1abacbb::t_1afff540f8b990 1-42
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol
+  s_5cb454b1abacbb::t_51d393264707ce 1-530
+  s_5cb454b1abacbb::t_b608d1a432e85c 531-555
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4BaseActivation_20260919.s.sol
+  s_5cb454b1abacbb::t_ffe9362605c6dc 1-63
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4BaseActivation.md
+  s_5cb454b1abacbb::t_bea06639eeee92 1-100
+.github/workflows/test.yml
+  s_5cb454b1abacbb::t_6fc2e7677d824f 59-93
+diffs/AaveV4Base_AaveV4BaseActivation_20260919_before_AaveV4Base_AaveV4BaseActivation_20260919_after.md
+  s_5cb454b1abacbb::t_4c3efae318cc46 1-282
+foundry.lock
+  s_5cb454b1abacbb::t_21540b1f342e10 4-5,11
+lib/aave-helpers
+  s_5cb454b1abacbb::t_2266181d166e16 1
+src/interfaces/IPriceCapAdapterStable.sol
+  s_5cb454b1abacbb::t_9b2d886a6eeea0 5-6,9-10,12
+src/interfaces/ISafe.sol
+  s_5cb454b1abacbb::t_bfefcc1670cb27 19-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a67c1da0685e5f9d38f649e20e7562dd192a37c1",
+  "prompts": {},
+  "sessions": {
+    "s_5cb454b1abacbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf6c5f8c-2bd0-4298-a34d-805f54004688",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}
