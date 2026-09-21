@@ -12,7 +12,6 @@ import {AaveV4Base, AaveV4BaseHubs} from 'aave-address-book/AaveV4Base.sol';
  * @author Aave Labs
  * - Snapshot: https://snapshot.box/#/s:aavedao.eth/proposal/0xe3b16e8a0054aabba2a6b0570885e7a911df73fc6e806a7e13928ee21d3183ba
  * - Discussion: https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427
- * - Parameters: https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427/5
  */
 contract AaveV4Base_AaveV4BaseActivation_20260919 is IProposalGenericExecutor {
   function execute() external override {
