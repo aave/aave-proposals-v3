@@ -1,7 +1,7 @@
 ---
 title: "Aave V4 Base Activation"
 author: "Aave Labs"
-discussions: "https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427"
+discussions: "https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427/5"
 snapshot: TODO
 ---
 
@@ -11,9 +11,9 @@ This payload activates Aave Protocol V4 on Base by clearing the `halted` flag on
 
 ## Motivation
 
-TODO: governance-post text to be supplied by Aave Labs.
-
 Aave Labs proposed deploying Aave V4 on Base in the ARFC linked above. The first market is a tokenized-equities market: one Liquidity Hub holding the seven Coinbase-issued "Magnificent 7" equity tokens (AAPLc, AMZNc, GOOGLc, METAc, MSFTc, NVDAc, TSLAc) and USDC, one borrowing spoke (MAG7) where the equities are collateral-only and USDC is the only borrowable asset, and a supply-only USDC tokenization spoke.
+
+The initial parameters follow LlamaRisk's [Tokenized Equities on Aave V4 Base: Initial Market Parameters](https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427/5) (2026-09-21). Section 4 of that post is reproduced in the Specification below, and the deployed configuration was verified against it on chain at block 51601000 before this payload was prepared.
 
 The market is deployed and fully configured with every hub spoke registration halted, so no supply, borrow or liquidity movement is possible until this activation.
 
@@ -37,18 +37,18 @@ Equities USDC Tokenization Spoke: supply-only ERC-4626 share token over the Equi
 
 ### V4 Spoke Parameters
 
-The liquidation protocol fee is 10% on every collateral asset.
+The liquidation fee is 10%, consistent with the rest of Aave V4. The risk premium threshold is 0 for every reserve, as risk premiums are not in use, and liquidators can receive collateral as shares on every reserve.
 
-| Chain | Hub          | Spoke      | Reserve | Collateral Factor | Max Liquidation Bonus | Borrowable | Collateral Risk | Liquidation Fee |
-| ----- | ------------ | ---------- | ------- | ----------------- | --------------------- | ---------- | --------------- | --------------- |
-| Base  | Equities Hub | MAG7 Spoke | AAPLc   | 78.00%            | 5.50%                 | FALSE      | 0               | 10.00%          |
-| Base  | Equities Hub | MAG7 Spoke | AMZNc   | 73.00%            | 5.50%                 | FALSE      | 0               | 10.00%          |
-| Base  | Equities Hub | MAG7 Spoke | GOOGLc  | 76.00%            | 5.50%                 | FALSE      | 0               | 10.00%          |
-| Base  | Equities Hub | MAG7 Spoke | METAc   | 65.00%            | 5.50%                 | FALSE      | 0               | 10.00%          |
-| Base  | Equities Hub | MAG7 Spoke | MSFTc   | 79.00%            | 5.50%                 | FALSE      | 0               | 10.00%          |
-| Base  | Equities Hub | MAG7 Spoke | NVDAc   | 70.00%            | 5.50%                 | FALSE      | 0               | 10.00%          |
-| Base  | Equities Hub | MAG7 Spoke | TSLAc   | 65.00%            | 5.50%                 | FALSE      | 0               | 10.00%          |
-| Base  | Equities Hub | MAG7 Spoke | USDC    | 0.00%             | -                     | TRUE       | -               | -               |
+| Chain | Hub          | Spoke      | Reserve | Collateral Factor | Max Liquidation Bonus | Borrowable | Collateral Risk | Liquidation Fee | Risk Premium Threshold | Receive Shares |
+| ----- | ------------ | ---------- | ------- | ----------------- | --------------------- | ---------- | --------------- | --------------- | ---------------------- | -------------- |
+| Base  | Equities Hub | MAG7 Spoke | AAPLc   | 78.00%            | 5.50%                 | FALSE      | 0               | 10.00%          | 0                      | TRUE           |
+| Base  | Equities Hub | MAG7 Spoke | AMZNc   | 73.00%            | 5.50%                 | FALSE      | 0               | 10.00%          | 0                      | TRUE           |
+| Base  | Equities Hub | MAG7 Spoke | GOOGLc  | 76.00%            | 5.50%                 | FALSE      | 0               | 10.00%          | 0                      | TRUE           |
+| Base  | Equities Hub | MAG7 Spoke | METAc   | 65.00%            | 5.50%                 | FALSE      | 0               | 10.00%          | 0                      | TRUE           |
+| Base  | Equities Hub | MAG7 Spoke | MSFTc   | 79.00%            | 5.50%                 | FALSE      | 0               | 10.00%          | 0                      | TRUE           |
+| Base  | Equities Hub | MAG7 Spoke | NVDAc   | 70.00%            | 5.50%                 | FALSE      | 0               | 10.00%          | 0                      | TRUE           |
+| Base  | Equities Hub | MAG7 Spoke | TSLAc   | 65.00%            | 5.50%                 | FALSE      | 0               | 10.00%          | 0                      | TRUE           |
+| Base  | Equities Hub | MAG7 Spoke | USDC    | 0.00%             | -                     | TRUE       | -               | -               | 0                      | TRUE           |
 
 ### Add and Draw Caps
 
@@ -103,7 +103,8 @@ With an empty signature the Executor forwards the data as is, so the call reachi
 
 - Implementation: [AaveV4Base_AaveV4BaseActivation_20260919](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.sol)
 - Tests: [AaveV4Base_AaveV4BaseActivation_20260919](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol)
-- [Discussion](https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427)
+- [Discussion: ARFC Deploy Aave V4 on Base](https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427)
+- [LlamaRisk: Tokenized Equities on Aave V4 Base, Initial Market Parameters](https://governance.aave.com/t/arfc-deploy-aave-v4-on-base/25427/5)
 
 ## Copyright
 
