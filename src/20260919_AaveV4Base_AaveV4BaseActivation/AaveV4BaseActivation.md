@@ -11,9 +11,13 @@ This payload activates Aave Protocol V4 on Base by clearing the `halted` flag on
 
 ## Motivation
 
+TODO: governance-post text to be supplied by Aave Labs.
+
 Aave Labs proposed deploying Aave V4 on Base in the ARFC linked above. The first market is a tokenized-equities market: one Liquidity Hub holding the seven Coinbase-issued "Magnificent 7" equity tokens (AAPLc, AMZNc, GOOGLc, METAc, MSFTc, NVDAc, TSLAc) and USDC, one borrowing spoke (MAG7) where the equities are collateral-only and USDC is the only borrowable asset, and a supply-only USDC tokenization spoke.
 
 The market is deployed and fully configured with every hub spoke registration halted, so no supply, borrow or liquidity movement is possible until this activation.
+
+The activation is executed by the Aave V4 Security Council Safe (`0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9`, 5-of-8, same signers as on Ethereum) through its Executor (`0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70`), which holds `HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE` on the Base V4 AccessManager. There is no Aave Governance V3 vote for this payload. It has the same shape as the Arc activation payload.
 
 ## Specification
 
@@ -79,7 +83,7 @@ Caps are denominated in whole token units.
 | MSFTc   | `0xeB10A6c9aa7E537aEd766C08c35Dae35B321b18c` | Chainlink OCR2 proxy  | Coinbase MSFT / USD            |
 | NVDAc   | `0x04689a41629776563E6822F76f2e57D148d28513` | Chainlink OCR2 proxy  | Coinbase NVDA / USD            |
 | TSLAc   | `0xFaf869185383a24F8cb00e27BdA6b63B9905DCb4` | Chainlink OCR2 proxy  | Coinbase TSLA / USD            |
-| USDC    | `0xf52D010c7d4ecBfda92c2509900593CE34535D86` | PriceCapAdapterStable | Chainlink USDC / USD, cap 1.04 |
+| USDC    | `0xC7d0f8dCC1F860ca752054c59Ea82Ba2A5AaB50c` | PriceCapAdapterStable | Chainlink USDC / USD, cap 1.04 |
 
 ### What the payload does
 
@@ -87,7 +91,13 @@ For every asset on the Equities Hub and every spoke registered for it (17 pairs:
 
 ### Execution
 
-The payload is executed by the Base PayloadsController through the Base Executor level 1 (`0x9390B1735def18560c509E2d0bc090E9d6BA257a`), which holds `HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE` on the Base V4 AccessManager next to the Security Council Executor.
+The Security Council Safe submits one transaction to its Executor:
+
+```
+Executor.executeTransaction(payload, 0, "", abi.encodeCall(execute, ()), true)
+```
+
+With an empty signature the Executor forwards the data as is, so the call reaching the payload is `execute()` (`0x61461954`). `true` selects delegatecall, so the payload runs with the Executor's `HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE`. The Safe operation is Call, not DelegateCall.
 
 ## References
 

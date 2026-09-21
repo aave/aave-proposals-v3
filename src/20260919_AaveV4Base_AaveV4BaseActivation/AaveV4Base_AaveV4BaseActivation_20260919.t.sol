@@ -3,8 +3,12 @@ pragma solidity ^0.8.0;
 
 import 'forge-std/Test.sol';
 import {IERC20Metadata} from 'openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol';
-import {GovV3Helpers} from 'aave-helpers/src/GovV3Helpers.sol';
+import {Ownable} from 'openzeppelin-contracts/contracts/access/Ownable.sol';
+import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
+import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
+import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {GovernanceV3Base} from 'aave-address-book/GovernanceV3Base.sol';
+import {ChainlinkBase} from 'aave-address-book/ChainlinkBase.sol';
 import {AaveV3Base} from 'aave-address-book/AaveV3Base.sol';
 import {MiscBase} from 'aave-address-book/MiscBase.sol';
 import {ISpoke, IHub, IAaveOracle, ITokenizationSpoke} from 'aave-address-book/AaveV4.sol';
@@ -27,6 +31,8 @@ import {AaveV4Base_AaveV4BaseActivation_20260919} from './AaveV4Base_AaveV4BaseA
  * @dev Test for AaveV4Base_AaveV4BaseActivation_20260919. Runs the generic e2e/snapshot suite plus
  *      explicit assertions on the market spec (AaveV4BaseActivation.md), access control, ownership
  *      and the Security Council Safe configuration.
+ *      The payload is executed the way it will be on chain: the Security Council Safe calls its
+ *      Executor, which delegatecalls the payload. The Base PayloadsController is not involved.
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol -vv
  */
 contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase {
@@ -38,6 +44,10 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   address internal constant SECURITY_COUNCIL_EXECUTOR = MiscBase.V4_SECURITY_COUNCIL_EXECUTOR;
   address internal constant GOV_EXECUTOR = GovernanceV3Base.EXECUTOR_LVL_1;
   address internal constant DEPLOYER = 0x4C11ed256D43762811B093145e6F6b58F2be4782;
+  // PriceCapAdapterStable over ChainlinkBase.USDC__USD (aave-price-feeds #169). The spoke oracle still
+  // points at the SVR-backed adapter 0xf52D010c7d4ecBfda92c2509900593CE34535D86 until Safe tx nonce 3
+  // (0x8a0fd4569e50c55435b5770d2c86d70df80f66719ce63f666dbe1373ffac78a0) executes.
+  address internal constant USDC_PRICE_FEED = 0xC7d0f8dCC1F860ca752054c59Ea82Ba2A5AaB50c;
 
   bytes32 internal constant SAFE_GUARD_SLOT =
     0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
@@ -49,12 +59,12 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   AaveV4Base_AaveV4BaseActivation_20260919 internal proposal;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('base'), 51513390);
+    vm.createSelectFork(vm.rpcUrl('base'), 51601000);
     proposal = new AaveV4Base_AaveV4BaseActivation_20260919();
   }
 
   modifier activated() {
-    GovV3Helpers.executePayload(vm, address(proposal));
+    _executeThroughSecurityCouncil(address(proposal));
     _;
   }
 
@@ -75,7 +85,7 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   /// with that binary) and is skipped, not passed, anywhere else. See `_requireB20Semantics`.
   function test_e2e() public {
     _requireB20Semantics();
-    GovV3Helpers.executePayload(vm, address(proposal));
+    _executeThroughSecurityCouncil(address(proposal));
     e2eTestAllSpokes({spokes: _getSpokes(), testPositionManagers: true});
     e2eTestAllTokenizationSpokes(_getTokenizationSpokes());
   }
@@ -90,7 +100,7 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
 
   function test_payloadOnlyClearsHaltedFlag() public {
     IHub.SpokeConfig[] memory before = _spokeConfigs();
-    GovV3Helpers.executePayload(vm, address(proposal));
+    _executeThroughSecurityCouncil(address(proposal));
     IHub.SpokeConfig[] memory afterwards = _spokeConfigs();
     assertEq(before.length, REGISTRATION_COUNT, 'registration count');
     for (uint256 i; i < before.length; ++i) {
@@ -105,6 +115,25 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
         'riskPremiumThreshold'
       );
     }
+  }
+
+  function test_onlySecurityCouncilCanExecuteThroughExecutor() public {
+    address[2] memory others = [DEPLOYER, GOV_EXECUTOR];
+    for (uint256 i; i < others.length; ++i) {
+      vm.prank(others[i]);
+      vm.expectPartialRevert(
+        Ownable.OwnableUnauthorizedAccount.selector,
+        SECURITY_COUNCIL_EXECUTOR
+      );
+      IExecutor(SECURITY_COUNCIL_EXECUTOR).executeTransaction(
+        address(proposal),
+        0,
+        '',
+        abi.encodeCall(IProposalGenericExecutor.execute, ()),
+        true
+      );
+    }
+    _assertHaltedEverywhere(true);
   }
 
   function test_unhaltRequiresDomainAdminRole() public {
@@ -217,22 +246,26 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
       _assertPriceSource(AaveV4BaseAssets.MSFTc_UNDERLYING,  AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_MSFTc_PRICE_FEED);
       _assertPriceSource(AaveV4BaseAssets.NVDAc_UNDERLYING,  AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_NVDAc_PRICE_FEED);
       _assertPriceSource(AaveV4BaseAssets.TSLAc_UNDERLYING,  AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_TSLAc_PRICE_FEED);
-      _assertPriceSource(AaveV4BaseAssets.USDC_UNDERLYING,   AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_USDC_PRICE_FEED);
     }
+  }
 
-    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(
-      AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_USDC_PRICE_FEED
-    );
+  /// @dev Intended end state; red until Safe tx nonce 3 swaps the USDC source (see USDC_PRICE_FEED).
+  function test_usdcPriceSource() public view {
+    _assertPriceSource(AaveV4BaseAssets.USDC_UNDERLYING, USDC_PRICE_FEED);
+  }
+
+  function test_usdcPriceCapAdapter() public view {
+    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(USDC_PRICE_FEED);
+    assertEq(usdcAdapter.decimals(), 8);
     assertEq(usdcAdapter.getPriceCap(), 1.04e8);
+    assertEq(usdcAdapter.ASSET_TO_USD_AGGREGATOR(), ChainlinkBase.USDC__USD);
     assertEq(usdcAdapter.ACL_MANAGER(), address(ACL_MANAGER));
   }
 
   /// @dev The USDC adapter gates cap updates on the Aave V3 Base ACLManager, where the governance
   /// executor is POOL_ADMIN. Neither the Security Council nor its Executor hold a role there.
   function test_governanceCanUpdateUsdcPriceCap() public activated {
-    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(
-      AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_USDC_PRICE_FEED
-    );
+    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(USDC_PRICE_FEED);
     assertTrue(ACL_MANAGER.isPoolAdmin(GOV_EXECUTOR), 'executor not pool admin');
 
     vm.prank(GOV_EXECUTOR);
@@ -398,12 +431,10 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
 
   /// @dev The Security Council Safe lives at the same address on Ethereum and Base. Its
   /// configuration on Base must equal Ethereum: same signer set, same threshold, no modules, no guard.
-  /// Base currently carries one extra signer; its removal is Safe tx nonce 1
-  /// (0x400a583b02d91e29e4d64e24488d80a6ae4917ea8efa172e95a56a3ab00e8df3), 4 of 5 signed.
   function test_securityCouncilSafeMatchesEthereum() public {
     (address[] memory baseOwners, uint256 baseThreshold) = _safeConfig();
 
-    vm.createSelectFork(vm.rpcUrl('mainnet'), 26011806);
+    vm.createSelectFork(vm.rpcUrl('mainnet'), 26025000);
     (address[] memory ethOwners, uint256 ethThreshold) = _safeConfig();
 
     assertEq(baseThreshold, 5, 'threshold');
@@ -419,6 +450,66 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
       abi.encodeCall(IERC20Metadata.decimals, ())
     );
     vm.skip(!ok, 'requires base-anvil forge (base-forge) for the B20 equity precompiles');
+  }
+
+  function _executeThroughSecurityCouncil(address payload) internal {
+    vm.prank(V4_SECURITY_COUNCIL);
+    IExecutor(SECURITY_COUNCIL_EXECUTOR).executeTransaction(
+      payload,
+      0,
+      '',
+      abi.encodeCall(IProposalGenericExecutor.execute, ()),
+      true
+    );
+  }
+
+  function _executePayloadWithRecording(
+    address payload
+  ) internal override returns (string memory rawDiff, string memory logsJson) {
+    uint256 snapshotId = vm.snapshotState();
+    _executeThroughSecurityCouncil(payload);
+    _assertPayloadGasWithinLimit(vm.lastCallGas().gasTotalUsed);
+    vm.revertToState(snapshotId);
+
+    vm.startStateDiffRecording();
+    vm.recordLogs();
+    _executeThroughSecurityCouncil(payload);
+    rawDiff = vm.getStateDiffJson();
+    logsJson = vm.getRecordedLogsJson();
+  }
+
+  /// @dev Same as the base, minus the PayloadsController lookup. The executor whose storage must stay
+  /// untouched by the delegatecall is the Security Council Executor.
+  function _snapshotDiffAndExecute(
+    string memory reportName,
+    ISpoke[] memory spokes,
+    address payload
+  ) internal override returns (Types.V4Snapshot memory snapshotAfter) {
+    IHub[] memory hubs = _getHubs();
+    address[] memory positionManagerCandidates = _positionManagerCandidates();
+    address[] memory accessManagers = _accessManagers();
+    string memory beforeName = string.concat(reportName, '_before');
+    string memory afterName = string.concat(reportName, '_after');
+
+    Types.V4Snapshot memory snapshotBefore = createV4Snapshot(
+      spokes,
+      hubs,
+      positionManagerCandidates,
+      accessManagers
+    );
+    writeV4SnapshotJson(beforeName, snapshotBefore);
+
+    (string memory rawDiff, string memory logsJson) = _executePayloadWithRecording(payload);
+    _validateNoExecutorStorageChange(rawDiff, SECURITY_COUNCIL_EXECUTOR);
+
+    snapshotAfter = createV4Snapshot(spokes, hubs, positionManagerCandidates, accessManagers);
+    writeV4SnapshotJson(afterName, snapshotAfter);
+
+    string memory afterPath = string.concat('./reports/', afterName, '.json');
+    vm.writeJson(rawDiff, afterPath, '$.raw');
+    vm.writeJson(logsJson, afterPath, '$.logs');
+
+    diffV4Snapshots(reportName);
   }
 
   function _assertHaltedEverywhere(bool halted) internal view {

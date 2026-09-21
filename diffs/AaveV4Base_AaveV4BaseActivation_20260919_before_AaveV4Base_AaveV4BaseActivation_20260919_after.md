@@ -126,26 +126,13 @@
 | 15 | UpdateSpokeConfig(assetId: 7, spoke: 0x17905Db0e4A3514467539956c084180616AE7B8D, config: {addCap: 32000000, drawCap: 21000000, riskPremiumThreshold: 0, active: true, halted: false}) |
 | 16 | UpdateSpokeConfig(assetId: 7, spoke: 0x7081CE7EB1282c53CF38EA9B622f6269cb8FeFDc, config: {addCap: 1000000, drawCap: 0, riskPremiumThreshold: 0, active: true, halted: false}) |
 
-#### 0x9390B1735def18560c509E2d0bc090E9d6BA257a (AaveV3Base.ACL_ADMIN, GovernanceV3Base.EXECUTOR_LVL_1)
+#### 0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70
 
 | index | event |
 | --- | --- |
-| 17 | ExecutedAction(target: 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f, value: 0, signature: execute(), data: 0x, executionTime: 1789816127, withDelegatecall: true, resultData: 0x) |
-
-#### 0x2DC219E716793fb4b21548C0f009Ba3Af753ab01 (GovernanceV3Base.PAYLOADS_CONTROLLER)
-
-| index | event |
-| --- | --- |
-| 18 | PayloadExecuted(payloadId: 117) |
+| 17 | ExecutedAction(target: 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f, value: 0, signature: , data: 0x61461954, executionTime: 1789991347, withDelegatecall: true, resultData: 0x) |
 
 ## Raw storage changes
-
-### 0x2dc219e716793fb4b21548c0f009ba3af753ab01 (GovernanceV3Base.PAYLOADS_CONTROLLER)
-
-| slot | previous value | new value |
-| --- | --- | --- |
-| 0x8a6b747e4193754f5887d456542feeee62a909f5cc32e46553fc5e84632ffaaf | 0x006aae6d3e000000000002000000000000000000000000000000000000000000 | 0x006aae6d3e000000000003000000000000000000000000000000000000000000 |
-| 0x8a6b747e4193754f5887d456542feeee62a909f5cc32e46553fc5e84632ffab0 | 0x000000000000000000093a800000000000006adc91bf00000000000000000000 | 0x000000000000000000093a800000000000006adc91bf0000000000006aae6d3f |
 
 ### 0xa4d5947eb727a052bae69c593ffc84247ec9864e
 
