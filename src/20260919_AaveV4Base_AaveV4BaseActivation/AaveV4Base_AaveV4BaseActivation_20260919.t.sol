@@ -335,8 +335,9 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   }
 
   /// @dev Role holders as deployed. The governance executor is AccessManager admin next to the
-  /// Security Council and shares the hub configurator domain admin role with the council's Executor,
-  /// which is what lets this payload run through the PayloadsController. The payload changes no roles.
+  /// Security Council and shares the hub configurator domain admin role with the council's Executor.
+  /// The Executor's membership is what lets this payload run when the Executor delegatecalls it on
+  /// behalf of the Security Council Safe. The payload changes no roles.
   function test_roleMembership() public activated {
     _assertMembers(Roles.ACCESS_MANAGER_ADMIN_ROLE, V4_SECURITY_COUNCIL, GOV_EXECUTOR);
 
