@@ -59,7 +59,7 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   AaveV4Base_AaveV4BaseActivation_20260919 internal proposal;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('base'), 51601000);
+    vm.createSelectFork(vm.rpcUrl('base'), 51604825);
     proposal = new AaveV4Base_AaveV4BaseActivation_20260919();
   }
 
