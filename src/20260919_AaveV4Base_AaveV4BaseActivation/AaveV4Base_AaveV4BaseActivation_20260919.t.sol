@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import 'forge-std/Test.sol';
-import {IERC20Metadata} from 'openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol';
+import {IB20Factory} from 'aave-helpers/src/interfaces/IB20Factory.sol';
 import {Ownable} from 'openzeppelin-contracts/contracts/access/Ownable.sol';
 import {Types} from 'aave-helpers/src/dependencies/v4/Types.sol';
 import {IProposalGenericExecutor} from 'aave-helpers/src/interfaces/IProposalGenericExecutor.sol';
@@ -80,9 +80,9 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   }
 
   /// @dev The generic e2e suite over every spoke, tokenization spoke and position manager. The seven
-  /// equities are B20 tokens (node-native, code 0xef, balances outside EVM storage): stock forge cannot
-  /// execute them, so this test only runs under base-anvil's forge (`base-forge`, or FOUNDRY_BASE=true
-  /// with that binary) and is skipped, not passed, anywhere else. See `_requireB20Semantics`.
+  /// equities are B20 tokens (node-native, code 0xef, balances outside EVM storage): stable forge cannot
+  /// execute them, so this test only runs under a forge that selects the Base EVM (`--network base`)
+  /// and is skipped, not passed, anywhere else. See `_requireB20Semantics`.
   function test_e2e() public {
     _requireB20Semantics();
     _executeThroughSecurityCouncil(address(proposal));
@@ -274,6 +274,7 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
 
     address[3] memory others = [DEPLOYER, SECURITY_COUNCIL_EXECUTOR, V4_SECURITY_COUNCIL];
     for (uint256 i; i < others.length; ++i) {
+      vm.deal(others[i], 1 ether);
       vm.prank(others[i]);
       vm.expectRevert(
         IPriceCapAdapterStable.CallerIsNotRiskOrPoolAdmin.selector,
@@ -444,13 +445,14 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
     _assertSameAddressSet(baseOwners, ethOwners, 'owners vs ethereum');
   }
 
-  /// @dev Under stock forge any call into a B20 token hits the invalid opcode 0xef and reverts; under
-  /// base-anvil's forge the precompile answers. Probe with a view call and skip rather than pass.
+  /// @dev The B20 factory is a precompile: it returns data only when forge runs the Base EVM
+  /// (`--network base`); under stable forge the account is empty and the call returns nothing. Probe it
+  /// and skip rather than pass.
   function _requireB20Semantics() internal {
-    (bool ok, ) = AaveV4BaseAssets.AAPLc_UNDERLYING.staticcall(
-      abi.encodeCall(IERC20Metadata.decimals, ())
+    (, bytes memory ret) = B20_FACTORY.staticcall(
+      abi.encodeCall(IB20Factory.isB20, (AaveV4BaseAssets.AAPLc_UNDERLYING))
     );
-    vm.skip(!ok, 'requires base-anvil forge (base-forge) for the B20 equity precompiles');
+    vm.skip(ret.length != 32, 'requires forge with --network base for the B20 equity precompiles');
   }
 
   function _executeThroughSecurityCouncil(address payload) internal {
