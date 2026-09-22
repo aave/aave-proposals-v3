@@ -1,0 +1,25 @@
+.github/workflows/test.yml
+  s_5cb454b1abacbb::t_a317ca568bb478 60,63-68,79-81,84-89,92,95
+foundry.lock
+  s_5cb454b1abacbb::t_4fce5970b81c2c 4-5
+lib/aave-helpers
+  s_5cb454b1abacbb::t_569c6fd2d7d14c 1
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol
+  s_5cb454b1abacbb::t_7a11570f6c56e7 5,83-85,277,448-450,452-453,455
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "19d17bc4b566ee6878df24046b617d588b14fbca",
+  "prompts": {},
+  "sessions": {
+    "s_5cb454b1abacbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf6c5f8c-2bd0-4298-a34d-805f54004688",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}
