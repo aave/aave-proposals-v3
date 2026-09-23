@@ -10,21 +10,21 @@ import {IAaveV4ConfigEngine as IConfigEngine} from 'aave-address-book/AaveV4.sol
 import {EngineFlags} from 'aave-v4/config-engine/libraries/EngineFlags.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {IRiskStewardV4} from 'src/interfaces/IRiskStewardV4.sol';
-import {AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923} from './AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923.sol';
+import {AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923} from './AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923.sol';
 
 /**
- * @dev Test for AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923
+ * @dev Test for AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923
  *      The Security Council Safe calls its Executor, which delegatecalls the payload. The e2e suite
  *      only runs under base-anvil's forge, upstream forge cannot execute the B20 equities.
- * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923.t.sol -vv
+ * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923.t.sol -vv
  */
-contract AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923_Test is ProtocolV4TestBaseBase {
-  AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923 internal proposal;
+contract AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923_Test is ProtocolV4TestBaseBase {
+  AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923 internal proposal;
   IRiskStewardV4 internal steward = IRiskStewardV4(AaveV4Base.RISK_STEWARD);
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('base'), 51697000);
-    proposal = new AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923();
+    proposal = new AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923();
     _grantExecutorAdmin();
   }
 
@@ -34,7 +34,7 @@ contract AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923_Test is Protoco
    */
   function test_defaultProposalExecution() public {
     defaultTest({
-      reportName: 'AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923',
+      reportName: 'AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923',
       payload: address(proposal),
       runE2E: _canExecuteB20(),
       testPositionManagers: false,

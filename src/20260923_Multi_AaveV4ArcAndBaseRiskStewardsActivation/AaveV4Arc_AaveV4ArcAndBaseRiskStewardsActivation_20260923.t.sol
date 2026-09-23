@@ -12,19 +12,19 @@ import {MiscArc} from 'aave-address-book/MiscArc.sol';
 import {IHub, IHubConfigurator, ISpoke} from 'aave-address-book/AaveV4.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {IPriceCapAdapterStable} from 'src/interfaces/IPriceCapAdapterStable.sol';
-import {AaveV4RiskStewardsActivationTestBase} from '../20260807_Multi_AaveV4RiskStewardsActivation/AaveV4RiskStewardsActivationTestBase.sol';
-import {AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923} from './AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923.sol';
+import {AaveV4ArcAndBaseRiskStewardsActivationTestBase} from './AaveV4ArcAndBaseRiskStewardsActivationTestBase.sol';
+import {AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923} from './AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923.sol';
 
 /**
- * @dev Test for AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923
+ * @dev Test for AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923
  *      Arc has no PayloadsController: the Security Council Safe calls its Executor, which
  *      delegatecalls the payload. `forge` below must be circlefin/arc-foundry, upstream forge skips
  *      the suite instead of running it under Ethereum rules.
- * command: FOUNDRY_PROFILE=test FOUNDRY_NETWORK=arc forge test --match-path=src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923.t.sol -vv
+ * command: FOUNDRY_PROFILE=test FOUNDRY_NETWORK=arc forge test --match-path=src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923.t.sol -vv
  */
-contract AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923_Test is
+contract AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923_Test is
   ProtocolV4TestBaseArc,
-  AaveV4RiskStewardsActivationTestBase
+  AaveV4ArcAndBaseRiskStewardsActivationTestBase
 {
   // Arc system contract (blocklist) whose code is the single byte 0xef, executed natively by the client.
   address internal constant ARC_BLOCKLIST_PRECOMPILE = 0x1800000000000000000000000000000000000001;
@@ -40,7 +40,7 @@ contract AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923_Test is
   }
 
   function _deployProposal() internal override returns (IProposalGenericExecutor) {
-    return new AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923();
+    return new AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923();
   }
 
   function _activate() internal override {
@@ -88,7 +88,7 @@ contract AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923_Test is
    * forge-config: default.isolate = true
    */
   function test_defaultProposalExecution() public {
-    defaultTest('AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923', address(proposal));
+    defaultTest('AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923', address(proposal));
   }
 
   function test_executorAdminIsRequired() public {

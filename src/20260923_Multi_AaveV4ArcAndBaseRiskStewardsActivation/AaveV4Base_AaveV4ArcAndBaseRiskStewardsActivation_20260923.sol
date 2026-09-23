@@ -13,7 +13,7 @@ import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
  * @dev To be executed by the Security Council Executor, which must first be granted
  * ACCESS_MANAGER_ADMIN_ROLE on the AccessManager.
  */
-contract AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923 is IProposalGenericExecutor {
+contract AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923 is IProposalGenericExecutor {
   function execute() external override {
     AaveV4Base.ACCESS_MANAGER.grantRole({
       roleId: Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE,

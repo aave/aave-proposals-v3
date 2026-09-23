@@ -59,7 +59,7 @@ There is no governance on Arc. The Aave V4 Security Council Safe ([0x187AAE17d49
 2. `ACLManager.grantRole(DEFAULT_ADMIN_ROLE, Executor)`
 3. `Executor.executeTransaction(payload, 0, "execute()", "", true)`, which delegatecalls the payload
 
-They are provided as a single Safe Transaction Builder batch in [AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_SafeTxBundle.json](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_SafeTxBundle.json).
+They are provided as a single Safe Transaction Builder batch in [AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_SafeTxBundle.json](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_SafeTxBundle.json).
 
 After this, the Executor holds the same admin rights as the Safe on both contracts. That lets later Security Council payloads on Arc manage roles through the Executor, the same way the governance Executors do on Ethereum and Avalanche.
 
@@ -74,12 +74,12 @@ The Aave V4 Security Council Safe ([0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9](
 1. `AccessManager.grantRole(ACCESS_MANAGER_ADMIN_ROLE, Executor, 0)`, to its Executor ([0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70](https://basescan.org/address/0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70))
 2. `Executor.executeTransaction(payload, 0, "execute()", "", true)`, which delegatecalls the payload
 
-They are provided as a single Safe Transaction Builder batch in [AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_SafeTxBundle.json](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_SafeTxBundle.json).
+They are provided as a single Safe Transaction Builder batch in [AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_SafeTxBundle.json](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_SafeTxBundle.json).
 
 ## References
 
-- Implementation: [AaveV4Arc](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923.sol), [AaveV4Base](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923.sol)
-- Tests: [AaveV4Arc](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923.t.sol), [AaveV4Base](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923.t.sol)
+- Implementation: [AaveV4Arc](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923.sol), [AaveV4Base](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923.sol)
+- Tests: [AaveV4Arc](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923.t.sol), [AaveV4Base](https://github.com/aave-dao/aave-proposals-v3/blob/main/src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923.t.sol)
 - [Snapshot](https://snapshot.org/#/s:aavedao.eth/proposal/0xf736fa5f6dd1532d0e2825fe528262479949a923427989384e313490ca9d9f18)
 - [Discussion](https://governance.aave.com/t/arfc-activate-aave-risk-stewards-on-aave-v4/25510)
 

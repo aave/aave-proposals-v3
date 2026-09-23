@@ -12,12 +12,12 @@ import {MiscBase} from 'aave-address-book/MiscBase.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {ArcScript, BaseScript} from 'solidity-utils/contracts/utils/ScriptUtils.sol';
 
-import {AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923} from './AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923.sol';
-import {AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923} from './AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923.sol';
+import {AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923} from './AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923.sol';
+import {AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923} from './AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923.sol';
 
 /**
  * @dev Deploy Arc
- * deploy-command: make deploy-ledger contract=src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4ArcBaseRiskStewardsActivation_20260923.s.sol:DeployArc chain=arc
+ * deploy-command: make deploy-ledger contract=src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4ArcAndBaseRiskStewardsActivation_20260923.s.sol:DeployArc chain=arc
  *
  * Arc has no PayloadsController and no governance bridge, so there is no CreateProposal step.
  * The Security Council Safe first grants its Executor admin rights on the AccessManager and the
@@ -27,7 +27,7 @@ import {AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923} from './AaveV4B
 contract DeployArc is ArcScript {
   function run() external broadcast {
     address payload = GovV3Helpers.deployDeterministic(
-      type(AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923).creationCode
+      type(AaveV4Arc_AaveV4ArcAndBaseRiskStewardsActivation_20260923).creationCode
     );
 
     console.log('payload', payload);
@@ -62,7 +62,7 @@ contract DeployArc is ArcScript {
 
 /**
  * @dev Deploy Base
- * deploy-command: make deploy-ledger contract=src/20260923_Multi_AaveV4ArcBaseRiskStewardsActivation/AaveV4ArcBaseRiskStewardsActivation_20260923.s.sol:DeployBase chain=base
+ * deploy-command: make deploy-ledger contract=src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4ArcAndBaseRiskStewardsActivation_20260923.s.sol:DeployBase chain=base
  *
  * Executed by the Security Council, not by governance, so there is no CreateProposal step.
  * The Security Council Safe first grants its Executor admin rights on the AccessManager, then
@@ -71,7 +71,7 @@ contract DeployArc is ArcScript {
 contract DeployBase is BaseScript {
   function run() external broadcast {
     address payload = GovV3Helpers.deployDeterministic(
-      type(AaveV4Base_AaveV4ArcBaseRiskStewardsActivation_20260923).creationCode
+      type(AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923).creationCode
     );
 
     console.log('payload', payload);

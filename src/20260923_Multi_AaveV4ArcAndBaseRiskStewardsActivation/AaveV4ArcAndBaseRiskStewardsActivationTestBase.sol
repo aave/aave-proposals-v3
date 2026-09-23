@@ -20,10 +20,9 @@ import {IRiskStewardV4} from 'src/interfaces/IRiskStewardV4.sol';
 /**
  * @dev Common base for the per-network "Aave V4 Risk Stewards Activation" proposal tests.
  *      Each network only provides its addresses (via the internal getters below), the fork, the
- *      proposal deployment and its own `test_defaultProposalExecution`; every assertion lives here
- *      so the three networks stay in sync.
+ *      proposal deployment and its own `test_defaultProposalExecution`; every assertion lives here.
  */
-abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
+abstract contract AaveV4ArcAndBaseRiskStewardsActivationTestBase is ProtocolV4TestBase {
   IProposalGenericExecutor internal proposal;
   IRiskStewardV4 internal steward;
 
