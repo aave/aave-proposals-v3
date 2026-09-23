@@ -33,7 +33,7 @@ contract AaveV4Arc_AaveV4ArcRiskStewardsActivation_20260923 is IProposalGenericE
     IACLManager(MiscArc.ACL_MANAGER).addRiskAdmin(AaveV4Arc.RISK_STEWARD);
 
     IRiskStewardV4(AaveV4Arc.RISK_STEWARD).setConfig(
-      RiskStewardV4Config.llamaRisk(AaveV4Arc.HUB_CONFIGURATOR, AaveV4Arc.SPOKE_CONFIGURATOR)
+      RiskStewardV4Config.defaultConfig(AaveV4Arc.HUB_CONFIGURATOR, AaveV4Arc.SPOKE_CONFIGURATOR)
     );
   }
 }
