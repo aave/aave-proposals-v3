@@ -33,6 +33,13 @@ import {AaveV4Base_AaveV4BaseActivation_20260919} from './AaveV4Base_AaveV4BaseA
  *      and the Security Council Safe configuration.
  *      The payload is executed the way it will be on chain: the Security Council Safe calls its
  *      Executor, which delegatecalls the payload. The Base PayloadsController is not involved.
+ *      Runs on forge's Base EVM (nightly), which executes the B20 equity precompiles. The fork block is
+ *      on the Beryl upgrade; switch to base:cobalt if the fork moves past 1790791200 (2026-09-30T10:00Z).
+ *      Isolation is off because isolated top-level calls are charged the L1 data fee and revert for
+ *      0-ETH pranked callers (foundry-rs/foundry#17010).
+ * forge-config: default.networks.network = "base"
+ * forge-config: default.hardfork = "base:beryl"
+ * forge-config: default.isolate = false
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol -vv
  */
 contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase {
@@ -80,9 +87,8 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   }
 
   /// @dev The generic e2e suite over every spoke, tokenization spoke and position manager. The seven
-  /// equities are B20 tokens (node-native, code 0xef, balances outside EVM storage): stable forge cannot
-  /// execute them, so this test only runs under a forge that selects the Base EVM (`--network base`)
-  /// and is skipped, not passed, anywhere else. See `_requireB20Semantics`.
+  /// equities are B20 tokens (node-native, code 0xef, balances outside EVM storage): only forge's Base
+  /// EVM executes them, so this test is skipped, not passed, anywhere else. See `_requireB20Semantics`.
   function test_e2e() public {
     _requireB20Semantics();
     _executeThroughSecurityCouncil(address(proposal));
@@ -445,14 +451,13 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
     _assertSameAddressSet(baseOwners, ethOwners, 'owners vs ethereum');
   }
 
-  /// @dev The B20 factory is a precompile: it returns data only when forge runs the Base EVM
-  /// (`--network base`); under stable forge the account is empty and the call returns nothing. Probe it
-  /// and skip rather than pass.
+  /// @dev The B20 factory is a precompile: it returns data only when forge runs the Base EVM; without it
+  /// the account is empty and the call returns nothing. Probe it and skip rather than pass.
   function _requireB20Semantics() internal {
     (, bytes memory ret) = B20_FACTORY.staticcall(
       abi.encodeCall(IB20Factory.isB20, (AaveV4BaseAssets.AAPLc_UNDERLYING))
     );
-    vm.skip(ret.length != 32, 'requires forge with --network base for the B20 equity precompiles');
+    vm.skip(ret.length != 32, 'requires forge with the Base EVM for the B20 equity precompiles');
   }
 
   function _executeThroughSecurityCouncil(address payload) internal {
