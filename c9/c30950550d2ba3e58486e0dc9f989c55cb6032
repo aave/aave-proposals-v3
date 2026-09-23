@@ -2,8 +2,11 @@ src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_202
   s_54bb744ee46da2::t_1601c581fd9141 36,40-42,90-91
   s_54bb744ee46da2::t_0604e2b1b71afb 37-39
   s_54bb744ee46da2::t_120b5dcd523dc1 454-455,460
+  s_54bb744ee46da2::t_da0109127f9cbc 36,90-91
+  s_54bb744ee46da2::t_a8f7d407ce211a 40-42
 .github/workflows/test.yml
   s_54bb744ee46da2::t_1601c581fd9141 40
+  s_54bb744ee46da2::t_fe907059a73aaf 40
 ---
 {
   "schema_version": "authorship/3.0.0",
