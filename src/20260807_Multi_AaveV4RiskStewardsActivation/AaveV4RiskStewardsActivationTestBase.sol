@@ -35,7 +35,15 @@ abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
 
   function _riskSteward() internal view virtual returns (address);
 
-  function _v3RiskSteward() internal view virtual returns (IRiskSteward);
+  /// @dev networks with no v3 Risk Steward leave this at zero, which skips the v3 bounds test and
+  /// requires overriding `_riskCouncil`
+  function _v3RiskSteward() internal view virtual returns (IRiskSteward) {
+    return IRiskSteward(address(0));
+  }
+
+  function _riskCouncil() internal view virtual returns (address) {
+    return _v3RiskSteward().RISK_COUNCIL();
+  }
 
   function _aclManager() internal view virtual returns (IACLManager);
 
@@ -47,7 +55,10 @@ abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
 
   function _asset() internal view virtual returns (address);
 
-  function _lstAdapter() internal view virtual returns (IPriceCapAdapter);
+  /// @dev networks with no LST price source leave this at zero, which skips the LST tests
+  function _lstAdapter() internal view virtual returns (IPriceCapAdapter) {
+    return IPriceCapAdapter(address(0));
+  }
 
   function _stableAdapter() internal view virtual returns (IPriceCapAdapterStable);
 
@@ -67,17 +78,13 @@ abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
     _;
   }
 
-  function _activate() internal {
+  function _activate() internal virtual {
     GovV3Helpers.executePayload(vm, address(proposal));
   }
 
   function test_stewardOwnerAndCouncil() public view {
     assertEq(steward.owner(), _executor(), 'owner mismatch');
-    assertEq(
-      steward.RISK_COUNCIL(),
-      _v3RiskSteward().RISK_COUNCIL(),
-      'council diverges from the v3 risk steward'
-    );
+    assertEq(steward.RISK_COUNCIL(), _riskCouncil(), 'council mismatch');
   }
 
   function test_rolesGranted() public {
@@ -147,7 +154,9 @@ abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
   /// @dev Covers the bounds LlamaRisk carried over from the v3 Risk Steward unchanged. The params
   /// they widened (baseDrawnRate, rateGrowthBeforeOptimal, collateralRisk, the dynamicAdd bounds)
   /// and those with no v3 counterpart are asserted in `_assertConfig` only.
-  function test_boundsMatchV3RiskSteward() public activated {
+  function test_boundsMatchV3RiskSteward() public {
+    vm.skip(address(_v3RiskSteward()) == address(0), 'no v3 risk steward on this network');
+    _activate();
     IRiskSteward.Config memory v3 = _v3RiskSteward().getRiskConfig();
     IRiskStewardV4.Config memory v4 = steward.getConfig();
 
@@ -507,7 +516,9 @@ abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
     );
   }
 
-  function test_riskCouncilCanUpdateLstPriceCap() public activated {
+  function test_riskCouncilCanUpdateLstPriceCap() public {
+    vm.skip(address(_lstAdapter()) == address(0), 'no lst price source on this market');
+    _activate();
     uint16 growthAfter = _lstGrowthWithinBound();
     IRiskStewardV4.PriceCapLstUpdate[] memory updates = _lstPriceCapUpdate(growthAfter);
     address riskCouncil = steward.RISK_COUNCIL();
@@ -527,7 +538,9 @@ abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
     );
   }
 
-  function test_riskCouncilCannotUpdateLstPriceCapAboveBound() public activated {
+  function test_riskCouncilCannotUpdateLstPriceCapAboveBound() public {
+    vm.skip(address(_lstAdapter()) == address(0), 'no lst price source on this market');
+    _activate();
     IRiskStewardV4.PriceCapLstUpdate[] memory updates = _lstPriceCapUpdate(
       _lstGrowthWithinBound() + 1
     );
@@ -539,7 +552,9 @@ abstract contract AaveV4RiskStewardsActivationTestBase is ProtocolV4TestBase {
   }
 
   /// @dev the whole cooldown cycle on the lst price cap, whose bound carries the 72 hour delay
-  function test_riskCouncilCannotUpdateLstPriceCapBeforeCooldown() public activated {
+  function test_riskCouncilCannotUpdateLstPriceCapBeforeCooldown() public {
+    vm.skip(address(_lstAdapter()) == address(0), 'no lst price source on this market');
+    _activate();
     address riskCouncil = steward.RISK_COUNCIL();
     IRiskStewardV4.PriceCapLstUpdate[] memory updates = _lstPriceCapUpdate(_lstGrowthWithinBound());
 

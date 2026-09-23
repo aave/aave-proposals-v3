@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "chainId": "5042",
+  "createdAt": 1790150400000,
+  "meta": {
+    "name": "Aave V4 Arc Risk Stewards Activation",
+    "description": "Grants the Security Council Executor admin on the AccessManager and the ACL manager, then executes payload 0xfFFDE755FF126Ee7024F6Ff93348791134E0D182 through the Executor",
+    "txBuilderVersion": "1.18.0",
+    "createdFromSafeAddress": "0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9",
+    "createdFromOwnerAddress": ""
+  },
+  "transactions": [
+    {
+      "to": "0x24761DB265998ba1D38E8a29031cF72C2CeF3A7D",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          { "internalType": "uint64", "name": "roleId", "type": "uint64" },
+          { "internalType": "address", "name": "account", "type": "address" },
+          {
+            "internalType": "uint32",
+            "name": "executionDelay",
+            "type": "uint32"
+          }
+        ],
+        "name": "grantRole",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "roleId": "0",
+        "account": "0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5",
+        "executionDelay": "0"
+      }
+    },
+    {
+      "to": "0x4d4B307857eFff79E786923F2A277ea298E88aEA",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          { "internalType": "bytes32", "name": "role", "type": "bytes32" },
+          { "internalType": "address", "name": "account", "type": "address" }
+        ],
+        "name": "grantRole",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "role": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "account": "0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5"
+      }
+    },
+    {
+      "to": "0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          { "internalType": "address", "name": "target", "type": "address" },
+          { "internalType": "uint256", "name": "value", "type": "uint256" },
+          { "internalType": "string", "name": "signature", "type": "string" },
+          { "internalType": "bytes", "name": "data", "type": "bytes" },
+          { "internalType": "bool", "name": "withDelegatecall", "type": "bool" }
+        ],
+        "name": "executeTransaction",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "target": "0xfFFDE755FF126Ee7024F6Ff93348791134E0D182",
+        "value": "0",
+        "signature": "execute()",
+        "data": "0x",
+        "withDelegatecall": "true"
+      }
+    }
+  ]
+}
