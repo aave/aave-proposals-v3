@@ -280,7 +280,6 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
 
     address[3] memory others = [DEPLOYER, SECURITY_COUNCIL_EXECUTOR, V4_SECURITY_COUNCIL];
     for (uint256 i; i < others.length; ++i) {
-      vm.deal(others[i], 1 ether);
       vm.prank(others[i]);
       vm.expectRevert(
         IPriceCapAdapterStable.CallerIsNotRiskOrPoolAdmin.selector,
