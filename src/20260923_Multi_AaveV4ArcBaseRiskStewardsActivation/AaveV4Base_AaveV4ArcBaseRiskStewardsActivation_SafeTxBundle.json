@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "chainId": "8453",
+  "createdAt": 1790150400000,
+  "meta": {
+    "name": "Aave V4 Base Risk Stewards Activation",
+    "description": "Grants the Security Council Executor admin on the AccessManager, then executes payload 0xC4aFe44E6869463246baD7AF178B27892a2e8048 through the Executor",
+    "txBuilderVersion": "1.18.0",
+    "createdFromSafeAddress": "0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9",
+    "createdFromOwnerAddress": ""
+  },
+  "transactions": [
+    {
+      "to": "0x4010C94698EDE9d895814502B6EB122D764a1Cc6",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint64",
+            "name": "roleId",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "uint32",
+            "name": "executionDelay",
+            "type": "uint32"
+          }
+        ],
+        "name": "grantRole",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "roleId": "0",
+        "account": "0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70",
+        "executionDelay": "0"
+      }
+    },
+    {
+      "to": "0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "target",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "signature",
+            "type": "string"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bool",
+            "name": "withDelegatecall",
+            "type": "bool"
+          }
+        ],
+        "name": "executeTransaction",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "target": "0xC4aFe44E6869463246baD7AF178B27892a2e8048",
+        "value": "0",
+        "signature": "execute()",
+        "data": "0x",
+        "withDelegatecall": "true"
+      }
+    }
+  ]
+}

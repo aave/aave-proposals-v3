@@ -17,7 +17,7 @@ import {IRiskStewardV4} from 'src/interfaces/IRiskStewardV4.sol';
  * @dev To be executed by the Security Council Executor, which must first be granted
  * ACCESS_MANAGER_ADMIN_ROLE on the AccessManager and DEFAULT_ADMIN_ROLE on the ACL manager.
  */
-contract AaveV4Arc_AaveV4ArcRiskStewardsActivation_20260923 is IProposalGenericExecutor {
+contract AaveV4Arc_AaveV4ArcBaseRiskStewardsActivation_20260923 is IProposalGenericExecutor {
   function execute() external override {
     AaveV4Arc.ACCESS_MANAGER.grantRole({
       roleId: Roles.HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE,
