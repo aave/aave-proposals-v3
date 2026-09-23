@@ -1,0 +1,29 @@
+diffs/AaveV4Base_AaveV4BaseActivation_20260919_before_AaveV4Base_AaveV4BaseActivation_20260919_after.md
+  s_5cb454b1abacbb::t_f1417db9cdd595 129,133
+foundry.lock
+  s_5cb454b1abacbb::t_644ed08033f317 5
+lib/aave-helpers
+  s_5cb454b1abacbb::t_84d8dc4a8f7877 1
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4BaseActivation.md
+  s_5cb454b1abacbb::t_198c8e6d2eea61 14-15,20-21,86,94-100
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4BaseActivation_20260919.s.sol
+  s_5cb454b1abacbb::t_12a82e24261c9a 4-9,17-19,23-24,26,28-31,33-37,39-40
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol
+  s_5cb454b1abacbb::t_a822eb4211c8dd 6-9,11,34-35,47-50,62,67,88,103,120-138,250,252-259,261,268,437,455-514
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "28df20186d57962f7aff696415938b409bdc6673",
+  "prompts": {},
+  "sessions": {
+    "s_5cb454b1abacbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf6c5f8c-2bd0-4298-a34d-805f54004688",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}

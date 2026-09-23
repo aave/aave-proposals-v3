@@ -1,0 +1,23 @@
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4BaseActivation.md
+  s_5cb454b1abacbb::t_70eeb00fdca956 5
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.sol
+  s_5cb454b1abacbb::t_099b636606f1ac 13
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol
+  s_5cb454b1abacbb::t_9260ab141f4e3c 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c3c000d421a7378457ecd08f5dabccdd88ae6a65",
+  "prompts": {},
+  "sessions": {
+    "s_5cb454b1abacbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf6c5f8c-2bd0-4298-a34d-805f54004688",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}
