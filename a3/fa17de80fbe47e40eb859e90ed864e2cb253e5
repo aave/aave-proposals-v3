@@ -1,0 +1,22 @@
+.github/workflows/test.yml
+  s_54bb744ee46da2::t_fe907059a73aaf 40
+src/20260919_AaveV4Base_AaveV4BaseActivation/AaveV4Base_AaveV4BaseActivation_20260919.t.sol
+  s_54bb744ee46da2::t_da0109127f9cbc 36-38,89-90,452-453,458
+  s_54bb744ee46da2::t_a8f7d407ce211a 39-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a3fa17de80fbe47e40eb859e90ed864e2cb253e5",
+  "prompts": {},
+  "sessions": {
+    "s_54bb744ee46da2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a1d9f805-60cc-4fcc-b746-4c1bc528005b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "DhairyaSethi <55102840+DhairyaSethi@users.noreply.github.com>"
+    }
+  }
+}
