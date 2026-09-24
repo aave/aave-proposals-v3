@@ -6,10 +6,12 @@ import {ProtocolV4TestBaseBase} from 'aave-helpers/src/v4-protocol-test/Protocol
 import {IExecutor} from 'aave-address-book/governance-v3/IExecutor.sol';
 import {AaveV4Base, AaveV4BaseHubs, AaveV4BaseSpokes, AaveV4BaseAssets} from 'aave-address-book/AaveV4Base.sol';
 import {MiscBase} from 'aave-address-book/MiscBase.sol';
+import {GovernanceV3Base} from 'aave-address-book/GovernanceV3Base.sol';
 import {IAaveV4ConfigEngine as IConfigEngine} from 'aave-address-book/AaveV4.sol';
 import {EngineFlags} from 'aave-v4/config-engine/libraries/EngineFlags.sol';
 import {Roles} from 'aave-v4/deployments/utils/libraries/Roles.sol';
 import {IRiskStewardV4} from 'src/interfaces/IRiskStewardV4.sol';
+import {IOwnable2Step} from 'src/interfaces/IOwnable2Step.sol';
 import {AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923} from './AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923.sol';
 
 /**
@@ -21,9 +23,10 @@ import {AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923} from './Aave
 contract AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923_Test is ProtocolV4TestBaseBase {
   AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923 internal proposal;
   IRiskStewardV4 internal steward = IRiskStewardV4(AaveV4Base.RISK_STEWARD);
+  address internal constant DEPLOYER = 0x4C11ed256D43762811B093145e6F6b58F2be4782;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('base'), 51697000);
+    vm.createSelectFork(vm.rpcUrl('base'), 51731343);
     proposal = new AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923();
     _grantExecutorAdmin();
   }
@@ -61,6 +64,17 @@ contract AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923_Test is Prot
       assertEq(hasRole, expected, string.concat('unexpected role: ', vm.toString(roles[i])));
       assertEq(uint256(delay), 0, string.concat('role delay: ', vm.toString(roles[i])));
     }
+  }
+
+  function test_ownershipHandedOver() public {
+    IOwnable2Step ownable = IOwnable2Step(address(steward));
+    assertEq(ownable.owner(), DEPLOYER, 'owner before');
+    assertEq(ownable.pendingOwner(), MiscBase.V4_SECURITY_COUNCIL_EXECUTOR, 'pendingOwner before');
+
+    _executeThroughSecurityCouncil(address(proposal));
+
+    assertEq(ownable.owner(), MiscBase.V4_SECURITY_COUNCIL_EXECUTOR, 'owner after');
+    assertEq(ownable.pendingOwner(), GovernanceV3Base.EXECUTOR_LVL_1, 'pendingOwner after');
   }
 
   function test_executorAdminIsRequired() public {

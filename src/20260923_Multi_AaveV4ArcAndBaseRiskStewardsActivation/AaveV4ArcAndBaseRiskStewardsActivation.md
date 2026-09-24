@@ -9,7 +9,7 @@ snapshot: "https://snapshot.org/#/s:aavedao.eth/proposal/0xf736fa5f6dd1532d0e282
 
 These payloads activate the Aave V4 Risk Stewards on Arc and Base, both executed by the Aave V4 Security Council.
 
-On Arc, the payload sets the Risk Steward configuration, the one applied on Ethereum and Avalanche following LlamaRisk's recommendation, and grants it the AccessManager and ACL manager roles it needs to operate. On Base, the payload grants the Risk Steward its AccessManager roles.
+On Arc, the payload sets the Risk Steward configuration, the one applied on Ethereum and Avalanche following LlamaRisk's recommendation, and grants it the AccessManager and ACL manager roles it needs to operate. On Base, the payload grants the Risk Steward its AccessManager roles and moves its ownership from the deployer to the Base governance Executor.
 
 ## Motivation
 
@@ -67,7 +67,9 @@ After this, the Executor holds the same admin rights as the Safe on both contrac
 
 The payload grants the Risk Steward at [0x577dD4c67d4c7278CdF3bC03aE9a391C4C72DB4f](https://basescan.org/address/0x577dD4c67d4c7278CdF3bC03aE9a391C4C72DB4f), whose risk council is [0xfbeB4AcB31340bA4de9C87B11dfBf7e2bc8C0bF1](https://basescan.org/address/0xfbeB4AcB31340bA4de9C87B11dfBf7e2bc8C0bF1), `HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE` (200) and `SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE` (400) on the Base AccessManager ([0x4010C94698EDE9d895814502B6EB122D764a1Cc6](https://basescan.org/address/0x4010C94698EDE9d895814502B6EB122D764a1Cc6)), with no execution delay.
 
-The Base Risk Steward is already configured and its ownership is being handed over to the Base governance Executor, so this payload does not touch its configuration. It is not granted `RISK_ADMIN` on the Base v3 ACL manager, which gates `setPriceCap` on the USDC CAPO adapter, because only governance administers that ACL manager: the `priceCapStable` bound stays unusable on Base until governance grants it.
+The payload also accepts the Risk Steward ownership on behalf of the Security Council Executor ([0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70](https://basescan.org/address/0xA9D9923A1ADC1200771aaaA38CFeD6A5b8483d70)), which the deployer sets as pending owner beforehand, and then sets the Base governance Executor ([0x9390B1735def18560c509E2d0bc090E9d6BA257a](https://basescan.org/address/0x9390B1735def18560c509E2d0bc090E9d6BA257a)) as pending owner. Ownership moves to governance once a governance payload accepts it.
+
+The Base Risk Steward is already configured, so this payload does not touch its configuration. It is not granted `RISK_ADMIN` on the Base v3 ACL manager, which gates `setPriceCap` on the USDC CAPO adapter, because only governance administers that ACL manager: the `priceCapStable` bound stays unusable on Base until governance grants it.
 
 The Aave V4 Security Council Safe ([0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9](https://basescan.org/address/0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9)) submits two transactions, in order:
 

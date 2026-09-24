@@ -4,7 +4,7 @@
   "createdAt": 1790150400000,
   "meta": {
     "name": "Aave V4 Base Risk Stewards Activation",
-    "description": "Grants the Security Council Executor admin on the AccessManager, then executes payload 0xC4aFe44E6869463246baD7AF178B27892a2e8048 through the Executor",
+    "description": "Grants the Security Council Executor admin on the AccessManager, then executes payload 0xccA99b501F2F2d91A918F84104f6E7a88Cc494bf through the Executor",
     "txBuilderVersion": "1.18.0",
     "createdFromSafeAddress": "0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9",
     "createdFromOwnerAddress": ""
@@ -77,7 +77,7 @@
         "payable": true
       },
       "contractInputsValues": {
-        "target": "0xC4aFe44E6869463246baD7AF178B27892a2e8048",
+        "target": "0xccA99b501F2F2d91A918F84104f6E7a88Cc494bf",
         "value": "0",
         "signature": "execute()",
         "data": "0x",
