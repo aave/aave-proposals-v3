@@ -10,26 +10,26 @@
 
 ## Event logs
 
-#### 0x24761DB265998ba1D38E8a29031cF72C2CeF3A7D
+#### 0x24761DB265998ba1D38E8a29031cF72C2CeF3A7D (AaveV4Arc.ACCESS_MANAGER)
 
 | index | event |
 | --- | --- |
 | 0 | RoleGranted(roleId: 200, account: 0x73adb67D5De247D40152Cf06aC16174b3d87D2c8, delay: 0, since: 1790159747, newMember: true) |
 | 1 | RoleGranted(roleId: 400, account: 0x73adb67D5De247D40152Cf06aC16174b3d87D2c8, delay: 0, since: 1790159747, newMember: true) |
 
-#### 0x4d4B307857eFff79E786923F2A277ea298E88aEA
+#### 0x4d4B307857eFff79E786923F2A277ea298E88aEA (MiscArc.ACL_MANAGER)
 
 | index | event |
 | --- | --- |
 | 2 | RoleGranted(role: 0x8aa855a911518ecfbe5bc3088c8f3dda7badf130faaf8ace33fdc33828e18167, account: 0x73adb67D5De247D40152Cf06aC16174b3d87D2c8, sender: 0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5) |
 
-#### 0x73adb67D5De247D40152Cf06aC16174b3d87D2c8
+#### 0x73adb67D5De247D40152Cf06aC16174b3d87D2c8 (AaveV4Arc.RISK_STEWARD)
 
 | index | event |
 | --- | --- |
-| 3 | topics: `0x2329cbe7a0a6163d660474fbbc2e37d4b23710a3427e5cace6b371f5dba354b6`, data: `0x000000000000000000000000419cf771e08d927b23f2f1691968c5135ad8b659...` |
+| 3 | ConfigSet(config: {hub: {configurator: 0x419cF771E08d927b23F2F1691968C5135Ad8B659, rate: {optimalUsageRatio: {minDelay: 129600, maxPercentChange: 300, isChangeRelative: false}, baseDrawnRate: {minDelay: 129600, maxPercentChange: 300, isChangeRelative: false}, rateGrowthBeforeOptimal: {minDelay: 129600, maxPercentChange: 300, isChangeRelative: false}, rateGrowthAfterOptimal: {minDelay: 129600, maxPercentChange: 2000, isChangeRelative: false}}, cap: {addCap: {minDelay: 129600, maxPercentChange: 10000, isChangeRelative: true}, drawCap: {minDelay: 129600, maxPercentChange: 10000, isChangeRelative: true}}}, spoke: {configurator: 0x102610d2A7Fd87A85ad8fdCfC78879be8Fd40576, collateralRisk: {minDelay: 129600, maxPercentChange: 30000, isChangeRelative: false}, dynamicUpdate: {collateralFactor: {minDelay: 259200, maxPercentChange: 50, isChangeRelative: false}, maxLiquidationBonus: {minDelay: 259200, maxPercentChange: 50, isChangeRelative: false}}, dynamicAdd: {collateralFactor: {minDelay: 259200, maxPercentChange: 500, isChangeRelative: false}, maxLiquidationBonus: {minDelay: 259200, maxPercentChange: 50, isChangeRelative: false}}, liquidation: {targetHealthFactor: {minDelay: 259200, maxPercentChange: 500, isChangeRelative: true}, healthFactorForMaxBonus: {minDelay: 259200, maxPercentChange: 500, isChangeRelative: true}, liquidationBonusFactor: {minDelay: 259200, maxPercentChange: 500, isChangeRelative: false}}}, oracle: {priceCapLst: {minDelay: 259200, maxPercentChange: 500, isChangeRelative: true}, priceCapStable: {minDelay: 259200, maxPercentChange: 50, isChangeRelative: true}, discountRatePendle: {minDelay: 172800, maxPercentChange: 25000000000000000, isChangeRelative: false}}}) |
 
-#### 0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5
+#### 0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5 (MiscArc.V4_SECURITY_COUNCIL_EXECUTOR)
 
 | index | event |
 | --- | --- |
@@ -37,7 +37,7 @@
 
 ## Raw storage changes
 
-### 0x24761db265998ba1d38e8a29031cf72c2cef3a7d
+### 0x24761db265998ba1d38e8a29031cf72c2cef3a7d (AaveV4Arc.ACCESS_MANAGER)
 
 | slot | previous value | new value |
 | --- | --- | --- |
@@ -50,13 +50,13 @@
 | 0xd3514e0c044d40f82e6b5efc4983e5e44a543d1bea9170260e74a5ae4a80e504 | 0x0000000000000000000000000000000000000000000000000000000000000000 | 0x00000000000000000000000073adb67d5de247d40152cf06ac16174b3d87d2c8 |
 | 0xf523d91cfbcd6104119aa1c09c5e25b0cda9f381036dfcd760e303c5e0c8776c | 0x0000000000000000000000000000000000000000000000000000000000000000 | 0x0000000000000000000000000000000000000000000000000000000000000002 |
 
-### 0x4d4b307857efff79e786923f2a277ea298e88aea
+### 0x4d4b307857efff79e786923f2a277ea298e88aea (MiscArc.ACL_MANAGER)
 
 | slot | previous value | new value |
 | --- | --- | --- |
 | 0x71b849cb74846602fb59317161384ea01be96f4d42a7ff014b2a6cc4ff68c56e | 0x0000000000000000000000000000000000000000000000000000000000000000 | 0x0000000000000000000000000000000000000000000000000000000000000001 |
 
-### 0x73adb67d5de247d40152cf06ac16174b3d87d2c8
+### 0x73adb67d5de247d40152cf06ac16174b3d87d2c8 (AaveV4Arc.RISK_STEWARD)
 
 | slot | previous value | new value |
 | --- | --- | --- |
