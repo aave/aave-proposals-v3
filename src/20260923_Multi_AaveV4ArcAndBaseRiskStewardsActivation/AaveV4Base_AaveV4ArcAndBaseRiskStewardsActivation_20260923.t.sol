@@ -16,11 +16,20 @@ import {AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923} from './Aave
 
 /**
  * @dev Test for AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923
- *      The Security Council Safe calls its Executor, which delegatecalls the payload. The e2e suite
- *      only runs under base-anvil's forge, upstream forge cannot execute the B20 equities.
+ *      The Security Council Safe calls its Executor, which delegatecalls the payload.
+ *      Runs on forge's Base EVM (nightly), which executes the B20 equity precompiles. The fork block is
+ *      on the Beryl upgrade; switch to base:cobalt if the fork moves past 1790791200 (2026-09-30T10:00Z).
+ *      Isolation is off because isolated top-level calls are charged the L1 data fee and revert for
+ *      0-ETH pranked callers (foundry-rs/foundry#17010).
+ * forge-config: default.networks.network = "base"
+ * forge-config: default.hardfork = "base:beryl"
+ * forge-config: default.isolate = false
  * command: FOUNDRY_PROFILE=test forge test --match-path=src/20260923_Multi_AaveV4ArcAndBaseRiskStewardsActivation/AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923.t.sol -vv
  */
 contract AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923_Test is ProtocolV4TestBaseBase {
+  /// @dev The Base market is deployed halted until this activation payload (Security Council) executes
+  address internal constant BASE_ACTIVATION_PAYLOAD = 0x6BDf957Ff2AE324fe23911f549aff9b5621b198E;
+
   AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923 internal proposal;
   IRiskStewardV4 internal steward = IRiskStewardV4(AaveV4Base.RISK_STEWARD);
   address internal constant DEPLOYER = 0x4C11ed256D43762811B093145e6F6b58F2be4782;
@@ -31,18 +40,26 @@ contract AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923_Test is Prot
     _grantExecutorAdmin();
   }
 
-  /**
-   * @dev executes the generic test suite including e2e and config snapshots
-   * forge-config: default.isolate = true
-   */
+  /// @dev executes the payload with config snapshots and diff; the e2e runs in `test_e2e`
+  /// forge-config: default.isolate = true
   function test_defaultProposalExecution() public {
     defaultTest({
       reportName: 'AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923',
       payload: address(proposal),
-      runE2E: _canExecuteB20(),
+      runE2E: false,
       testPositionManagers: false,
       runSeatbelt: false
     });
+  }
+
+  /// @dev The equities are B20 tokens (node-native, code 0xef): only forge's Base EVM executes them, so
+  /// this test is skipped, not passed, anywhere else. See `_requireB20Semantics`.
+  function test_e2e() public {
+    _requireB20Semantics();
+    _executeThroughSecurityCouncil(BASE_ACTIVATION_PAYLOAD);
+    _executeThroughSecurityCouncil(address(proposal));
+    e2eTestAllSpokes({spokes: _getSpokes(), testPositionManagers: true});
+    e2eTestAllTokenizationSpokes(_getTokenizationSpokes());
   }
 
   function test_rolesGranted() public {
@@ -191,11 +208,13 @@ contract AaveV4Base_AaveV4ArcAndBaseRiskStewardsActivation_20260923_Test is Prot
     logsJson = vm.getRecordedLogsJson();
   }
 
-  /// @dev B20 equities are node-native (code 0xef): upstream forge burns all forwarded gas on them
-  function _canExecuteB20() internal view returns (bool ok) {
-    (ok, ) = AaveV4BaseAssets.AAPLc_UNDERLYING.staticcall{gas: 100_000}(
+  /// @dev Without the Base EVM, forge burns all forwarded gas on a B20 token. Probe it and skip rather
+  /// than pass.
+  function _requireB20Semantics() internal {
+    (bool ok, ) = AaveV4BaseAssets.AAPLc_UNDERLYING.staticcall{gas: 100_000}(
       abi.encodeWithSignature('symbol()')
     );
+    vm.skip(!ok, 'requires forge with the Base EVM for the B20 equity precompiles');
   }
 
   function _usdcSpokeAddCap() internal view returns (uint256) {
