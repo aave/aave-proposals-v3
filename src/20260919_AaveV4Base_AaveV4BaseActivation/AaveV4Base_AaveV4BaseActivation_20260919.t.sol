@@ -51,10 +51,6 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   address internal constant SECURITY_COUNCIL_EXECUTOR = MiscBase.V4_SECURITY_COUNCIL_EXECUTOR;
   address internal constant GOV_EXECUTOR = GovernanceV3Base.EXECUTOR_LVL_1;
   address internal constant DEPLOYER = 0x4C11ed256D43762811B093145e6F6b58F2be4782;
-  // PriceCapAdapterStable over ChainlinkBase.USDC__USD (aave-price-feeds #169). The spoke oracle still
-  // points at the SVR-backed adapter 0xf52D010c7d4ecBfda92c2509900593CE34535D86 until Safe tx nonce 3
-  // (0x8a0fd4569e50c55435b5770d2c86d70df80f66719ce63f666dbe1373ffac78a0) executes.
-  address internal constant USDC_PRICE_FEED = 0xC7d0f8dCC1F860ca752054c59Ea82Ba2A5AaB50c;
 
   bytes32 internal constant SAFE_GUARD_SLOT =
     0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8;
@@ -255,13 +251,17 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
     }
   }
 
-  /// @dev Intended end state; red until Safe tx nonce 3 swaps the USDC source (see USDC_PRICE_FEED).
   function test_usdcPriceSource() public view {
-    _assertPriceSource(AaveV4BaseAssets.USDC_UNDERLYING, USDC_PRICE_FEED);
+    _assertPriceSource(
+      AaveV4BaseAssets.USDC_UNDERLYING,
+      AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_USDC_PRICE_FEED
+    );
   }
 
   function test_usdcPriceCapAdapter() public view {
-    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(USDC_PRICE_FEED);
+    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(
+      AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_USDC_PRICE_FEED
+    );
     assertEq(usdcAdapter.decimals(), 8);
     assertEq(usdcAdapter.getPriceCap(), 1.04e8);
     assertEq(usdcAdapter.ASSET_TO_USD_AGGREGATOR(), ChainlinkBase.USDC__USD);
@@ -271,7 +271,9 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
   /// @dev The USDC adapter gates cap updates on the Aave V3 Base ACLManager, where the governance
   /// executor is POOL_ADMIN. Neither the Security Council nor its Executor hold a role there.
   function test_governanceCanUpdateUsdcPriceCap() public activated {
-    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(USDC_PRICE_FEED);
+    IPriceCapAdapterStable usdcAdapter = IPriceCapAdapterStable(
+      AaveV4BaseSpokePriceFeeds.MAG7_SPOKE_USDC_PRICE_FEED
+    );
     assertTrue(ACL_MANAGER.isPoolAdmin(GOV_EXECUTOR), 'executor not pool admin');
 
     vm.prank(GOV_EXECUTOR);
@@ -417,11 +419,6 @@ contract AaveV4Base_AaveV4BaseActivation_20260919_Test is ProtocolV4TestBaseBase
     assertEq(IOwnable2Step(SECURITY_COUNCIL_EXECUTOR).owner(), V4_SECURITY_COUNCIL);
   }
 
-  /// @dev Intended end state: the Security Council owns every position manager with no transfer
-  /// pending. As of the pinned block the deployer still owns them with the Safe as pendingOwner; the
-  /// acceptOwnership batch is Safe tx nonce 2
-  /// (0xdd18cc9623ee3417e98018ac582058d946533ce4b1372c1ba811584b2a55bb0b) and this test is red until
-  /// it lands.
   function test_positionManagersOwnedBySecurityCouncil() public activated {
     address[5] memory owned = [
       address(AaveV4BasePositionManagers.GIVER_POSITION_MANAGER),
