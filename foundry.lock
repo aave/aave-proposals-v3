@@ -1,8 +1,8 @@
 {
   "lib/aave-helpers": {
     "branch": {
-      "name": "feat/b20-factory-detection",
-      "rev": "426f097b3eab73955eb5b77b3c5dbd9baa8c32ee"
+      "name": "main",
+      "rev": "2061ee9b299414c66646795f8413f6c4c9f01900"
     }
   },
   "lib/aave-umbrella": {
