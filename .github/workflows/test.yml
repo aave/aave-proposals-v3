@@ -37,7 +37,7 @@ jobs:
       - name: Run Foundry setup
         uses: aave-dao/github-workflows/.github/actions/foundry-setup@main
         with:
-          FOUNDRY_VERSION: "v1.7.1"
+          FOUNDRY_VERSION: "nightly"
 
       - name: Run Forge tests
         id: test
@@ -85,7 +85,7 @@ jobs:
           "$HOME/.arc-foundry/forge" --version
 
       - name: Run Arc tests
-        run: forge test --match-path 'src/*Arc*/**/*.t.sol' -vv
+        run: forge test --match-path 'src/**/AaveV*Arc_*.t.sol' -vv
         env:
           FOUNDRY_PROFILE: test
           FOUNDRY_NETWORK: arc
