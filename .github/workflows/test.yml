@@ -85,7 +85,7 @@ jobs:
           "$HOME/.arc-foundry/forge" --version
 
       - name: Run Arc tests
-        run: forge test --match-path 'src/*Arc*/**/*.t.sol' -vv
+        run: forge test --match-path 'src/**/AaveV*Arc_*.t.sol' -vv
         env:
           FOUNDRY_PROFILE: test
           FOUNDRY_NETWORK: arc
