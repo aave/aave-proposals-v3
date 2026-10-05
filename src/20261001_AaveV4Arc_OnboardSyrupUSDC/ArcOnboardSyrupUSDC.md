@@ -7,7 +7,7 @@ snapshot: "https://snapshot.box/#/s:aavedao.eth/proposal/0x1d8f31d5dacf173a1ef3e
 
 ## Simple Summary
 
-This payload onboards syrupUSDC, Maple Finance's yield-bearing USDC token, to Aave V4 on Arc. It lists syrupUSDC on the Core Hub and configures a dedicated Maple Spoke where syrupUSDC is collateral only and USDC is the only borrowable asset, following the parameters recommended by LlamaRisk.
+This payload onboards syrupUSDC, Maple Finance's yield-bearing USDC token, to Aave V4 on Arc. It lists syrupUSDC on the Core Hub and configures a dedicated USDC Maple eSpoke where syrupUSDC is collateral only and USDC is the only borrowable asset, following the parameters recommended by LlamaRisk.
 
 ## Motivation
 
@@ -19,22 +19,22 @@ Onboarding syrupUSDC to Aave V4 on Arc:
 - Extends syrupUSDC's availability beyond its existing Aave deployments on Base and Monad.
 - Lets the DAO and its Service Providers apply a configuration specific to Arc, isolated on its own spoke.
 
-USDC drawn on the Maple Spoke comes from the same Core Hub reserve that serves the Main Spoke. Debt backed by syrupUSDC carries a 20% collateral risk, so it accrues interest at `r_drawn × 1.20`, compensating USDC suppliers for the credit exposure and keeping part of the hub's liquidity available for cirBTC and WETH borrowers.
+USDC drawn on the USDC Maple eSpoke comes from the same Core Hub reserve that serves the Main Spoke. Debt backed by syrupUSDC carries a 20% collateral risk, so it accrues interest at `r_drawn × 1.20`, compensating USDC suppliers for the credit exposure and keeping part of the hub's liquidity available for cirBTC and WETH borrowers.
 
 ## Specification
 
 **syrupUSDC**: [0x0dC6b79F3c3854E4d74514fD4d29BE6c96Beee39](https://explorer.arc.io/address/0x0dC6b79F3c3854E4d74514fD4d29BE6c96Beee39)
 
-The Maple Spoke is deployed at [0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2](https://explorer.arc.io/address/0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2) with its AaveOracle ([0x1Dd77518EC8A68E91C0656660d7972e301Fc00A4](https://explorer.arc.io/address/0x1Dd77518EC8A68E91C0656660d7972e301Fc00A4)), its ProxyAdmin owned by the Security Council and the Arc AccessManager as authority. It runs the same implementation code as the Main Spoke. The payload wires it to the AccessManager, lists syrupUSDC on the Core Hub without a tokenization spoke, and configures the spoke as below.
+The USDC Maple eSpoke is deployed at [0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2](https://explorer.arc.io/address/0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2) with its AaveOracle ([0x1Dd77518EC8A68E91C0656660d7972e301Fc00A4](https://explorer.arc.io/address/0x1Dd77518EC8A68E91C0656660d7972e301Fc00A4)), its ProxyAdmin owned by the Security Council and the Arc AccessManager as authority. It runs the same implementation code as the Main Spoke. The payload wires it to the AccessManager, lists syrupUSDC on the Core Hub without a tokenization spoke, and configures the spoke as below.
 
-**Maple Spoke configuration**
+**USDC Maple eSpoke configuration**
 
-| Hub      | Spoke       | Reserve   | Collateral Factor | Max Liquidation Bonus | Borrowable | Collateral Risk | Liquidation Fee | Risk Premium Threshold | Receive Shares |
-| -------- | ----------- | --------- | ----------------: | --------------------: | ---------- | --------------: | --------------: | ---------------------: | -------------- |
-| Core Hub | Maple Spoke | syrupUSDC |            92.00% |                 4.00% | FALSE      |             20% |          10.00% |                      0 | TRUE           |
-| Core Hub | Maple Spoke | USDC      |             0.00% |                     - | TRUE       |               - |               - |                  1000% | TRUE           |
+| Hub      | Spoke             | Reserve   | Collateral Factor | Max Liquidation Bonus | Borrowable | Collateral Risk | Liquidation Fee | Risk Premium Threshold | Receive Shares |
+| -------- | ----------------- | --------- | ----------------: | --------------------: | ---------- | --------------: | --------------: | ---------------------: | -------------- |
+| Core Hub | USDC Maple eSpoke | syrupUSDC |            92.00% |                 4.00% | FALSE      |             20% |          10.00% |                      0 | TRUE           |
+| Core Hub | USDC Maple eSpoke | USDC      |             0.00% |                     - | TRUE       |               - |               - |                  1000% | TRUE           |
 
-For the premium to accrue, the USDC risk premium threshold on the Maple Spoke has to sit at or above the syrupUSDC collateral risk, otherwise any USDC borrow against syrupUSDC reverts. It is set to 1000%, the maximum collateral risk the protocol allows, so the Risk Steward can tune the collateral risk without a separate change to the threshold.
+For the premium to accrue, the USDC risk premium threshold on the USDC Maple eSpoke has to sit at or above the syrupUSDC collateral risk, otherwise any USDC borrow against syrupUSDC reverts. It is set to 1000%, the maximum collateral risk the protocol allows, so the Risk Steward can tune the collateral risk without a separate change to the threshold.
 
 **Dynamic liquidation configuration**
 
@@ -46,14 +46,14 @@ For the premium to accrue, the USDC risk premium threshold on the Maple Spoke ha
 
 **Caps**
 
-| Hub      | Spoke       | Reserve   |    Add Cap |   Draw Cap |
-| -------- | ----------- | --------- | ---------: | ---------: |
-| Core Hub | Maple Spoke | syrupUSDC | 25,000,000 |          0 |
-| Core Hub | Maple Spoke | USDC      |          0 | 23,000,000 |
+| Hub      | Spoke             | Reserve   |    Add Cap |   Draw Cap |
+| -------- | ----------------- | --------- | ---------: | ---------: |
+| Core Hub | USDC Maple eSpoke | syrupUSDC | 25,000,000 |          0 |
+| Core Hub | USDC Maple eSpoke | USDC      |          0 | 23,000,000 |
 
 The syrupUSDC add cap, about $30M, is sized to the bridge-and-redeem exit to Ethereum, which clears about $10M an hour.
 
-syrupUSDC is listed with a liquidity fee of 0 and a flat interest rate curve, as it is not borrowable. The Giver, Taker and Config position managers and the Signature Gateway are enabled on the Maple Spoke and the Maple Spoke is registered on each of them, as for the Main and Forex spokes.
+syrupUSDC is listed with a liquidity fee of 0 and a flat interest rate curve, as it is not borrowable. The Giver, Taker and Config position managers and the Signature Gateway are enabled on the USDC Maple eSpoke and the USDC Maple eSpoke is registered on each of them, as for the Main and Forex spokes.
 
 **Oracle configuration**
 
@@ -78,7 +78,7 @@ The adapter is administered through the Arc ACL manager ([0x4d4B307857eFff79E786
 There is no governance on Arc. The Aave V4 Security Council Safe ([0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9](https://explorer.arc.io/address/0x187AAE17d4931310B3fc75743e7F16Bdc9eD77e9)) submits one batch of five transactions:
 
 1. `Executor.executeTransaction(payload, 0, "execute()", "", true)` on its Executor ([0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5](https://explorer.arc.io/address/0x8e79b0541122d3822eC93082cEB1ab03EDBc1Fd5)), which delegatecalls the payload
-2. to 5. `registerSpoke(MapleSpoke, true)` on the Giver, Taker and Config position managers and the Signature Gateway
+2. to 5. `registerSpoke(UsdcMapleESpoke, true)` on the Giver, Taker and Config position managers and the Signature Gateway
 
 The Executor already holds `ACCESS_MANAGER_ADMIN_ROLE`, `HUB_CONFIGURATOR_DOMAIN_ADMIN_ROLE` and `SPOKE_CONFIGURATOR_DOMAIN_ADMIN_ROLE` on the Arc AccessManager, so no role grant precedes it. The position managers are owned by the Safe itself, so the Safe registers the spoke on them directly rather than through the payload.
 

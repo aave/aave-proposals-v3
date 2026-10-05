@@ -23,7 +23,7 @@ import {AaveV4Arc_OnboardSyrupUSDC_20261001} from './AaveV4Arc_OnboardSyrupUSDC_
  * @dev Test for AaveV4Arc_OnboardSyrupUSDC_20261001.
  *      Arc has no PayloadsController, so the listing is executed the way it will be on chain: the
  *      Security Council Safe calls its Executor, which delegatecalls the payload, and registers the
- *      Maple Spoke on the position managers it owns.
+ *      USDC Maple eSpoke on the position managers it owns.
  *      `forge` below must be circlefin/arc-foundry; upstream forge skips the suite.
  * command: FOUNDRY_PROFILE=test FOUNDRY_NETWORK=arc forge test --match-path=src/20261001_AaveV4Arc_OnboardSyrupUSDC/AaveV4Arc_OnboardSyrupUSDC_20261001.t.sol -vv
  */
@@ -41,13 +41,13 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
   address internal constant RISK_STEWARD = 0x73adb67D5De247D40152Cf06aC16174b3d87D2c8;
 
   AaveV4Arc_OnboardSyrupUSDC_20261001 internal proposal;
-  ISpoke internal mapleSpoke;
+  ISpoke internal usdcMapleESpoke;
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl('arc'), 23690000);
     _requireArcSemantics();
     proposal = new AaveV4Arc_OnboardSyrupUSDC_20261001();
-    mapleSpoke = ISpoke(proposal.MAPLE_SPOKE());
+    usdcMapleESpoke = ISpoke(proposal.USDC_MAPLE_ESPOKE());
   }
 
   modifier executed() {
@@ -63,7 +63,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     for (uint256 i; i < addressBookSpokes.length; ++i) {
       spokes[i] = addressBookSpokes[i];
     }
-    spokes[addressBookSpokes.length] = mapleSpoke;
+    spokes[addressBookSpokes.length] = usdcMapleESpoke;
     defaultTest({
       reportName: 'AaveV4Arc_OnboardSyrupUSDC_20261001',
       spokes: spokes,
@@ -76,22 +76,22 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
 
   function test_preState() public view {
     assertFalse(CORE_HUB.isUnderlyingListed(proposal.SYRUP_USDC()), 'syrupUSDC already listed');
-    assertEq(mapleSpoke.getReserveCount(), 0, 'Maple Spoke already configured');
+    assertEq(usdcMapleESpoke.getReserveCount(), 0, 'USDC Maple eSpoke already configured');
     assertFalse(
-      CORE_HUB.isSpokeListed(_assetId(AaveV4ArcAssets.USDC_UNDERLYING), address(mapleSpoke)),
-      'USDC already registered on Maple Spoke'
+      CORE_HUB.isSpokeListed(_assetId(AaveV4ArcAssets.USDC_UNDERLYING), address(usdcMapleESpoke)),
+      'USDC already registered on USDC Maple eSpoke'
     );
   }
 
   function test_spokeDeployment() public view {
-    _assertSpokeDeployment(mapleSpoke);
+    _assertSpokeDeployment(usdcMapleESpoke);
     assertEq(
-      _proxyAdminOwner(address(mapleSpoke)),
+      _proxyAdminOwner(address(usdcMapleESpoke)),
       MiscArc.V4_SECURITY_COUNCIL,
       'proxy admin owner mismatch'
     );
     assertEq(
-      uint256(mapleSpoke.MAX_USER_RESERVES_LIMIT()),
+      uint256(usdcMapleESpoke.MAX_USER_RESERVES_LIMIT()),
       uint256(AaveV4ArcSpokes.MAIN_SPOKE.MAX_USER_RESERVES_LIMIT()),
       'max user reserves mismatch vs Main Spoke'
     );
@@ -127,9 +127,12 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     assertEq(uint256(irData.rateGrowthBeforeOptimal), 0);
     assertEq(uint256(irData.rateGrowthAfterOptimal), 0);
 
-    // treasury (fee receiver) and Maple Spoke only, no tokenization spoke
+    // treasury (fee receiver) and USDC Maple eSpoke only, no tokenization spoke
     assertEq(CORE_HUB.getSpokeCount(assetId), 2, 'spoke count mismatch');
-    assertTrue(CORE_HUB.isSpokeListed(assetId, address(mapleSpoke)), 'Maple Spoke not listed');
+    assertTrue(
+      CORE_HUB.isSpokeListed(assetId, address(usdcMapleESpoke)),
+      'USDC Maple eSpoke not listed'
+    );
   }
 
   function test_hubSpokeConfigs() public executed {
@@ -147,10 +150,10 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
   }
 
   function test_reservePriceSources() public executed {
-    IAaveOracle oracle = IAaveOracle(mapleSpoke.ORACLE());
+    IAaveOracle oracle = IAaveOracle(usdcMapleESpoke.ORACLE());
     assertEq(
       oracle.getReserveSource(_reserveId(proposal.SYRUP_USDC())),
-      proposal.MAPLE_SPOKE_SYRUP_USDC_PRICE_FEED(),
+      proposal.USDC_MAPLE_ESPOKE_SYRUP_USDC_PRICE_FEED(),
       'syrupUSDC price source mismatch'
     );
     assertEq(
@@ -161,7 +164,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
   }
 
   function test_liquidationConfig() public executed {
-    ISpoke.LiquidationConfig memory cfg = mapleSpoke.getLiquidationConfig();
+    ISpoke.LiquidationConfig memory cfg = usdcMapleESpoke.getLiquidationConfig();
     assertEq(uint256(cfg.targetHealthFactor), 1.0277e18, 'targetHealthFactor mismatch');
     assertEq(uint256(cfg.healthFactorForMaxBonus), 0.99e18, 'healthFactorForMaxBonus mismatch');
     assertEq(uint256(cfg.liquidationBonusFactor), 100_00, 'liquidationBonusFactor mismatch');
@@ -170,16 +173,16 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
   function test_positionManagersEnabledOnBothSides() public executed {
     address[4] memory positionManagers = _positionManagers();
     for (uint256 i; i < positionManagers.length; ++i) {
-      assertTrue(mapleSpoke.isPositionManagerActive(positionManagers[i]), 'inactive on spoke');
+      assertTrue(usdcMapleESpoke.isPositionManagerActive(positionManagers[i]), 'inactive on spoke');
       assertTrue(
-        IPositionManagerBase(positionManagers[i]).isSpokeRegistered(address(mapleSpoke)),
+        IPositionManagerBase(positionManagers[i]).isSpokeRegistered(address(usdcMapleESpoke)),
         'spoke not registered on position manager'
       );
     }
   }
 
   /// @dev Every selector the AccessManager gates on the Main Spoke is gated by the same role on the
-  /// Maple Spoke, with the same target admin delay and open state.
+  /// USDC Maple eSpoke, with the same target admin delay and open state.
   function test_accessManagerParityWithMainSpoke() public executed {
     IAccessManagerEnumerable accessManager = AaveV4Arc.ACCESS_MANAGER;
     address mainSpoke = address(AaveV4ArcSpokes.MAIN_SPOKE);
@@ -188,29 +191,29 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
       uint64 roleId = accessManager.getRole(i);
       uint256 selectorCount = accessManager.getRoleTargetSelectorCount(roleId, mainSpoke);
       assertEq(
-        accessManager.getRoleTargetSelectorCount(roleId, address(mapleSpoke)),
+        accessManager.getRoleTargetSelectorCount(roleId, address(usdcMapleESpoke)),
         selectorCount,
         'selector count'
       );
       for (uint256 j; j < selectorCount; ++j) {
         bytes4 selector = accessManager.getRoleTargetSelector(roleId, mainSpoke, j);
         assertEq(
-          accessManager.getTargetFunctionRole(address(mapleSpoke), selector),
+          accessManager.getTargetFunctionRole(address(usdcMapleESpoke), selector),
           roleId,
           'selector role'
         );
       }
     }
     assertEq(
-      accessManager.getTargetAdminDelay(address(mapleSpoke)),
+      accessManager.getTargetAdminDelay(address(usdcMapleESpoke)),
       accessManager.getTargetAdminDelay(mainSpoke),
       'target admin delay'
     );
-    assertFalse(accessManager.isTargetClosed(address(mapleSpoke)), 'target closed');
+    assertFalse(accessManager.isTargetClosed(address(usdcMapleESpoke)), 'target closed');
   }
 
   function test_syrupUSDCPriceFeed() public view {
-    IPriceCapAdapter adapter = IPriceCapAdapter(proposal.MAPLE_SPOKE_SYRUP_USDC_PRICE_FEED());
+    IPriceCapAdapter adapter = IPriceCapAdapter(proposal.USDC_MAPLE_ESPOKE_SYRUP_USDC_PRICE_FEED());
     assertEq(address(adapter.ACL_MANAGER()), MiscArc.ACL_MANAGER, 'ACL manager');
     assertEq(
       address(adapter.BASE_TO_USD_AGGREGATOR()),
@@ -229,7 +232,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     );
   }
 
-  function test_riskPremiumThresholdOnlyChangesOnMapleSpoke() public {
+  function test_riskPremiumThresholdOnlyChangesOnUsdcMapleESpoke() public {
     uint256 usdcAssetId = _assetId(AaveV4ArcAssets.USDC_UNDERLYING);
     address[2] memory otherSpokes = [
       address(AaveV4ArcSpokes.MAIN_SPOKE),
@@ -243,9 +246,9 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     _executeSafeBatch(address(proposal));
 
     assertEq(
-      uint256(CORE_HUB.getSpokeConfig(usdcAssetId, address(mapleSpoke)).riskPremiumThreshold),
+      uint256(CORE_HUB.getSpokeConfig(usdcAssetId, address(usdcMapleESpoke)).riskPremiumThreshold),
       1000_00,
-      'Maple Spoke USDC threshold'
+      'USDC Maple eSpoke USDC threshold'
     );
     for (uint256 i; i < otherSpokes.length; ++i) {
       assertEq(
@@ -256,7 +259,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     }
   }
 
-  /// @dev The same USDC debt opened on the Maple Spoke and on the Main Spoke accrues the same drawn
+  /// @dev The same USDC debt opened on the USDC Maple eSpoke and on the Main Spoke accrues the same drawn
   /// interest, and only the Maple position pays the 20% premium on top of it.
   function test_riskPremiumAppliedToMapleBorrowersOnly() public executed {
     uint256 borrowAmount = 50_000e6;
@@ -268,8 +271,8 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
       _assetId(AaveV4ArcAssets.USDC_UNDERLYING)
     );
 
-    assertEq(mapleSpoke.getUserAccountData(mapleBorrower).riskPremium, 20_00, 'Maple premium');
-    assertEq(mapleSpoke.getUserLastRiskPremium(mapleBorrower), 20_00, 'Maple last premium');
+    assertEq(usdcMapleESpoke.getUserAccountData(mapleBorrower).riskPremium, 20_00, 'Maple premium');
+    assertEq(usdcMapleESpoke.getUserLastRiskPremium(mapleBorrower), 20_00, 'Maple last premium');
     assertEq(
       AaveV4ArcSpokes.MAIN_SPOKE.getUserAccountData(mainBorrower).riskPremium,
       0,
@@ -278,7 +281,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
 
     skip(365 days);
 
-    (uint256 mapleDrawn, uint256 maplePremium) = mapleSpoke.getUserDebt(
+    (uint256 mapleDrawn, uint256 maplePremium) = usdcMapleESpoke.getUserDebt(
       mapleUsdcReserveId,
       mapleBorrower
     );
@@ -301,7 +304,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     IHubConfigurator(AaveV4Arc.HUB_CONFIGURATOR).updateSpokeRiskPremiumThreshold({
       hub: address(CORE_HUB),
       assetId: usdcAssetId,
-      spoke: address(mapleSpoke),
+      spoke: address(usdcMapleESpoke),
       riskPremiumThreshold: 19_00
     });
 
@@ -309,7 +312,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     uint256 usdcReserveId = _reserveId(AaveV4ArcAssets.USDC_UNDERLYING);
     vm.prank(user);
     vm.expectRevert(IHub.InvalidPremiumChange.selector, address(CORE_HUB));
-    mapleSpoke.borrow(usdcReserveId, 50_000e6, user);
+    usdcMapleESpoke.borrow(usdcReserveId, 50_000e6, user);
   }
 
   /// @dev The threshold covers any collateral risk the Risk Steward can set, up to the protocol
@@ -318,13 +321,13 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     uint256 syrupReserveId = _reserveId(proposal.SYRUP_USDC());
     vm.prank(MiscArc.V4_SECURITY_COUNCIL_EXECUTOR);
     ISpokeConfigurator(address(AaveV4Arc.SPOKE_CONFIGURATOR)).updateCollateralRisk(
-      address(mapleSpoke),
+      address(usdcMapleESpoke),
       syrupReserveId,
       1000_00
     );
 
     address user = _openMaplePosition(100_000e6, 50_000e6);
-    assertEq(mapleSpoke.getUserAccountData(user).riskPremium, 1000_00, 'risk premium');
+    assertEq(usdcMapleESpoke.getUserAccountData(user).riskPremium, 1000_00, 'risk premium');
   }
 
   function _supplySyrupUSDC(uint256 amount) internal returns (address user) {
@@ -332,9 +335,9 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     uint256 reserveId = _reserveId(proposal.SYRUP_USDC());
     deal(proposal.SYRUP_USDC(), user, amount);
     vm.startPrank(user);
-    IERC20Metadata(proposal.SYRUP_USDC()).approve(address(mapleSpoke), amount);
-    mapleSpoke.supply(reserveId, amount, user);
-    mapleSpoke.setUsingAsCollateral(reserveId, true, user);
+    IERC20Metadata(proposal.SYRUP_USDC()).approve(address(usdcMapleESpoke), amount);
+    usdcMapleESpoke.supply(reserveId, amount, user);
+    usdcMapleESpoke.setUsingAsCollateral(reserveId, true, user);
     vm.stopPrank();
   }
 
@@ -345,7 +348,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     user = _supplySyrupUSDC(collateralAmount);
     uint256 usdcReserveId = _reserveId(AaveV4ArcAssets.USDC_UNDERLYING);
     vm.prank(user);
-    mapleSpoke.borrow(usdcReserveId, borrowAmount, user);
+    usdcMapleESpoke.borrow(usdcReserveId, borrowAmount, user);
   }
 
   function _openMainPosition(uint256 borrowAmount) internal returns (address user) {
@@ -386,9 +389,9 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     uint16 liquidationFee
   ) internal view {
     uint256 reserveId = _reserveId(underlying);
-    ISpoke.Reserve memory reserve = mapleSpoke.getReserve(reserveId);
-    ISpoke.ReserveConfig memory cfg = mapleSpoke.getReserveConfig(reserveId);
-    ISpoke.DynamicReserveConfig memory dyn = mapleSpoke.getDynamicReserveConfig(
+    ISpoke.Reserve memory reserve = usdcMapleESpoke.getReserve(reserveId);
+    ISpoke.ReserveConfig memory cfg = usdcMapleESpoke.getReserveConfig(reserveId);
+    ISpoke.DynamicReserveConfig memory dyn = usdcMapleESpoke.getDynamicReserveConfig(
       reserveId,
       reserve.dynamicConfigKey
     );
@@ -412,7 +415,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
   ) internal view {
     IHub.SpokeConfig memory cfg = CORE_HUB.getSpokeConfig(
       _assetId(underlying),
-      address(mapleSpoke)
+      address(usdcMapleESpoke)
     );
     assertEq(uint256(cfg.addCap), addCap, 'addCap');
     assertEq(uint256(cfg.drawCap), drawCap, 'drawCap');
@@ -426,7 +429,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
   }
 
   function _reserveId(address underlying) internal view returns (uint256) {
-    return mapleSpoke.getReserveId(address(CORE_HUB), _assetId(underlying));
+    return usdcMapleESpoke.getReserveId(address(CORE_HUB), _assetId(underlying));
   }
 
   /// @dev Arc USDC is the chain's native coin and its transfers run through Arc-only system
@@ -445,7 +448,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
     address[4] memory positionManagers = _positionManagers();
     vm.startPrank(MiscArc.V4_SECURITY_COUNCIL);
     for (uint256 i; i < positionManagers.length; ++i) {
-      IPositionManagerBase(positionManagers[i]).registerSpoke(address(mapleSpoke), true);
+      IPositionManagerBase(positionManagers[i]).registerSpoke(address(usdcMapleESpoke), true);
     }
     vm.stopPrank();
   }

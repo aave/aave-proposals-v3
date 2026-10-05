@@ -17,7 +17,7 @@ import {AaveV4Arc_OnboardSyrupUSDC_20261001} from './AaveV4Arc_OnboardSyrupUSDC_
  *
  * Arc has no PayloadsController and no governance bridge, so there is no CreateProposal step.
  * The Security Council Safe executes the deployed payload through its Executor, then registers the
- * Maple Spoke on the position managers it owns directly; the script prints those Safe transactions.
+ * USDC Maple eSpoke on the position managers it owns directly; the script prints those Safe transactions.
  */
 contract DeployArc is ArcScript {
   function run() external broadcast {
@@ -42,7 +42,7 @@ contract DeployArc is ArcScript {
     ];
     bytes memory registerSpoke = abi.encodeCall(
       IPositionManagerBase.registerSpoke,
-      (payload.MAPLE_SPOKE(), true)
+      (payload.USDC_MAPLE_ESPOKE(), true)
     );
     for (uint256 i; i < positionManagers.length; ++i) {
       console.log(string.concat('Safe tx ', vm.toString(i + 2), ': to'), positionManagers[i]);

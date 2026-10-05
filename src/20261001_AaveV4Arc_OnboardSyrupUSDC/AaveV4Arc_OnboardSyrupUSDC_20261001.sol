@@ -21,11 +21,11 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
   address public constant SYRUP_USDC = 0x0dC6b79F3c3854E4d74514fD4d29BE6c96Beee39;
 
   // https://explorer.arc.io/address/0xAFcab475C68D931C3DC1035eFb50df2d29e003C3
-  address public constant MAPLE_SPOKE_SYRUP_USDC_PRICE_FEED =
+  address public constant USDC_MAPLE_ESPOKE_SYRUP_USDC_PRICE_FEED =
     0xAFcab475C68D931C3DC1035eFb50df2d29e003C3;
 
   // https://explorer.arc.io/address/0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2
-  address public constant MAPLE_SPOKE = 0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2;
+  address public constant USDC_MAPLE_ESPOKE = 0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2;
 
   function accessManagerTargetFunctionRoleUpdates()
     public
@@ -33,7 +33,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
     override
     returns (IConfigEngine.TargetFunctionRoleUpdate[] memory)
   {
-    return V4RoleWiring.spokeWiring(address(AaveV4Arc.ACCESS_MANAGER), MAPLE_SPOKE);
+    return V4RoleWiring.spokeWiring(address(AaveV4Arc.ACCESS_MANAGER), USDC_MAPLE_ESPOKE);
   }
 
   function hubAssetListings() public pure override returns (IConfigEngine.AssetListing[] memory) {
@@ -60,10 +60,10 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
     IConfigEngine.ReserveListing[] memory items = new IConfigEngine.ReserveListing[](2);
     items[0] = IConfigEngine.ReserveListing({
       spokeConfigurator: AaveV4Arc.SPOKE_CONFIGURATOR,
-      spoke: MAPLE_SPOKE,
+      spoke: USDC_MAPLE_ESPOKE,
       hub: address(AaveV4ArcHubs.CORE_HUB),
       underlying: SYRUP_USDC,
-      priceSource: MAPLE_SPOKE_SYRUP_USDC_PRICE_FEED,
+      priceSource: USDC_MAPLE_ESPOKE_SYRUP_USDC_PRICE_FEED,
       config: ISpoke.ReserveConfig({
         collateralRisk: uint24(20_00),
         paused: false,
@@ -79,7 +79,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
     });
     items[1] = IConfigEngine.ReserveListing({
       spokeConfigurator: AaveV4Arc.SPOKE_CONFIGURATOR,
-      spoke: MAPLE_SPOKE,
+      spoke: USDC_MAPLE_ESPOKE,
       hub: address(AaveV4ArcHubs.CORE_HUB),
       underlying: AaveV4ArcAssets.USDC_UNDERLYING,
       priceSource: AaveV4ArcSpokePriceFeeds.MAIN_SPOKE_USDC_PRICE_FEED,
@@ -109,7 +109,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
       memory items = new IConfigEngine.LiquidationConfigUpdate[](1);
     items[0] = IConfigEngine.LiquidationConfigUpdate({
       spokeConfigurator: AaveV4Arc.SPOKE_CONFIGURATOR,
-      spoke: MAPLE_SPOKE,
+      spoke: USDC_MAPLE_ESPOKE,
       targetHealthFactor: 1.0277e18,
       healthFactorForMaxBonus: 0.99e18,
       liquidationBonusFactor: 100_00
@@ -153,7 +153,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
     items[0] = IConfigEngine.SpokeToAssetsAddition({
       hubConfigurator: AaveV4Arc.HUB_CONFIGURATOR,
       hub: address(AaveV4ArcHubs.CORE_HUB),
-      spoke: MAPLE_SPOKE,
+      spoke: USDC_MAPLE_ESPOKE,
       assets: assets
     });
     return items;
@@ -177,7 +177,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
     for (uint256 i; i < positionManagers.length; ++i) {
       items[i] = IConfigEngine.PositionManagerUpdate({
         spokeConfigurator: AaveV4Arc.SPOKE_CONFIGURATOR,
-        spoke: MAPLE_SPOKE,
+        spoke: USDC_MAPLE_ESPOKE,
         positionManager: positionManagers[i],
         active: true
       });
