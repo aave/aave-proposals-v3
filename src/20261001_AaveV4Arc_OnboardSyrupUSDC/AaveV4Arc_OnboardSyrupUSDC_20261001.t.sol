@@ -14,9 +14,11 @@ import {IHubConfigurator} from 'aave-v4/hub/interfaces/IHubConfigurator.sol';
 import {ISpokeConfigurator} from 'aave-v4/spoke/interfaces/ISpokeConfigurator.sol';
 import {IPositionManagerBase} from 'aave-v4/position-manager/interfaces/IPositionManagerBase.sol';
 import {IAccessManagerEnumerable} from 'aave-v4/access/interfaces/IAccessManagerEnumerable.sol';
+import {EngineFlags} from 'aave-v4/config-engine/libraries/EngineFlags.sol';
 import {V4EngineDefaults} from 'aave-helpers/src/v4-config-engine/V4EngineDefaults.sol';
 import {ProtocolV4TestBaseArc} from 'aave-helpers/src/v4-protocol-test/ProtocolV4TestBaseArc.sol';
 import {IPriceCapAdapter} from 'src/interfaces/IPriceCapAdapter.sol';
+import {IRiskStewardV4} from 'src/interfaces/IRiskStewardV4.sol';
 import {AaveV4Arc_OnboardSyrupUSDC_20261001} from './AaveV4Arc_OnboardSyrupUSDC_20261001.sol';
 
 /**
@@ -328,6 +330,94 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
 
     address user = _openMaplePosition(100_000e6, 50_000e6);
     assertEq(usdcMapleESpoke.getUserAccountData(user).riskPremium, 1000_00, 'risk premium');
+  }
+
+  /// @dev The Risk Steward reaches the USDC Maple eSpoke through the Hub and Spoke configurators, so
+  /// each spoke-scoped update it can submit must land once the payload has wired the spoke.
+  function test_riskStewardCanUpdateUsdcMapleESpoke() public executed {
+    IRiskStewardV4 steward = IRiskStewardV4(RISK_STEWARD);
+    address syrupUSDC = proposal.SYRUP_USDC();
+
+    IConfigEngine.SpokeConfigUpdate[] memory capUpdates = new IConfigEngine.SpokeConfigUpdate[](2);
+    capUpdates[0] = _stewardCapUpdate(syrupUSDC, 30_000_000, EngineFlags.KEEP_CURRENT);
+    capUpdates[1] = _stewardCapUpdate(
+      AaveV4ArcAssets.USDC_UNDERLYING,
+      EngineFlags.KEEP_CURRENT,
+      25_000_000
+    );
+
+    IConfigEngine.ReserveConfigUpdate[]
+      memory reserveUpdates = new IConfigEngine.ReserveConfigUpdate[](1);
+    reserveUpdates[0] = IConfigEngine.ReserveConfigUpdate({
+      spokeConfigurator: AaveV4Arc.SPOKE_CONFIGURATOR,
+      spoke: address(usdcMapleESpoke),
+      hub: address(CORE_HUB),
+      underlying: syrupUSDC,
+      priceSource: EngineFlags.KEEP_CURRENT_ADDRESS,
+      collateralRisk: 25_00,
+      paused: EngineFlags.KEEP_CURRENT,
+      frozen: EngineFlags.KEEP_CURRENT,
+      borrowable: EngineFlags.KEEP_CURRENT,
+      receiveSharesEnabled: EngineFlags.KEEP_CURRENT
+    });
+
+    IConfigEngine.DynamicReserveConfigUpdate[]
+      memory dynamicUpdates = new IConfigEngine.DynamicReserveConfigUpdate[](1);
+    dynamicUpdates[0] = IConfigEngine.DynamicReserveConfigUpdate({
+      spokeConfigurator: AaveV4Arc.SPOKE_CONFIGURATOR,
+      spoke: address(usdcMapleESpoke),
+      hub: address(CORE_HUB),
+      underlying: syrupUSDC,
+      dynamicConfigKey: usdcMapleESpoke.getReserve(_reserveId(syrupUSDC)).dynamicConfigKey,
+      collateralFactor: 91_50,
+      maxLiquidationBonus: EngineFlags.KEEP_CURRENT,
+      liquidationFee: EngineFlags.KEEP_CURRENT
+    });
+
+    IConfigEngine.LiquidationConfigUpdate[]
+      memory liquidationUpdates = new IConfigEngine.LiquidationConfigUpdate[](1);
+    liquidationUpdates[0] = IConfigEngine.LiquidationConfigUpdate({
+      spokeConfigurator: AaveV4Arc.SPOKE_CONFIGURATOR,
+      spoke: address(usdcMapleESpoke),
+      targetHealthFactor: 1.03e18,
+      healthFactorForMaxBonus: EngineFlags.KEEP_CURRENT,
+      liquidationBonusFactor: EngineFlags.KEEP_CURRENT
+    });
+
+    vm.startPrank(AaveV4Arc.RISK_COUNCIL);
+    steward.updateHubSpokeCaps(capUpdates);
+    steward.updateReserveConfigs(reserveUpdates);
+    steward.updateDynamicReserveConfigs(dynamicUpdates);
+    steward.updateSpokeLiquidationConfigs(liquidationUpdates);
+    vm.stopPrank();
+
+    _assertSpokeConfig(syrupUSDC, 30_000_000, 0, 0);
+    _assertSpokeConfig(AaveV4ArcAssets.USDC_UNDERLYING, 0, 25_000_000, 1100_00);
+    _assertReserve(syrupUSDC, false, 25_00, 91_50, 104_00, 10_00);
+    assertEq(
+      uint256(usdcMapleESpoke.getLiquidationConfig().targetHealthFactor),
+      1.03e18,
+      'targetHealthFactor'
+    );
+  }
+
+  function _stewardCapUpdate(
+    address underlying,
+    uint256 addCap,
+    uint256 drawCap
+  ) internal view returns (IConfigEngine.SpokeConfigUpdate memory) {
+    return
+      IConfigEngine.SpokeConfigUpdate({
+        hubConfigurator: AaveV4Arc.HUB_CONFIGURATOR,
+        hub: address(CORE_HUB),
+        underlying: underlying,
+        spoke: address(usdcMapleESpoke),
+        addCap: addCap,
+        drawCap: drawCap,
+        riskPremiumThreshold: EngineFlags.KEEP_CURRENT,
+        active: EngineFlags.KEEP_CURRENT,
+        halted: EngineFlags.KEEP_CURRENT
+      });
   }
 
   function _supplySyrupUSDC(uint256 amount) internal returns (address user) {
