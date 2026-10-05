@@ -32,9 +32,9 @@ The USDC Maple eSpoke is deployed at [0x18Dde098d25722C14e09842a6Fa7db6aAFC395a2
 | Hub      | Spoke             | Reserve   | Collateral Factor | Max Liquidation Bonus | Borrowable | Collateral Risk | Liquidation Fee | Risk Premium Threshold | Receive Shares |
 | -------- | ----------------- | --------- | ----------------: | --------------------: | ---------- | --------------: | --------------: | ---------------------: | -------------- |
 | Core Hub | USDC Maple eSpoke | syrupUSDC |            92.00% |                 4.00% | FALSE      |             20% |          10.00% |                      0 | TRUE           |
-| Core Hub | USDC Maple eSpoke | USDC      |             0.00% |                     - | TRUE       |               - |               - |                  1000% | TRUE           |
+| Core Hub | USDC Maple eSpoke | USDC      |             0.00% |                     - | TRUE       |               - |               - |                  1100% | TRUE           |
 
-For the premium to accrue, the USDC risk premium threshold on the USDC Maple eSpoke has to sit at or above the syrupUSDC collateral risk, otherwise any USDC borrow against syrupUSDC reverts. It is set to 1000%, the maximum collateral risk the protocol allows, so the Risk Steward can tune the collateral risk without a separate change to the threshold.
+For the premium to accrue, the USDC risk premium threshold on the USDC Maple eSpoke has to sit at or above the syrupUSDC collateral risk, otherwise any USDC borrow against syrupUSDC reverts. It is set to 1100%, above the 1000% maximum collateral risk the protocol allows, so the Risk Steward can tune the collateral risk without a separate change to the threshold.
 
 **Dynamic liquidation configuration**
 

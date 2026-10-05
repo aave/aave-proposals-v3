@@ -135,13 +135,13 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001 is AaveV4Payload(AaveV4Arc.CONFIG_E
       })
     });
     // USDC borrows against syrupUSDC revert unless the threshold covers its 20% collateral risk;
-    // the maximum lets the Risk Steward tune collateral risk without touching the threshold.
+    // sitting above the max collateral risk lets the Risk Steward tune it freely.
     assets[1] = IConfigEngine.SpokeAssetConfig({
       underlying: AaveV4ArcAssets.USDC_UNDERLYING,
       config: IHub.SpokeConfig({
         addCap: 0,
         drawCap: 23_000_000,
-        riskPremiumThreshold: 1000_00,
+        riskPremiumThreshold: 1100_00,
         active: true,
         halted: false
       })

@@ -137,7 +137,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
 
   function test_hubSpokeConfigs() public executed {
     _assertSpokeConfig(proposal.SYRUP_USDC(), 25_000_000, 0, 0);
-    _assertSpokeConfig(AaveV4ArcAssets.USDC_UNDERLYING, 0, 23_000_000, 1000_00);
+    _assertSpokeConfig(AaveV4ArcAssets.USDC_UNDERLYING, 0, 23_000_000, 1100_00);
   }
 
   function test_spokeReserves() public executed {
@@ -247,7 +247,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
 
     assertEq(
       uint256(CORE_HUB.getSpokeConfig(usdcAssetId, address(usdcMapleESpoke)).riskPremiumThreshold),
-      1000_00,
+      1100_00,
       'USDC Maple eSpoke USDC threshold'
     );
     for (uint256 i; i < otherSpokes.length; ++i) {
@@ -297,7 +297,7 @@ contract AaveV4Arc_OnboardSyrupUSDC_20261001_Test is ProtocolV4TestBaseArc {
   }
 
   /// @dev A threshold below the 20% collateral risk makes USDC borrows against syrupUSDC revert,
-  /// which is what the 1000% threshold set by the payload prevents.
+  /// which is what the 1100% threshold set by the payload prevents.
   function test_borrowRevertsWhenThresholdBelowCollateralRisk() public executed {
     uint256 usdcAssetId = _assetId(AaveV4ArcAssets.USDC_UNDERLYING);
     vm.prank(MiscArc.V4_SECURITY_COUNCIL_EXECUTOR);
